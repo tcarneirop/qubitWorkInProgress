@@ -1,0 +1,2 @@
+# qubitWorkInProgress
+Working with Qubit 
