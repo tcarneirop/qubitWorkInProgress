@@ -44,7 +44,6 @@ int dist[N * N] = {
     4, 3, 2, 1, 0
 };
 
-#define PHYSIC_QUBITS 16
 
 #ifndef MAX_BOARDSIZE
 #define MAX_BOARDSIZE 32
@@ -52,13 +51,8 @@ int dist[N * N] = {
 
 #define MAX_ELEMENTS 100000
 
-typedef unsigned long long SOLUTIONTYPE;
-
 #define MIN_BOARDSIZE 2
-#define MAX_NAME_LEN 256
 #define H_TOL 1e-5f
-
-SOLUTIONTYPE g_numsolutions = 0ULL;
 
 struct RoutingResult
 {
@@ -66,16 +60,6 @@ struct RoutingResult
     int depth;
 };
 
-double rtclock()
-{
-    struct timezone Tzp;
-    struct timeval Tp;
-    int stat;
-    stat = gettimeofday(&Tp, &Tzp);
-    if (stat != 0)
-        printf("Error return from gettimeofday: %d", stat);
-    return (Tp.tv_sec + Tp.tv_usec * 1.0e-6);
-}
 
 struct PaPrep
 {
@@ -973,197 +957,6 @@ std::vector<RoutingResult> SABRE_routing_many(
     return results;
 }
 
-// Function to extract and clean the circuit name from the file path
-void extract_circuit_name(const char *path, char *dest, size_t max_len)
-{
-
-    // Find the last slash to strip out directories (e.g., "circuits/my_circuit.txt" -> "my_circuit.txt")
-    const char *base = strrchr(path, '/');
-#ifdef _WIN32
-    if (!base)
-        base = strrchr(path, '\\'); // Handle Windows paths if necessary
-#endif
-    base = (base) ? base + 1 : path;
-
-    // Copy to destination
-    strncpy(dest, base, max_len - 1);
-    dest[max_len - 1] = '\0';
-
-    // Strip the extension (e.g., "my_circuit.txt" -> "my_circuit")
-    char *dot = strrchr(dest, '.');
-    if (dot != NULL)
-    {
-        *dot = '\0';
-    }
-}
-
-void print_circuits(const char *circuit_name, const int *circuits, int count, int nb_qubits)
-{
-    if (circuits == NULL || count == 0)
-    {
-        printf("No data to print.\n");
-        return;
-    }
-
-    printf("--- Circuit Info ---\n");
-    printf("Circuit Name:           %s\n", circuit_name);
-    printf("Logical Qubits (nb_qubit): %d\n", nb_qubits);
-    printf("Total Vector Integers:     %d (%d pairs)\n\n", count, count / 2);
-
-    for (int i = 0; i < count; i += 2)
-    {
-        printf("%d %d\n", circuits[i], circuits[i + 1]);
-    }
-}
-
-inline unsigned long long factorial(unsigned long long n)
-{
-    return (n == 1 || n == 0) ? 1 : factorial(n - 1) * n;
-}
-
-void check(const long long m, const long long d, const unsigned long long nsols)
-{
-    unsigned long long mfat   =   factorial((unsigned long long)m);
-    unsigned long long mmdfat =   factorial((unsigned long long)(m - d));
-
-    if (mfat / (mmdfat) != nsols)
-    {
-        printf("\n############ ERROR - WRONG NUMBER OF SOLS #############\n");
-        exit(1);
-    }
-    else
-    {
-        printf("\n############ NUM SOLS OK #############\n");
-    }
-}
-
-// partial_search_64(circuit,flat_circuit_size, PHYSIC_QUBITS, nb_qubits);
-
-unsigned long long partial_search_64(int *circuit,
-                                     int size_of_the_vector_circuits,
-                                     const long long physic, const long long logic)
-{
-
-    unsigned int depth = 0U;
-    int mapping[MAX_BOARDSIZE];
-    long long aQueenBitCol[MAX_BOARDSIZE];
-    long long aStack[MAX_BOARDSIZE];
-
-    std::vector<RoutingResult> results(1);
-
-    long long int *pnStack;
-
-    long long int pnStackPos = 0LLU;
-
-    long long numrows = 0LL;
-    unsigned long long lsb;
-    unsigned long long bitfield;
-    long long i;
-
-    long long mask = (1LL << physic) - 1LL;
-
-    unsigned long long tree_size = 0ULL;
-    /* Initialize stack */
-    aStack[0] = -1LL; /* set sentinel -- signifies end of stack */
-
-    bitfield = 0ULL;
-
-    bitfield = (1LL << physic) - 1LL;
-    pnStack = aStack + 1LL;
-
-    pnStackPos++;
-
-    mapping[0] = 0;
-    mapping[0] = 0;
-
-    for (;;)
-    {
-
-        lsb = -((signed long long)bitfield) & bitfield;
-        if (0ULL == bitfield)
-        {
-
-            bitfield = *--pnStack;
-            pnStackPos--;
-
-            if (pnStack == aStack)
-            {
-                break;
-            }
-
-            --numrows;
-            continue;
-        }
-
-        bitfield &= ~lsb;
-        mapping[numrows] = (int)(63 - __builtin_clzll(lsb));
-
-        if (numrows < logic)
-        {
-            long long n = numrows++;
-            aQueenBitCol[numrows] = aQueenBitCol[n] | lsb;
-
-            pnStackPos++;
-
-            *pnStack++ = bitfield;
-
-            bitfield = mask & ~(aQueenBitCol[numrows]);
-
-            ++tree_size;
-
-            if (numrows == logic)
-            {
-
-                ++g_numsolutions;
-
-#ifdef PRINT
-                printf("\nSolution of number %llu - \n\t", g_numsolutions);
-
-                printf("[ ");
-                for (long long s = 0; s < logic; ++s)
-                {
-                    printf("%d ", mapping[s]);
-                    if (s < logic - 1)
-                        printf(" - ");
-                }
-                printf("]");
-
-                //  if(g_numsolutions == 2)
-                //      exit(1);
-#endif
-
-                   results = SABRE_routing_many(
-                               circuit, size_of_the_vector_circuits/2,
-                               ALBATROZ, (int)physic,
-                               (int)logic, 1, mapping, 1,
-                               20, 1);
-
-                //   std::cout<<"\nResult: "<<results[0].depth<<"\n";
-            }
-
-            continue;
-        }
-        else
-        {
-
-            bitfield = *--pnStack;
-            pnStackPos--;
-            --numrows;
-            continue;
-        }
-    }
-
-    printf("\n \nNum sols: %llu \n", g_numsolutions);
-
-#ifdef CHECK
-    check(physic, logic, g_numsolutions);
-#endif
-
-    return tree_size;
-}
-
-
-
 
 // ---------------------------------------------------------------------------
 // Minimal QASM parser.
@@ -1239,47 +1032,150 @@ static ParsedCircuit parse_qasm(const std::string& filename)
     return pc;
 }
 
-int *load_circuits(const char *filename, int *out_count, int *out_nb_qubits)
+
+
+inline unsigned long long factorial(unsigned long long n)
 {
-    FILE *file = fopen(filename, "r");
-    if (file == NULL)
-    {
-        perror("Error opening file");
-        return NULL;
-    }
-
-    // 1. Read the first line (single value for number of qubits)
-    if (fscanf(file, "%d", out_nb_qubits) != 1)
-    {
-        fprintf(stderr, "Error reading the qubit count header\n");
-        fclose(file);
-        return NULL;
-    }
-
-    // Allocate the fixed-size array
-    int *circuits = (int *)malloc(MAX_ELEMENTS * sizeof(int));
-
-    if (circuits == NULL)
-    {
-        perror("Allocation failed");
-        fclose(file);
-        return NULL;
-    }
-
-    int idx = 0;
-    int val1, val2;
-
-    // 2. Read the remaining gate pairs
-    while (idx < MAX_ELEMENTS - 1 && fscanf(file, "%d %d", &val1, &val2) == 2)
-    {
-        circuits[idx++] = val1;
-        circuits[idx++] = val2;
-    }
-
-    fclose(file);
-    *out_count = idx;
-    return circuits;
+    return (n == 1 || n == 0) ? 1 : factorial(n - 1) * n;
 }
+
+
+void check(const long long m, const long long d, const unsigned long long nsols)
+{
+    unsigned long long mfat   =   factorial((unsigned long long)m);
+    unsigned long long mmdfat =   factorial((unsigned long long)(m - d));
+
+    if (mfat / (mmdfat) != nsols)
+    {
+        printf("\n############ ERROR - WRONG NUMBER OF SOLS #############\n");
+        exit(1);
+    }
+    else
+    {
+        printf("\n############ %llu NUM SOLS OK #############\n", nsols);
+    }
+}
+
+
+unsigned long long partial_search_64(int *circuit,  const int num_gates, const long long physic, const long long logic)
+{
+
+    unsigned int depth = 0U;
+    int mapping[MAX_BOARDSIZE];
+    long long aQueenBitCol[MAX_BOARDSIZE];
+    long long aStack[MAX_BOARDSIZE];
+    unsigned long long g_numsolutions = 0ULL;
+
+    std::vector<RoutingResult> results;
+
+    long long int *pnStack;
+
+    long long int pnStackPos = 0LLU;
+
+    long long numrows = 0LL;
+    unsigned long long lsb;
+    unsigned long long bitfield;
+    long long i;
+
+    long long mask = (1LL << physic) - 1LL;
+
+    unsigned long long tree_size = 0ULL;
+    /* Initialize stack */
+    aStack[0] = -1LL; /* set sentinel -- signifies end of stack */
+
+    bitfield = 0ULL;
+
+    bitfield = (1LL << physic) - 1LL;
+    pnStack = aStack + 1LL;
+
+    pnStackPos++;
+
+    mapping[0] = 0;
+    aQueenBitCol[0] =  0LL;
+
+    int best_depth = INT_MAX;
+    int best_num_gates = INT_MAX;
+
+
+    for (;;)
+    {
+
+        lsb = -((signed long long)bitfield) & bitfield;
+        if (0ULL == bitfield)
+        {
+
+            bitfield = *--pnStack;
+            pnStackPos--;
+
+            if (pnStack == aStack)
+            {
+                break;
+            }
+
+            --numrows;
+            continue;
+        }
+
+        bitfield &= ~lsb;
+        mapping[numrows] = (int)(63 - __builtin_clzll(lsb));
+
+        if (numrows < logic)
+        {
+            long long n = numrows++;
+            aQueenBitCol[numrows] = aQueenBitCol[n] | lsb;
+
+            pnStackPos++;
+
+            *pnStack++ = bitfield;
+
+            bitfield = mask & ~(aQueenBitCol[numrows]);
+
+            ++tree_size;
+
+            if (numrows == logic)
+            {
+
+                ++g_numsolutions;
+                //what should we do here with parameters for enumeration?
+                //remove 
+                //@todo
+                results = SABRE_routing_many(circuit, num_gates, dist, physic,logic, 1, mapping, 42,20, 1);
+                std::cout<<"results[0].depth: "<< results[0].depth<<"\n";
+                std::cout<<"results[0].num_gates: "<< results[0].num_gates<<"\n";
+                if(results[0].depth<best_depth){
+                    best_depth = results[0].depth;
+                    best_num_gates = results[0].num_gates;
+                }
+               // exit(1);
+
+            }
+
+            continue;
+        }
+        else
+        {
+
+            bitfield = *--pnStack;
+            pnStackPos--;
+            --numrows;
+            continue;
+        }
+    }
+
+#ifdef CHECK
+    check(physic, logic, g_numsolutions);
+#endif
+
+    std::cout<<"############# BEST SOL: ##################\n";
+    std::cout<<"results[0].depth: "<< best_depth<<"\n";
+    std::cout<<"results[0].num_gates: "<< best_num_gates<<"\n";
+
+    return tree_size;
+}
+
+
+
+
 
 /* main routine for N Queens program.*/
 int main(int argc, char **argv)
@@ -1295,26 +1191,7 @@ int main(int argc, char **argv)
     int nb_qubits = 0;
     int flat_circuit_size = 0;
 
-
-
-    #ifdef PRINTCIRCUIT
-
-    int *circuit = load_circuits(argv[1], &flat_circuit_size, &nb_qubits);
-
-    char circuit_name[MAX_NAME_LEN];
-    extract_circuit_name(argv[1], circuit_name, MAX_NAME_LEN);
-
-    if (circuit != NULL)
-    {
-        print_circuits(circuit_name, circuit, flat_circuit_size, nb_qubits);
-        free(circuit);
-    }
-    #endif
-
     printf("---- Physic: %lld; Logic: %lld \n", (long long)(5), (long long)(nb_qubits));
-
-  //  partial_search_64(circuit, flat_circuit_size, (long long)(PHYSIC_QUBITS), (long long)(nb_qubits));
-
 
     const std::string qasm_file = "./Benchmark_Small/test.qasm";
     ParsedCircuit circuit_flat = parse_qasm(qasm_file);
@@ -1325,10 +1202,18 @@ int main(int argc, char **argv)
 
     int mapping[4] = {0,1,2,3};
 
+    std::cout<<"########### SANITY TEST ################# "<<"\n";
+
     std::vector<RoutingResult> results = SABRE_routing_many(circuit_flat.gates_flat.data(), circuit_flat.num_gates,dist, 5,4, 1, mapping, 42,20, 1);
 
     std::cout<<"results[0].depth: "<< results[0].depth<<"\n";
     std::cout<<"results[0].num_gates: "<< results[0].num_gates<<"\n";
+    std::cout<<"########### SANITY TEST ################# "<<"\n";
+
+
+    partial_search_64(circuit_flat.gates_flat.data(), circuit_flat.num_gates, (long long)atoi(argv[2]), (long long)(atoi(argv[3])));
+    //partial_search_64((long long)atoi(argv[2]), (long long)(atoi(argv[3])));
+
 
     return 0;
 }
