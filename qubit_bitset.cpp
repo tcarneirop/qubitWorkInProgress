@@ -11,6 +11,10 @@
 #include <vector>
 #include <limits.h>
 #include <iostream>
+#include <regex>
+#include <fstream>
+#include <cstdint>
+
 
 int ALBATROZ[256] = {
     0, 1, 2, 3, 4, 5, 6, 7, 8, 7, 6, 5, 4, 3, 2, 1,
@@ -29,6 +33,16 @@ int ALBATROZ[256] = {
     3, 2, 1, 2, 3, 4, 5, 6, 5, 4, 3, 2, 1, 0, 1, 2,
     2, 1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2, 1, 0, 1,
     1, 2, 3, 4, 5, 6, 7, 8, 7, 6, 5, 4, 3, 2, 1, 0};
+
+
+const int N = 5;
+int dist[N * N] = {
+    0, 1, 2, 3, 4,
+    1, 0, 1, 2, 3,
+    2, 1, 0, 1, 2,
+    3, 2, 1, 0, 1,
+    4, 3, 2, 1, 0
+};
 
 #define PHYSIC_QUBITS 16
 
@@ -302,7 +316,7 @@ void precompute_dag(const std::vector<int> &gates_q1, const std::vector<int> &ga
     {
         const int q1 = gates_q1[g];
         const int q2 = gates_q2[g];
-        printf("\n\nGATES!!!\n\t%d - %d\n", gates_q1[g], gates_q2[g]);
+        //printf("\n\nGATES!!!\n\t%d - %d\n", gates_q1[g], gates_q2[g]);
         const int prev1 = last_touch_q[q1];
         if (prev1 != -1)
         {
@@ -1148,6 +1162,83 @@ unsigned long long partial_search_64(int *circuit,
     return tree_size;
 }
 
+
+
+
+// ---------------------------------------------------------------------------
+// Minimal QASM parser.
+// ---------------------------------------------------------------------------
+// Reads a QASM file and produces `gates_flat` in the same layout that
+// utils.get_circuit_array() emits on the Python side:
+//   * flat length 2 * num_gates
+//   * for gate i: gates_flat[2*i] = q1, gates_flat[2*i + 1] = q2 (or -1
+//     for single-qubit gates)
+// Also reads `n` from the `qreg q[n];` declaration.
+//
+// Kept intentionally simple: assumes a single qreg named `q`, no measurement
+// gates in the middle, no OpenQASM 3 syntax. Adequate for the small
+// hand-crafted test.qasm circuits used to validate SABRE_routing_many.
+struct ParsedCircuit {
+    std::vector<int> gates_flat;
+    int num_gates = 0;
+    int n = 0;
+};
+
+static ParsedCircuit parse_qasm(const std::string& filename)
+{
+    std::ifstream f(filename);
+    if (!f) {
+        throw std::runtime_error("Cannot open QASM file: " + filename);
+    }
+
+    ParsedCircuit pc;
+    const std::regex qreg_re (R"(qreg\s+\w+\s*\[\s*(\d+)\s*\])");
+    const std::regex qubit_re(R"(q\s*\[\s*(\d+)\s*\])");
+
+    std::string line;
+    while (std::getline(f, line)) {
+        // Strip end-of-line comment, then leading whitespace.
+        if (auto pos = line.find("//"); pos != std::string::npos)
+            line = line.substr(0, pos);
+        auto start = line.find_first_not_of(" \t\r\n");
+        if (start == std::string::npos) continue;
+        line = line.substr(start);
+
+        // Skip QASM header / classical-only / boundary lines.
+        if (line.rfind("OPENQASM", 0) == 0) continue;
+        if (line.rfind("include",  0) == 0) continue;
+        if (line.rfind("barrier",  0) == 0) continue;
+        if (line.rfind("measure",  0) == 0) continue;
+        if (line.rfind("reset",    0) == 0) continue;
+        if (line.rfind("creg",     0) == 0) continue;
+
+        // Read qreg size.
+        if (std::smatch m; std::regex_search(line, m, qreg_re)) {
+            pc.n = std::stoi(m[1]);
+            continue;
+        }
+
+        // Anything else is treated as a gate line; collect its q[N] operands.
+        std::vector<int> qubits;
+        for (auto it = std::sregex_iterator(line.begin(), line.end(), qubit_re);
+             it != std::sregex_iterator();
+             ++it)
+        {
+            qubits.push_back(std::stoi((*it)[1]));
+        }
+        if (qubits.empty()) continue;
+
+        pc.gates_flat.push_back(qubits[0]);
+        pc.gates_flat.push_back(qubits.size() >= 2 ? qubits[1] : -1);
+        pc.num_gates++;
+    }
+
+    if (pc.n == 0) {
+        throw std::runtime_error("No qreg declaration found in " + filename);
+    }
+    return pc;
+}
+
 int *load_circuits(const char *filename, int *out_count, int *out_nb_qubits)
 {
     FILE *file = fopen(filename, "r");
@@ -1200,24 +1291,44 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    char circuit_name[MAX_NAME_LEN];
-    extract_circuit_name(argv[1], circuit_name, MAX_NAME_LEN);
 
     int nb_qubits = 0;
     int flat_circuit_size = 0;
+
+
+
+    #ifdef PRINTCIRCUIT
+
     int *circuit = load_circuits(argv[1], &flat_circuit_size, &nb_qubits);
 
-#ifdef PRINTCIRCUIT
+    char circuit_name[MAX_NAME_LEN];
+    extract_circuit_name(argv[1], circuit_name, MAX_NAME_LEN);
+
     if (circuit != NULL)
     {
         print_circuits(circuit_name, circuit, flat_circuit_size, nb_qubits);
         free(circuit);
     }
-#endif
+    #endif
 
-    printf("---- Physic: %lld; Logic: %lld \n", (long long)(PHYSIC_QUBITS), (long long)(nb_qubits));
+    printf("---- Physic: %lld; Logic: %lld \n", (long long)(5), (long long)(nb_qubits));
 
-    partial_search_64(circuit, flat_circuit_size, (long long)(PHYSIC_QUBITS), (long long)(nb_qubits));
+  //  partial_search_64(circuit, flat_circuit_size, (long long)(PHYSIC_QUBITS), (long long)(nb_qubits));
+
+
+    const std::string qasm_file = "./Benchmark_Small/test.qasm";
+    ParsedCircuit circuit_flat = parse_qasm(qasm_file);
+
+    std::cout<<"circuit_flat.n: "<<circuit_flat.n<<"\n";
+    std::cout<<"circuit_flat.num_gates:"<<circuit_flat.num_gates<<"\n";
+
+
+    int mapping[4] = {0,1,2,3};
+
+    std::vector<RoutingResult> results = SABRE_routing_many(circuit_flat.gates_flat.data(), circuit_flat.num_gates,dist, 5,4, 1, mapping, 42,20, 1);
+
+    std::cout<<"results[0].depth: "<< results[0].depth<<"\n";
+    std::cout<<"results[0].num_gates: "<< results[0].num_gates<<"\n";
 
     return 0;
 }
