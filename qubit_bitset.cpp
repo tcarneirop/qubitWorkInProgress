@@ -14,6 +14,7 @@
 #include <regex>
 #include <fstream>
 #include <cstdint>
+#include <numeric>
 
 
 int ALBATROZ[256] = {
@@ -35,8 +36,8 @@ int ALBATROZ[256] = {
     1, 2, 3, 4, 5, 6, 7, 8, 7, 6, 5, 4, 3, 2, 1, 0};
 
 
-const int N = 5;
-int dist[N * N] = {
+constexpr int DIST_SIZE = 5;
+int dist[DIST_SIZE * DIST_SIZE] = {
     0, 1, 2, 3, 4,
     1, 0, 1, 2, 3,
     2, 1, 0, 1, 2,
@@ -61,6 +62,8 @@ struct RoutingResult
 };
 
 
+//@todo: do you access directly the struct like this?
+/// For instance, you are using the struct as a global variable? this might be very bad for distributed/parallel
 struct PaPrep
 {
     int q_a;                // phys_to_logical[p_a]
@@ -1057,16 +1060,17 @@ void check(const long long m, const long long d, const unsigned long long nsols)
 }
 
 
-unsigned long long partial_search_64(int *circuit,  const int num_gates, const long long physic, const long long logic)
+std::vector<int> partial_search_64(int *PHYSIC_MACHINE, int *circuit,  const int num_gates, const long long physic, const long long logic)
 {
 
     unsigned int depth = 0U;
     int mapping[MAX_BOARDSIZE];
     long long aQueenBitCol[MAX_BOARDSIZE];
     long long aStack[MAX_BOARDSIZE];
-    unsigned long long g_numsolutions = 0ULL;
+    unsigned long long numSolutions = 0ULL;
 
     std::vector<RoutingResult> results;
+    std::vector<int> best_mapping;
 
     long long int *pnStack;
 
@@ -1135,16 +1139,22 @@ unsigned long long partial_search_64(int *circuit,  const int num_gates, const l
             if (numrows == logic)
             {
 
-                ++g_numsolutions;
+                ++numSolutions;
                 //what should we do here with parameters for enumeration?
                 //remove 
-                //@todo
-                results = SABRE_routing_many(circuit, num_gates, dist, physic,logic, 1, mapping, 42,20, 1);
+                //@todo 42 20 1?
+    
+                results = SABRE_routing_many(circuit, num_gates, PHYSIC_MACHINE, physic,logic, 1, mapping, 1 ,1, 1);
+                #ifdef VERBOSE
                 std::cout<<"results[0].depth: "<< results[0].depth<<"\n";
                 std::cout<<"results[0].num_gates: "<< results[0].num_gates<<"\n";
+                #endif
                 if(results[0].depth<best_depth){
+                    std::cout<<"\nNew solution found: \n\tSolution: "<< numSolutions<<", From "<<best_depth<<" to "<<results[0].depth<<"\n";
                     best_depth = results[0].depth;
                     best_num_gates = results[0].num_gates;
+                    best_mapping.resize(logic);
+                    std::copy(mapping, mapping + logic, best_mapping.begin());
                 }
                // exit(1);
 
@@ -1163,14 +1173,18 @@ unsigned long long partial_search_64(int *circuit,  const int num_gates, const l
     }
 
 #ifdef CHECK
-    check(physic, logic, g_numsolutions);
+    check(physic, logic, numSolutions);
 #endif
 
     std::cout<<"############# BEST SOL: ##################\n";
     std::cout<<"results[0].depth: "<< best_depth<<"\n";
     std::cout<<"results[0].num_gates: "<< best_num_gates<<"\n";
+    std::cout<<"Best mapping:\n";
+    for(auto m: best_mapping)
+        std::cout<<"  "<<m<<" ";
+    std::cout<<std::endl;
 
-    return tree_size;
+    return best_mapping;
 }
 
 
@@ -1181,37 +1195,57 @@ unsigned long long partial_search_64(int *circuit,  const int num_gates, const l
 int main(int argc, char **argv)
 {
 
-    if (argc < 2)
+    if (argc < 3)
     {
-        printf("Usage: %s <filename>\n", argv[0]);
-        return 1;
+        std::cerr << "Usage: " << argv[0] << " <qasm_file> <n physic gates of the desired machine>\n";
+        return EXIT_FAILURE;
     }
 
 
-    int nb_qubits = 0;
+    int nb_logic = 0;
     int flat_circuit_size = 0;
 
-    printf("---- Physic: %lld; Logic: %lld \n", (long long)(5), (long long)(nb_qubits));
-
-    const std::string qasm_file = "./Benchmark_Small/test.qasm";
+    
+    const std::string qasm_file = argv[1];
     ParsedCircuit circuit_flat = parse_qasm(qasm_file);
 
-    std::cout<<"circuit_flat.n: "<<circuit_flat.n<<"\n";
+
+    int nb_physic = atoi(argv[2]);
+    int *PHYSIC_MACHINE; 
+
+
+    std::cout<<"circuit_flat.n: "<<circuit_flat.n<<"\n"; //logic gates
     std::cout<<"circuit_flat.num_gates:"<<circuit_flat.num_gates<<"\n";
 
+    nb_logic = circuit_flat.n;
+    printf("---- Physic: %lld; Logic: %lld \n", (long long)(nb_physic), (long long)(nb_logic));
 
-    int mapping[4] = {0,1,2,3};
+    if(nb_physic<nb_logic){
+        std::cout<<"####### ERROR ########\n\t"<<"Number of physic gantes needs to be >= number of logic gates.\n";
+        exit(1);
+    }
+
 
     std::cout<<"########### SANITY TEST ################# "<<"\n";
+    
+    PHYSIC_MACHINE = ALBATROZ;
+    std::vector<int> mapping( nb_physic );
+    std::iota(mapping.begin(), mapping.end(), 0);
+    for(auto m: mapping)
+        std::cout<<m<<" ";
+    std::cout<<"\n";
 
-    std::vector<RoutingResult> results = SABRE_routing_many(circuit_flat.gates_flat.data(), circuit_flat.num_gates,dist, 5,4, 1, mapping, 42,20, 1);
+
+
+    std::vector<RoutingResult> results = SABRE_routing_many(circuit_flat.gates_flat.data(), circuit_flat.num_gates, PHYSIC_MACHINE , nb_physic,circuit_flat.n, 1, mapping.data(), 42,20, 1);
 
     std::cout<<"results[0].depth: "<< results[0].depth<<"\n";
     std::cout<<"results[0].num_gates: "<< results[0].num_gates<<"\n";
+
     std::cout<<"########### SANITY TEST ################# "<<"\n";
 
 
-    partial_search_64(circuit_flat.gates_flat.data(), circuit_flat.num_gates, (long long)atoi(argv[2]), (long long)(atoi(argv[3])));
+    partial_search_64(PHYSIC_MACHINE, circuit_flat.gates_flat.data(), circuit_flat.num_gates, (long long)nb_physic, (long long)nb_logic);
     //partial_search_64((long long)atoi(argv[2]), (long long)(atoi(argv[3])));
 
 
