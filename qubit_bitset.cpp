@@ -15,6 +15,7 @@
 #include <fstream>
 #include <cstdint>
 #include <numeric>
+#include <omp.h>
 
 
 int ALBATROZ[256] = {
@@ -911,34 +912,29 @@ std::vector<RoutingResult> SABRE_routing_many(
 
     std::vector<int> trial_results((size_t)P * (size_t)num_trials * 2);
 
-#pragma omp parallel num_threads(nt)
+    Scratch sc(ctx);
+    for (int p = 0; p < P; ++p)
     {
-
-        Scratch sc(ctx);
-
-#pragma omp for collapse(2) schedule(dynamic, 1)
-        for (int p = 0; p < P; ++p)
+        for (int t = 0; t < num_trials; ++t)
         {
-            for (int t = 0; t < num_trials; ++t)
-            {
-                std::copy(mappings_data + (size_t)p * n,
-                          mappings_data + (size_t)(p + 1) * n,
-                          sc.mapping_buf.begin());
+            std::copy(mappings_data + (size_t)p * n,
+                        mappings_data + (size_t)(p + 1) * n,
+                        sc.mapping_buf.begin());
 
-                const uint32_t rng_seed =
-                    base_seed + (uint32_t)p * (uint32_t)num_trials + (uint32_t)t + 1u;
+            const uint32_t rng_seed =
+                base_seed + (uint32_t)p * (uint32_t)num_trials + (uint32_t)t + 1u;
 
-                int num_gates = 0, depth = 0;
-                sabre_route_one(ctx, sc.mapping_buf.data(), rng_seed, sc,
-                                &num_gates, &depth);
+            int num_gates = 0, depth = 0;
+            sabre_route_one(ctx, sc.mapping_buf.data(), rng_seed, sc,
+                            &num_gates, &depth);
 
-                // Write to this (p, t)'s own slot — no contention, no atomic.
-                const size_t base = ((size_t)p * (size_t)num_trials + (size_t)t) * 2;
-                trial_results[base + 0] = num_gates;
-                trial_results[base + 1] = depth;
-            }
+            // Write to this (p, t)'s own slot — no contention, no atomic.
+            const size_t base = ((size_t)p * (size_t)num_trials + (size_t)t) * 2;
+            trial_results[base + 0] = num_gates;
+            trial_results[base + 1] = depth;
         }
     }
+
 
     for (int p = 0; p < P; ++p)
     {
@@ -1060,7 +1056,9 @@ void check(const long long m, const long long d, const unsigned long long nsols)
 }
 
 
-std::vector<int> partial_search_64(int *PHYSIC_MACHINE, int *circuit,  const int num_gates, const long long physic, const long long logic)
+
+
+std::vector<int> SERIAL_search_64(int *PHYSIC_MACHINE, int *circuit,  const int num_gates, const long long physic, const long long logic)
 {
 
     unsigned int depth = 0U;
@@ -1142,8 +1140,6 @@ std::vector<int> partial_search_64(int *PHYSIC_MACHINE, int *circuit,  const int
                 ++numSolutions;
                 //what should we do here with parameters for enumeration?
                 //remove 
-                //@todo 42 20 1?
-    
                 results = SABRE_routing_many(circuit, num_gates, PHYSIC_MACHINE, physic,logic, 1, mapping, 1 ,1, 1);
                 #ifdef VERBOSE
                 std::cout<<"results[0].depth: "<< results[0].depth<<"\n";
@@ -1155,6 +1151,9 @@ std::vector<int> partial_search_64(int *PHYSIC_MACHINE, int *circuit,  const int
                     best_num_gates = results[0].num_gates;
                     best_mapping.resize(logic);
                     std::copy(mapping, mapping + logic, best_mapping.begin());
+                    for(auto m: best_mapping)
+                        std::cout<<m<<" ";
+                    std::cout<<"\n";
                 }
                // exit(1);
 
@@ -1188,16 +1187,307 @@ std::vector<int> partial_search_64(int *PHYSIC_MACHINE, int *circuit,  const int
 }
 
 
+typedef struct subproblem_t{
+    int mapping[11];
+    long long  aQueenBitCol; 
+}Subproblem;
 
 
+
+
+void mcore_final_search_64(int *PHYSIC_MACHINE, int *circuit,  const int num_gates, const long long physic, 
+    const long long logic,const Subproblem* subproblem_pool, const long long cutoff_depth)
+{
+
+
+    unsigned int depth = 0U;
+    int mapping[MAX_BOARDSIZE];
+    long long aQueenBitCol[MAX_BOARDSIZE];
+    long long aStack[MAX_BOARDSIZE];
+    unsigned long long numSolutions = 0ULL;
+
+    std::vector<RoutingResult> results;
+    std::vector<int> best_mapping;
+
+    long long int *pnStack;
+
+    long long int pnStackPos = 0LLU;
+
+    long long numrows = cutoff_depth; //because we are doing the final search
+    unsigned long long lsb;
+    unsigned long long bitfield;
+    long long i;
+
+    long long mask = (1LL << physic) - 1LL;
+
+    unsigned long long tree_size = 0ULL;
+    /* Initialize stack */
+    aStack[0] = -1LL; /* set sentinel -- signifies end of stack */
+
+    bitfield = 0ULL;
+
+    bitfield = (1LL << physic) - 1LL;
+    pnStack = aStack + 1LL;
+
+    pnStackPos++;
+
+    int best_depth = INT_MAX;
+    int best_num_gates = INT_MAX;
+
+
+    //starting the search from where we stopped
+    aQueenBitCol[numrows] =  subproblem_pool->aQueenBitCol; 
+    memcpy(mapping, subproblem_pool->mapping, cutoff_depth * sizeof(int));
+    bitfield = mask & ~(aQueenBitCol[numrows]);    
+
+    for (;;)
+    {
+
+        lsb = -((signed long long)bitfield) & bitfield;
+        if (0ULL == bitfield)
+        {
+
+            bitfield = *--pnStack;
+            pnStackPos--;
+
+            if (pnStack == aStack)
+            {
+                break;
+            }
+
+            --numrows;
+            continue;
+        }
+
+        bitfield &= ~lsb;
+        mapping[numrows] = (int)(63 - __builtin_clzll(lsb));
+
+        if (numrows < logic)
+        {
+            long long n = numrows++;
+            aQueenBitCol[numrows] = aQueenBitCol[n] | lsb;
+
+            pnStackPos++;
+
+            *pnStack++ = bitfield;
+
+            bitfield = mask & ~(aQueenBitCol[numrows]);
+
+            ++tree_size;
+
+            if (numrows == logic)
+            {
+
+                ++numSolutions;
+                printf("\nSolution number: %llu - \n\t", numSolutions);
+                for(int i = 0; i<logic;++i){
+                    printf(" %d", mapping[i]);
+                }
+                
+            
+            /*     results = SABRE_routing_many(circuit, num_gates, PHYSIC_MACHINE, physic,logic, 1, mapping, 1 ,1, 1);
+
+                if(results[0].depth<best_depth){
+                    std::cout<<"\nNew solution found: \n\tSolution: "<< numSolutions<<", From "<<best_depth<<" to "<<results[0].depth<<"\n";
+                    best_depth = results[0].depth;
+                    best_num_gates = results[0].num_gates;
+                    best_mapping.resize(logic);
+                    std::copy(mapping, mapping + logic, best_mapping.begin());
+                    for(auto m: best_mapping)
+                        std::cout<<m<<" ";
+                    std::cout<<"\n";
+                }
+           */
+
+            }
+
+            continue;
+        }
+        else
+        {
+
+            bitfield = *--pnStack;
+            pnStackPos--;
+            --numrows;
+            continue;
+        }
+    }
+
+
+
+
+}
+
+unsigned long long partial_search_64( const long long physic, const long long cutoff_depth, unsigned long long *num_subproblems,
+    Subproblem *subproblem_pool)
+{
+
+    unsigned int depth = 0U;
+    int mapping[MAX_BOARDSIZE];
+    long long aQueenBitCol[MAX_BOARDSIZE];
+    long long aStack[MAX_BOARDSIZE];
+    unsigned long long numSolutions = 0ULL;
+
+    std::vector<RoutingResult> results;
+    std::vector<int> best_mapping;
+
+    long long int *pnStack;
+
+    long long int pnStackPos = 0LLU;
+
+    long long numrows = 0LL;
+    unsigned long long lsb;
+    unsigned long long bitfield;
+    long long i;
+
+    long long mask = (1LL << physic) - 1LL;
+
+    unsigned long long tree_size = 0ULL;
+    /* Initialize stack */
+    aStack[0] = -1LL; /* set sentinel -- signifies end of stack */
+
+    bitfield = 0ULL;
+
+    bitfield = (1LL << physic) - 1LL;
+    pnStack = aStack + 1LL;
+
+    pnStackPos++;
+
+    mapping[0] = 0;
+    aQueenBitCol[0] =  0LL;
+
+    int best_depth = INT_MAX;
+    int best_num_gates = INT_MAX;
+
+
+    for (;;)
+    {
+
+        lsb = -((signed long long)bitfield) & bitfield;
+        if (0ULL == bitfield)
+        {
+
+            bitfield = *--pnStack;
+            pnStackPos--;
+
+            if (pnStack == aStack)
+            {
+                break;
+            }
+
+            --numrows;
+            continue;
+        }
+
+        bitfield &= ~lsb;
+        mapping[numrows] = (int)(63 - __builtin_clzll(lsb));
+
+        if (numrows < cutoff_depth)
+        {
+            long long n = numrows++;
+            aQueenBitCol[numrows] = aQueenBitCol[n] | lsb;
+
+            pnStackPos++;
+
+            *pnStack++ = bitfield;
+
+            bitfield = mask & ~(aQueenBitCol[numrows]);
+
+            ++tree_size;
+
+            if (numrows == cutoff_depth)
+            {
+                
+                for(int i = 0; i<cutoff_depth;++i)
+                    subproblem_pool[numSolutions].mapping[i] = mapping[i];
+                    subproblem_pool[numSolutions].aQueenBitCol =  aQueenBitCol[numrows];
+
+                ++numSolutions;
+            }
+
+            continue;
+        }
+        else
+        {
+
+            bitfield = *--pnStack;
+            pnStackPos--;
+            --numrows;
+            continue;
+        }
+    }
+
+    *num_subproblems = numSolutions;
+    return tree_size;
+}
+
+
+void call_mcore_search(int *PHYSIC_MACHINE, int *circuit, const int num_gates, const long long physic,  
+    const long long logic,  const long long cutoff_depth){
+    
+
+    Subproblem *subproblem_pool = (Subproblem*)(malloc(sizeof(Subproblem)*(unsigned)10000000));
+    
+    unsigned long long num_subproblems = 0ULL;
+    unsigned long long num_sols_search = 0ULL;
+    unsigned long long mcore_tree_size[num_subproblems];
+    unsigned long long mcore_num_sols[num_subproblems];
+    unsigned long long total_mcore_num_sols = 0ULL;
+    unsigned long long total_mcore_tree_size = 0ULL;
+
+    
+    unsigned long long initial_tree_size = partial_search_64(physic, cutoff_depth, &num_subproblems, subproblem_pool);
+
+    
+    for(unsigned long long i = 0; i<num_subproblems;++i){
+        mcore_num_sols[i] = 0ULL;
+        mcore_tree_size[i] = 0ULL;
+    }
+
+    printf("\nPartial tree: %llu -- Number of subproblems: %llu \n", initial_tree_size, num_subproblems);
+    printf("\n### MCORE Search ###\n\tNumber of subproblems: %lld - Physic: %lld, Logic: %lld, Initial depth: %lld,  Max threads: %d\n", num_subproblems, physic, logic, cutoff_depth, omp_get_max_threads());
+    
+    for(unsigned long long subproblem = 0; subproblem<num_subproblems;++subproblem){
+        printf("\nSubproblem: %llu:\n\t ", subproblem);
+        for(int l = 0; l<cutoff_depth;++l){
+            printf("%d - ", subproblem_pool[subproblem].mapping[l]);
+        }
+    }
+    //#pragma omp parallel for schedule(runtime) default(none) shared(num_subproblems,board_size,mcore_tree_size,mcore_num_sols, cutoff_depth, subproblem_pool)
+    printf("\n\tNum subs: %llu", num_subproblems);
+    for(unsigned long long subproblem = 0; subproblem<num_subproblems;++subproblem){
+        printf("\nProcessing subproblem: %llu - ", subproblem);
+         mcore_final_search_64(PHYSIC_MACHINE, circuit, num_gates, physic, logic, subproblem_pool+subproblem, cutoff_depth);
+    }
+
+  printf("\n\tNum subs: %llu", num_subproblems);
+    //for(int s = 0; s<num_subproblems;++s){
+    //    total_mcore_tree_size+=mcore_tree_size[s];
+    //    total_mcore_num_sols+=mcore_num_sols[s];
+   // }
+
+    printf("\n#######################################\n");
+
+
+
+}////////////////////////////////////////////////
+
+
+
+
+///////@@OBS: I'm doing this, the search in C, because we will use a search in Chapel, which has only a C
+///////////// Interoperability layer
 
 /* main routine for N Queens program.*/
 int main(int argc, char **argv)
 {
 
-    if (argc < 3)
+
+    //@todo: we are not goind many, why dont we do routing_sabre_one?
+
+    if (argc < 4)
     {
-        std::cerr << "Usage: " << argv[0] << " <qasm_file> <n physic gates of the desired machine>\n";
+        std::cerr << "Usage: " << argv[0] << " <qasm_file> <n physic gates of the desired machine> <cutoff depth>\n";
         return EXIT_FAILURE;
     }
 
@@ -1211,6 +1501,7 @@ int main(int argc, char **argv)
 
 
     int nb_physic = atoi(argv[2]);
+    int cutoff_depth = atoi(argv[3]);
     int *PHYSIC_MACHINE; 
 
 
@@ -1228,16 +1519,17 @@ int main(int argc, char **argv)
 
     std::cout<<"########### SANITY TEST ################# "<<"\n";
     
-    PHYSIC_MACHINE = ALBATROZ;
-    std::vector<int> mapping( nb_physic );
+    PHYSIC_MACHINE = dist;
+    std::vector<int> mapping( nb_logic );
     std::iota(mapping.begin(), mapping.end(), 0);
     for(auto m: mapping)
         std::cout<<m<<" ";
     std::cout<<"\n";
 
 
-
-    std::vector<RoutingResult> results = SABRE_routing_many(circuit_flat.gates_flat.data(), circuit_flat.num_gates, PHYSIC_MACHINE , nb_physic,circuit_flat.n, 1, mapping.data(), 42,20, 1);
+    //@Todo./dist.exe Benchmark_Small/ising_model_16.qasm 16 -- freezes
+    //@@@@ Why, this is too heavy
+    std::vector<RoutingResult> results = SABRE_routing_many(circuit_flat.gates_flat.data(), circuit_flat.num_gates, PHYSIC_MACHINE , nb_physic,circuit_flat.n, 1, mapping.data(), 1,1, 1);
 
     std::cout<<"results[0].depth: "<< results[0].depth<<"\n";
     std::cout<<"results[0].num_gates: "<< results[0].num_gates<<"\n";
@@ -1245,8 +1537,10 @@ int main(int argc, char **argv)
     std::cout<<"########### SANITY TEST ################# "<<"\n";
 
 
-    partial_search_64(PHYSIC_MACHINE, circuit_flat.gates_flat.data(), circuit_flat.num_gates, (long long)nb_physic, (long long)nb_logic);
+    //SERIAL_search_64(PHYSIC_MACHINE, circuit_flat.gates_flat.data(), circuit_flat.num_gates, (long long)nb_physic, (long long)nb_logic);
     //partial_search_64((long long)atoi(argv[2]), (long long)(atoi(argv[3])));
+
+    call_mcore_search(PHYSIC_MACHINE, circuit_flat.gates_flat.data(), circuit_flat.num_gates, (long long)nb_physic, (long long)nb_logic,(long long)cutoff_depth);
 
 
     return 0;
