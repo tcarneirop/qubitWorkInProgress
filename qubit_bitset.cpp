@@ -1195,8 +1195,8 @@ typedef struct subproblem_t{
 
 
 
-void mcore_final_search_64(int *PHYSIC_MACHINE, int *circuit,  const int num_gates, const long long physic, 
-    const long long logic,const Subproblem* subproblem_pool, const long long cutoff_depth)
+unsigned long long  mcore_final_search_64(int *PHYSIC_MACHINE, int *circuit,  const int num_gates, const long long physic, 
+    const long long logic,const Subproblem* subproblem_pool, const long long cutoff_depth, const int upper_bound)
 {
 
 
@@ -1231,7 +1231,7 @@ void mcore_final_search_64(int *PHYSIC_MACHINE, int *circuit,  const int num_gat
 
     pnStackPos++;
 
-    int best_depth = INT_MAX;
+    int best_depth = upper_bound;
     int best_num_gates = INT_MAX;
 
 
@@ -1279,13 +1279,17 @@ void mcore_final_search_64(int *PHYSIC_MACHINE, int *circuit,  const int num_gat
             {
 
                 ++numSolutions;
-                printf("\nSolution number: %llu - \n\t", numSolutions);
+                
+                #ifdef VERBOSE
                 for(int i = 0; i<logic;++i){
+                    printf("\nSolution number: %llu - \n\t", numSolutions);
                     printf(" %d", mapping[i]);
                 }
+                #endif
                 
             
-            /*     results = SABRE_routing_many(circuit, num_gates, PHYSIC_MACHINE, physic,logic, 1, mapping, 1 ,1, 1);
+                #ifdef SABRE
+                results = SABRE_routing_many(circuit, num_gates, PHYSIC_MACHINE, physic,logic, 1, mapping, 1 ,1, 1);
 
                 if(results[0].depth<best_depth){
                     std::cout<<"\nNew solution found: \n\tSolution: "<< numSolutions<<", From "<<best_depth<<" to "<<results[0].depth<<"\n";
@@ -1297,7 +1301,8 @@ void mcore_final_search_64(int *PHYSIC_MACHINE, int *circuit,  const int num_gat
                         std::cout<<m<<" ";
                     std::cout<<"\n";
                 }
-           */
+                #endif
+           
 
             }
 
@@ -1313,9 +1318,7 @@ void mcore_final_search_64(int *PHYSIC_MACHINE, int *circuit,  const int num_gat
         }
     }
 
-
-
-
+    return numSolutions;
 }
 
 unsigned long long partial_search_64( const long long physic, const long long cutoff_depth, unsigned long long *num_subproblems,
@@ -1423,7 +1426,7 @@ unsigned long long partial_search_64( const long long physic, const long long cu
 
 
 void call_mcore_search(int *PHYSIC_MACHINE, int *circuit, const int num_gates, const long long physic,  
-    const long long logic,  const long long cutoff_depth){
+    const long long logic,  const long long cutoff_depth, const int upper_bound){
     
 
     Subproblem *subproblem_pool = (Subproblem*)(malloc(sizeof(Subproblem)*(unsigned)10000000));
@@ -1434,6 +1437,7 @@ void call_mcore_search(int *PHYSIC_MACHINE, int *circuit, const int num_gates, c
     unsigned long long mcore_num_sols[num_subproblems];
     unsigned long long total_mcore_num_sols = 0ULL;
     unsigned long long total_mcore_tree_size = 0ULL;
+    unsigned long long num_sols = 0ULL;
 
     
     unsigned long long initial_tree_size = partial_search_64(physic, cutoff_depth, &num_subproblems, subproblem_pool);
@@ -1447,26 +1451,25 @@ void call_mcore_search(int *PHYSIC_MACHINE, int *circuit, const int num_gates, c
     printf("\nPartial tree: %llu -- Number of subproblems: %llu \n", initial_tree_size, num_subproblems);
     printf("\n### MCORE Search ###\n\tNumber of subproblems: %lld - Physic: %lld, Logic: %lld, Initial depth: %lld,  Max threads: %d\n", num_subproblems, physic, logic, cutoff_depth, omp_get_max_threads());
     
+    #ifdef VERBOSE
     for(unsigned long long subproblem = 0; subproblem<num_subproblems;++subproblem){
         printf("\nSubproblem: %llu:\n\t ", subproblem);
         for(int l = 0; l<cutoff_depth;++l){
             printf("%d - ", subproblem_pool[subproblem].mapping[l]);
         }
     }
-    //#pragma omp parallel for schedule(runtime) default(none) shared(num_subproblems,board_size,mcore_tree_size,mcore_num_sols, cutoff_depth, subproblem_pool)
-    printf("\n\tNum subs: %llu", num_subproblems);
+    #endif
+
+    #pragma omp parallel for schedule(runtime) default(none) shared(num_subproblems,upper_bound, PHYSIC_MACHINE, circuit, num_gates, physic, logic, subproblem_pool, cutoff_depth) reduction(+:num_sols)
     for(unsigned long long subproblem = 0; subproblem<num_subproblems;++subproblem){
-        printf("\nProcessing subproblem: %llu - ", subproblem);
-         mcore_final_search_64(PHYSIC_MACHINE, circuit, num_gates, physic, logic, subproblem_pool+subproblem, cutoff_depth);
+        num_sols += mcore_final_search_64(PHYSIC_MACHINE, circuit, num_gates, physic, logic, subproblem_pool+subproblem, cutoff_depth, upper_bound);
     }
 
-  printf("\n\tNum subs: %llu", num_subproblems);
-    //for(int s = 0; s<num_subproblems;++s){
-    //    total_mcore_tree_size+=mcore_tree_size[s];
-    //    total_mcore_num_sols+=mcore_num_sols[s];
-   // }
+    printf("\nNUM SOLS: %llu", num_sols);
+    #ifdef CHECK
+    check(physic, logic, num_sols);
+    #endif
 
-    printf("\n#######################################\n");
 
 
 
@@ -1519,7 +1522,7 @@ int main(int argc, char **argv)
 
     std::cout<<"########### SANITY TEST ################# "<<"\n";
     
-    PHYSIC_MACHINE = dist;
+    PHYSIC_MACHINE = ALBATROZ;
     std::vector<int> mapping( nb_logic );
     std::iota(mapping.begin(), mapping.end(), 0);
     for(auto m: mapping)
@@ -1540,7 +1543,7 @@ int main(int argc, char **argv)
     //SERIAL_search_64(PHYSIC_MACHINE, circuit_flat.gates_flat.data(), circuit_flat.num_gates, (long long)nb_physic, (long long)nb_logic);
     //partial_search_64((long long)atoi(argv[2]), (long long)(atoi(argv[3])));
 
-    call_mcore_search(PHYSIC_MACHINE, circuit_flat.gates_flat.data(), circuit_flat.num_gates, (long long)nb_physic, (long long)nb_logic,(long long)cutoff_depth);
+    call_mcore_search(PHYSIC_MACHINE, circuit_flat.gates_flat.data(), circuit_flat.num_gates, (long long)nb_physic, (long long)nb_logic,(long long)cutoff_depth, results[0].depth);
 
 
     return 0;
