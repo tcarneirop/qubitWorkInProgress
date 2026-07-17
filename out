@@ -1,0 +1,103 @@
+circuit_flat.n: 10
+circuit_flat.num_gates:200
+---- Physic: 16; Logic: 10 
+########### SANITY TEST ################# 
+0 1 2 3 4 5 6 7 8 9 
+results[0].depth: 145
+results[0].num_gates: 326
+########### SANITY TEST ################# 
+
+######## RANDOM SEARCH ############
+	Working with 5765760 elements out of 5765760.
+ 
+Partial tree: 6337216 -- Number of subproblems: 5765760 
+
+### MCORE Search ###
+	Number of subproblems: 5765760 - Physic: 16, Logic: 10, Initial depth: 6,  Max threads: 128
+
+New solution found: 
+	Solution: 1, From 145 to 140
+	Num gates: 323
+	Mapping:  - 11 - 6 - 14 - 13 - 0 - 10 - 1 - 2 - 3 - 4
+
+New solution found: 
+	Solution: 3, From 140 to 136
+	Num gates: 329
+	Mapping:  - 13 - 6 - 0 - 10 - 7 - 4 - 1 - 2 - 3 - 9
+
+New solution found: 
+	Solution: 3, From 136 to 128
+	Num gates: 305
+	Mapping:  - 0 - 15 - 2 - 13 - 1 - 6 - 3 - 4 - 5 - 9
+
+New solution found: 
+	Solution: 42, From 128 to 126
+	Num gates: 299
+	Mapping:  - 0 - 15 - 2 - 13 - 1 - 6 - 3 - 4 - 11 - 14
+
+New solution found: 
+	Solution: 56, From 126 to 119
+	Num gates: 299
+	Mapping:  - 7 - 8 - 3 - 1 - 13 - 5 - 0 - 2 - 15 - 14
+
+New solution found: 
+	Solution: 49, From 119 to 118
+	Num gates: 293
+	Mapping:  - 10 - 5 - 11 - 14 - 3 - 0 - 1 - 2 - 13 - 15
+
+New solution found: 
+	Solution: 29, From 118 to 113
+	Num gates: 302
+	Mapping:  - 5 - 10 - 1 - 6 - 11 - 9 - 0 - 2 - 12 - 3
+
+New solution found: 
+	Solution: 330, From 113 to 110
+	Num gates: 293
+	Mapping:  - 0 - 15 - 2 - 13 - 1 - 6 - 3 - 10 - 14 - 4
+
+New solution found: 
+	Solution: 293, From 110 to 108
+	Num gates: 287
+	Mapping:  - 5 - 10 - 1 - 6 - 11 - 9 - 0 - 12 - 3 - 14
+
+New solution found: 
+	Solution: 555, From 108 to 107
+	Num gates: 296
+	Mapping:  - 5 - 10 - 1 - 6 - 11 - 9 - 2 - 0 - 15 - 4
+
+New solution found: 
+	Solution: 832, From 107 to 106
+	Num gates: 287
+	Mapping:  - 5 - 10 - 1 - 6 - 11 - 9 - 2 - 12 - 14 - 13
+
+New solution found: 
+	Solution: 1258, From 106 to 102
+	Num gates: 287
+	Mapping:  - 2 - 12 - 3 - 15 - 4 - 8 - 5 - 9 - 7 - 11
+
+New solution found: 
+	Solution: 1873, From 102 to 97
+	Num gates: 287
+	Mapping:  - 2 - 12 - 3 - 15 - 4 - 8 - 6 - 11 - 7 - 9
+
+New solution found: 
+	Solution: 847, From 97 to 94
+	Num gates: 284
+	Mapping:  - 11 - 10 - 6 - 4 - 2 - 15 - 1 - 12 - 0 - 14
+
+New solution found: 
+	Solution: 1798, From 94 to 93
+	Num gates: 269
+	Mapping:  - 10 - 9 - 6 - 5 - 4 - 11 - 3 - 12 - 0 - 14
+
+New solution found: 
+	Solution: 1294, From 93 to 92
+	Num gates: 287
+	Mapping:  - 10 - 8 - 7 - 5 - 4 - 14 - 2 - 11 - 0 - 13
+
+New solution found: 
+	Solution: 1425, From 92 to 91
+	Num gates: 287
+	Mapping:  - 13 - 14 - 0 - 2 - 3 - 9 - 5 - 12 - 7 - 8
+
+NUM SOLS: 29059430400

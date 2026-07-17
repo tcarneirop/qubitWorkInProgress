@@ -1,0 +1,97 @@
+nohup: ignoring input
+circuit_flat.n: 11
+circuit_flat.num_gates:3073
+---- Physic: 16; Logic: 11 
+########### SANITY TEST ################# 
+0 1 2 3 4 5 6 7 8 9 10 
+results[0].depth: 3971
+results[0].num_gates: 5602
+########### SANITY TEST ################# 
+
+######## RANDOM SEARCH ############
+	Working with 57657600 elements out of 57657600.
+ 
+Partial tree: 63994816 -- Number of subproblems: 57657600 
+
+### MCORE Search ###
+	Number of subproblems: 57657600 - Physic: 16, Logic: 11, Initial depth: 7,  Max threads: 128
+
+New solution found: 
+	Solution: 1, From 3971 to 3858
+	Num gates: 5539
+	Mapping:  - 14 - 10 - 8 - 11 - 1 - 5 - 13 - 0 - 2 - 3 - 4
+
+New solution found: 
+	Solution: 1, From 3858 to 3819
+	Num gates: 5425
+	Mapping:  - 10 - 6 - 5 - 15 - 12 - 9 - 4 - 0 - 1 - 2 - 3
+
+New solution found: 
+	Solution: 1, From 3819 to 3800
+	Num gates: 5395
+	Mapping:  - 1 - 3 - 11 - 14 - 10 - 13 - 8 - 0 - 2 - 4 - 5
+
+New solution found: 
+	Solution: 4, From 3800 to 3789
+	Num gates: 5413
+	Mapping:  - 1 - 13 - 14 - 0 - 15 - 4 - 9 - 2 - 3 - 5 - 10
+
+New solution found: 
+	Solution: 4, From 3789 to 3788
+	Num gates: 5479
+	Mapping:  - 4 - 7 - 14 - 15 - 5 - 12 - 3 - 0 - 1 - 2 - 10
+
+New solution found: 
+	Solution: 10, From 3788 to 3786
+	Num gates: 5455
+	Mapping:  - 14 - 10 - 8 - 11 - 1 - 5 - 13 - 0 - 2 - 4 - 9
+
+New solution found: 
+	Solution: 8, From 3786 to 3773
+	Num gates: 5428
+	Mapping:  - 6 - 12 - 11 - 0 - 2 - 10 - 1 - 3 - 4 - 7 - 8
+
+New solution found: 
+	Solution: 15, From 3773 to 3767
+	Num gates: 5470
+	Mapping:  - 12 - 3 - 11 - 15 - 7 - 5 - 10 - 0 - 1 - 6 - 8
+
+New solution found: 
+	Solution: 34, From 3767 to 3744
+	Num gates: 5479
+	Mapping:  - 11 - 9 - 2 - 12 - 6 - 0 - 8 - 1 - 3 - 14 - 10
+
+New solution found: 
+	Solution: 189, From 3744 to 3721
+	Num gates: 5407
+	Mapping:  - 11 - 15 - 9 - 5 - 13 - 10 - 6 - 0 - 7 - 4 - 3
+
+New solution found: 
+	Solution: 304, From 3721 to 3719
+	Num gates: 5449
+	Mapping:  - 13 - 15 - 8 - 7 - 2 - 5 - 6 - 0 - 14 - 3 - 10
+
+New solution found: 
+	Solution: 644, From 3719 to 3695
+	Num gates: 5401
+	Mapping:  - 13 - 4 - 1 - 2 - 10 - 12 - 14 - 3 - 15 - 6 - 5
+
+New solution found: 
+	Solution: 2177, From 3695 to 3694
+	Num gates: 5401
+	Mapping:  - 5 - 8 - 14 - 6 - 4 - 3 - 1 - 12 - 9 - 13 - 11
+
+New solution found: 
+	Solution: 2372, From 3694 to 3688
+	Num gates: 5401
+	Mapping:  - 1 - 5 - 2 - 12 - 14 - 3 - 13 - 11 - 0 - 8 - 6
+
+New solution found: 
+	Solution: 2425, From 3688 to 3666
+	Num gates: 5287
+	Mapping:  - 3 - 1 - 9 - 13 - 2 - 0 - 11 - 14 - 5 - 12 - 4
+
+New solution found: 
+	Solution: 2126, From 3666 to 3662
+	Num gates: 5287
+	Mapping:  - 4 - 2 - 8 - 11 - 5 - 1 - 10 - 13 - 6 - 12 - 3
