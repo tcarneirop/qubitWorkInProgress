@@ -1200,7 +1200,12 @@ typedef struct subproblem_t{
 
 unsigned long long  mcore_final_search_64(int *PHYSIC_MACHINE, int *circuit,  const int num_gates, const long long physic, 
     const long long logic,const Subproblem* subproblem_pool, 
-    const long long cutoff_depth, int* shared_best_depth, int *shared_best_num_gates, int* shared_best_mapping)
+    const long long cutoff_depth, 
+    int* shared_best_depth, 
+    int *shared_best_num_gates, 
+    int *shared_best_mapping, 
+    unsigned long long *shared_sols_counter,
+    const int NUMBER_OF_SABRE_RUNS)
 {
 
 
@@ -1293,7 +1298,7 @@ unsigned long long  mcore_final_search_64(int *PHYSIC_MACHINE, int *circuit,  co
                 
             
                 #ifdef SABRE
-                results = SABRE_routing_many(circuit, num_gates, PHYSIC_MACHINE, physic,logic, 1, mapping, 1 , 1, 1);
+                results = SABRE_routing_many(circuit, num_gates, PHYSIC_MACHINE, physic,logic, 1, mapping, 1 , NUMBER_OF_SABRE_RUNS, 1);
                 ++num_sabres;
                 
                 #pragma omp atomic read
@@ -1311,19 +1316,20 @@ unsigned long long  mcore_final_search_64(int *PHYSIC_MACHINE, int *circuit,  co
                             *shared_best_num_gates = results[0].num_gates;
                             memcpy(shared_best_mapping, mapping, logic * sizeof(int));
                             improved = true;
-                        }
-                        
-                            
+                        }  
                     }//omp critical
 
                     if(improved){
                         #pragma omp critical(printsol)
                         {
-                        std::cout<<"\nNew solution found: \n\tSolution: "<< numSolutions<<", From "<<local_best_depth<<" to "<<results[0].depth<<"\n\tDepth: "<<local_best_depth<<"\n\tNum gates: "<<results[0].num_gates<<"\n\tMapping: ";
-                        for(int m = 0;m<logic;++m)
-                            printf(" - %i", mapping[m]);
-                        }
-                        printf("\n");
+                        (*shared_sols_counter)++;
+                        std::cout<<"\nNew solution found: \n\tSolution: "<< *shared_sols_counter <<", From "<<local_best_depth<<" to "<<results[0].depth<<"\n\tDepth: "<<results[0].depth<<"\n\tNum gates: "<<results[0].num_gates<<"\n\tMapping: ";
+                        std::cout<<"[";
+                        for(int m = 0;m<logic-1;++m)
+                            std::cout<<mapping[m]<<", ";
+                        std::cout<<mapping[logic-1]<<"]"<<std::endl;
+
+                        }//critical
                         
                     }
     
@@ -1458,9 +1464,11 @@ unsigned long long partial_search_64( const long long physic, const long long cu
 
 
 void call_mcore_search(int *PHYSIC_MACHINE, int *circuit, const int num_gates, const long long physic,  
-    const long long logic,  const long long cutoff_depth, int *best_depth, 
+    const long long logic,  const long long cutoff_depth, int *best_depth,
     int *best_num_gates,
-    int *vec_best_mapping){
+    int *vec_best_mapping, 
+    unsigned long long *shared_sols_counter,
+    const int NUMBER_OF_SABRE_RUNS){
     
 
     Subproblem *subproblem_pool = (Subproblem*)(malloc(sizeof(Subproblem)*(unsigned)100000000));
@@ -1494,10 +1502,10 @@ void call_mcore_search(int *PHYSIC_MACHINE, int *circuit, const int num_gates, c
     }
     #endif
 
-    #pragma omp parallel for schedule(runtime) default(none) shared( best_depth, best_num_gates, vec_best_mapping,num_subproblems,PHYSIC_MACHINE, circuit, num_gates, physic, logic, subproblem_pool, cutoff_depth) reduction(+:num_sols)
+    #pragma omp parallel for schedule(runtime) default(none) shared( shared_sols_counter,best_depth, best_num_gates, vec_best_mapping,num_subproblems,PHYSIC_MACHINE, circuit, num_gates, physic, logic, subproblem_pool, cutoff_depth,NUMBER_OF_SABRE_RUNS) reduction(+:num_sols)
     for(unsigned long long subproblem = 0; subproblem<num_subproblems;++subproblem){
         num_sols += mcore_final_search_64(PHYSIC_MACHINE, circuit, num_gates, physic, logic, subproblem_pool+subproblem, 
-            cutoff_depth, best_depth, best_num_gates,vec_best_mapping);
+            cutoff_depth, best_depth,best_num_gates,vec_best_mapping, shared_sols_counter,NUMBER_OF_SABRE_RUNS);
     }
 
     printf("\nNUM SOLS: %llu", num_sols);
@@ -1517,7 +1525,9 @@ void call_mcore_search(int *PHYSIC_MACHINE, int *circuit, const int num_gates, c
 void call_RANDOM_mcore_search(int *PHYSIC_MACHINE, int *circuit, const int num_gates, const long long physic,  
     const long long logic,  const long long cutoff_depth, int *best_depth, 
     int *best_num_gates,
-    int *vec_best_mapping, const float PERCENT){
+    int *vec_best_mapping, 
+    const float PERCENT,
+    const int NUMBER_OF_SABRE_RUNS){
     
 
     Subproblem *subproblem_pool = (Subproblem*)(malloc(sizeof(Subproblem)*(unsigned)100000000));
@@ -1529,6 +1539,7 @@ void call_RANDOM_mcore_search(int *PHYSIC_MACHINE, int *circuit, const int num_g
     unsigned long long total_mcore_num_sols = 0ULL;
     unsigned long long total_mcore_tree_size = 0ULL;
     unsigned long long num_sols = 0ULL;
+    unsigned long long shared_sols_counter = 0ULL;
 
     
     unsigned long long initial_tree_size = partial_search_64(physic, cutoff_depth, &num_subproblems, subproblem_pool);
@@ -1574,10 +1585,10 @@ void call_RANDOM_mcore_search(int *PHYSIC_MACHINE, int *circuit, const int num_g
     }
     #endif
 
-    #pragma omp parallel for schedule(runtime) default(none) shared(values, best_depth, best_num_gates, vec_best_mapping,num_subproblems,PHYSIC_MACHINE, circuit, num_gates, physic, logic, subproblem_pool, cutoff_depth) reduction(+:num_sols)
+    #pragma omp parallel for schedule(runtime) default(none) shared(values, best_depth, best_num_gates, vec_best_mapping,shared_sols_counter,num_subproblems,PHYSIC_MACHINE, circuit, num_gates, physic, logic, subproblem_pool, cutoff_depth,NUMBER_OF_SABRE_RUNS) reduction(+:num_sols)
     for(unsigned long long subproblem = 0; subproblem<values.size();++subproblem){
         num_sols += mcore_final_search_64(PHYSIC_MACHINE, circuit, num_gates, physic, logic, subproblem_pool+values[subproblem], 
-            cutoff_depth, best_depth, best_num_gates,vec_best_mapping);
+            cutoff_depth, best_depth, best_num_gates,vec_best_mapping,&shared_sols_counter, NUMBER_OF_SABRE_RUNS);
     }
 
     printf("\nNUM SOLS: %llu", num_sols);
@@ -1602,16 +1613,15 @@ int main(int argc, char **argv)
 
     //@todo: we are not goind many, why dont we do routing_sabre_one?
 
-    if (argc < 4)
+    if (argc < 5)
     {
-        std::cerr << "Usage: " << argv[0] << " <qasm_file> <n physic gates of the desired machine> <cutoff depth> <percent of the pool> \n";
+        std::cerr << "Usage: " << argv[0] << " <qasm_file> <n physic gates of the desired machine> <cutoff depth> <percent of the pool> <number_of_sabre_runs> \n";
         return EXIT_FAILURE;
     }
 
 
     int nb_logic = 0;
     int flat_circuit_size = 0;
-
     
     const std::string qasm_file = argv[1];
     ParsedCircuit circuit_flat = parse_qasm(qasm_file);
@@ -1620,22 +1630,44 @@ int main(int argc, char **argv)
     int nb_physic = atoi(argv[2]);
     int cutoff_depth = atoi(argv[3]);
     float PERCENT = atof(argv[4]);
-    int *PHYSIC_MACHINE; 
+    int number_of_sabre_runs = 1;
 
+    std::cout<<"argc: "<<argc<<std::endl;
+    
+    if(argc == 6){
+
+        number_of_sabre_runs = atoi(argv[5]);
+
+        if(number_of_sabre_runs < 1){
+            std::cout<<"####### ERROR ########\n\t"<<"Number of SABRE runs < 1.\n";
+            exit(1);
+        }
+    }
+
+    if(nb_physic<nb_logic){
+        std::cout<<"####### ERROR ########\n\t"<<"Number of physic gantes needs to be >= number of logic gates.\n";
+        exit(1);
+    }
+
+
+
+    int *PHYSIC_MACHINE; 
     int best_depth = 0;
     int best_num_gates = 0;
     int best_mapping[MAX_BOARDSIZE];
 
 
 
-    std::cout<<"circuit_flat.n: "<<circuit_flat.n<<"\n"; //logic gates
-    std::cout<<"circuit_flat.num_gates:"<<circuit_flat.num_gates<<"\n";
+    std::cout<<"circuit_flat.n: "<<circuit_flat.n<<std::endl;
+    std::cout<<"circuit_flat.num_gates:"<<circuit_flat.num_gates<<std::endl;
+    std::cout<<"Number of SABRE runs: "<<number_of_sabre_runs<<std::endl;
 
     nb_logic = circuit_flat.n;
-    printf("---- Physic: %lld; Logic: %lld \n", (long long)(nb_physic), (long long)(nb_logic));
+    std::cout<<"---- Physic: "<< (long long)(nb_physic)<<" Logic: "<< (long long)(nb_logic)<<std::endl;
 
-    if(nb_physic<nb_logic){
-        std::cout<<"####### ERROR ########\n\t"<<"Number of physic gantes needs to be >= number of logic gates.\n";
+
+    if(cutoff_depth > nb_logic){
+        std::cout<<"####### ERROR ########\n\t"<<"cutoff depth needs to be <= nb_logic."<<std::endl;
         exit(1);
     }
 
@@ -1648,10 +1680,6 @@ int main(int argc, char **argv)
     for(auto m: mapping)
         std::cout<<m<<" ";
     std::cout<<"\n";
-
-
-    //@Todo./dist.exe Benchmark_Small/ising_model_16.qasm 16 -- freezes
-    //@@@@ Why, this is too heavy
     std::vector<RoutingResult> results = SABRE_routing_many(circuit_flat.gates_flat.data(), circuit_flat.num_gates, PHYSIC_MACHINE , nb_physic,circuit_flat.n, 1, mapping.data(), 1,1, 1);
 
     std::cout<<"results[0].depth: "<< results[0].depth<<"\n";
@@ -1668,7 +1696,7 @@ int main(int argc, char **argv)
     memcpy(best_mapping, mapping.data(), nb_logic * sizeof(int));
     
     call_RANDOM_mcore_search(PHYSIC_MACHINE, circuit_flat.gates_flat.data(), circuit_flat.num_gates, (long long)nb_physic, 
-        (long long)nb_logic,(long long)cutoff_depth,&best_depth,&best_num_gates,best_mapping,PERCENT);
+        (long long)nb_logic,(long long)cutoff_depth,&best_depth,&best_num_gates,best_mapping,PERCENT, number_of_sabre_runs);
 
 
     return 0;
