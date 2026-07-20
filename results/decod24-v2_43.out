@@ -1,0 +1,16 @@
+circuit_flat.n: 4
+circuit_flat.num_gates:64
+---- Physic: 16; Logic: 4 
+########### SANITY TEST ################# 
+0 1 2 3 
+results[0].depth: 82
+results[0].num_gates: 103
+########### SANITY TEST ################# 
+
+######## RANDOM SEARCH ############
+	Working with 57657600 elements out of 57657600.
+ 
+Partial tree: 63994816 -- Number of subproblems: 57657600 
+
+### MCORE Search ###
+	Number of subproblems: 57657600 - Physic: 16, Logic: 4, Initial depth: 7,  Max threads: 128

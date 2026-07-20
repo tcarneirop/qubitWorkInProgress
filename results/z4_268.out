@@ -1,0 +1,126 @@
+circuit_flat.n: 11
+circuit_flat.num_gates:3291
+---- Physic: 16; Logic: 11 
+########### SANITY TEST ################# 
+0 1 2 3 4 5 6 7 8 9 10 
+results[0].depth: 4222
+results[0].num_gates: 5820
+########### SANITY TEST ################# 
+
+######## RANDOM SEARCH ############
+	Working with 57657600 elements out of 57657600.
+ 
+Partial tree: 63994816 -- Number of subproblems: 57657600 
+
+### MCORE Search ###
+	Number of subproblems: 57657600 - Physic: 16, Logic: 11, Initial depth: 7,  Max threads: 128
+
+New solution found: 
+	Solution: 1, From 4222 to 4215
+	Num gates: 5868
+	Mapping:  - 7 - 6 - 13 - 4 - 15 - 11 - 3 - 0 - 1 - 2 - 5
+
+New solution found: 
+	Solution: 1, From 4215 to 4198
+	Num gates: 5781
+	Mapping:  - 0 - 2 - 6 - 9 - 8 - 7 - 13 - 1 - 3 - 4 - 5
+
+New solution found: 
+	Solution: 1, From 4178 to 4092
+	Num gates: 5673
+	Mapping:  - 4 - 0 - 8 - 11 - 13 - 9 - 10 - 1 - 2 - 3 - 5
+
+New solution found: 
+	Solution: 1, From 4198 to 4178
+	Num gates: 5754
+	Mapping:  - 3 - 11 - 4 - 2 - 12 - 5 - 7 - 0 - 1 - 6 - 8
+
+New solution found: 
+	Solution: 2, From 4092 to 4064
+	Num gates: 5715
+	Mapping:  - 2 - 11 - 7 - 13 - 1 - 3 - 4 - 0 - 5 - 6 - 9
+
+New solution found: 
+	Solution: 3, From 4064 to 4058
+	Num gates: 5634
+	Mapping:  - 5 - 14 - 3 - 7 - 1 - 15 - 4 - 0 - 2 - 6 - 10
+
+New solution found: 
+	Solution: 4, From 4058 to 4053
+	Num gates: 5652
+	Mapping:  - 0 - 4 - 9 - 5 - 2 - 3 - 1 - 6 - 7 - 8 - 13
+
+New solution found: 
+	Solution: 8, From 4053 to 4035
+	Num gates: 5718
+	Mapping:  - 2 - 10 - 9 - 14 - 5 - 6 - 0 - 1 - 3 - 7 - 8
+
+New solution found: 
+	Solution: 36, From 4035 to 4034
+	Num gates: 5661
+	Mapping:  - 3 - 2 - 6 - 12 - 1 - 15 - 4 - 0 - 5 - 13 - 14
+
+New solution found: 
+	Solution: 110, From 4034 to 4023
+	Num gates: 5631
+	Mapping:  - 15 - 14 - 6 - 12 - 9 - 2 - 13 - 0 - 4 - 8 - 3
+
+New solution found: 
+	Solution: 120, From 4023 to 4021
+	Num gates: 5616
+	Mapping:  - 4 - 10 - 13 - 2 - 15 - 12 - 14 - 0 - 5 - 9 - 11
+
+New solution found: 
+	Solution: 156, From 4021 to 4017
+	Num gates: 5616
+	Mapping:  - 4 - 10 - 13 - 2 - 15 - 12 - 14 - 0 - 6 - 8 - 11
+
+New solution found: 
+	Solution: 450, From 4017 to 4013
+	Num gates: 5616
+	Mapping:  - 4 - 10 - 13 - 2 - 15 - 12 - 14 - 1 - 5 - 8 - 11
+
+New solution found: 
+	Solution: 539, From 4013 to 4005
+	Num gates: 5625
+	Mapping:  - 5 - 15 - 1 - 8 - 9 - 11 - 10 - 2 - 7 - 13 - 12
+
+New solution found: 
+	Solution: 1082, From 4005 to 3998
+	Num gates: 5619
+	Mapping:  - 4 - 10 - 13 - 2 - 15 - 12 - 14 - 5 - 1 - 9 - 3
+
+New solution found: 
+	Solution: 2184, From 3998 to 3994
+	Num gates: 5625
+	Mapping:  - 5 - 14 - 3 - 7 - 1 - 15 - 4 - 11 - 8 - 13 - 12
+
+New solution found: 
+	Solution: 2268, From 3994 to 3992
+	Num gates: 5625
+	Mapping:  - 5 - 14 - 3 - 7 - 1 - 15 - 4 - 11 - 10 - 13 - 12
+
+New solution found: 
+	Solution: 2735, From 3992 to 3991
+	Num gates: 5523
+	Mapping:  - 13 - 12 - 4 - 3 - 2 - 14 - 1 - 15 - 5 - 0 - 10
+
+New solution found: 
+	Solution: 2778, From 3991 to 3988
+	Num gates: 5523
+	Mapping:  - 13 - 12 - 4 - 3 - 2 - 14 - 1 - 15 - 6 - 0 - 11
+
+New solution found: 
+	Solution: 30, From 3988 to 3975
+	Num gates: 5499
+	Mapping:  - 0 - 12 - 6 - 13 - 4 - 2 - 10 - 1 - 3 - 11 - 15
+
+New solution found: 
+	Solution: 1559, From 3975 to 3973
+	Num gates: 5631
+	Mapping:  - 12 - 8 - 2 - 4 - 3 - 10 - 0 - 9 - 13 - 1 - 14
+
+New solution found: 
+	Solution: 2126, From 3973 to 3967
+	Num gates: 5499
+	Mapping:  - 2 - 11 - 4 - 5 - 13 - 6 - 9 - 12 - 3 - 10 - 1

@@ -1,0 +1,155 @@
+1) why the number of gates get very different?
+-- i get 14 vs 13k, 54 vs 145 and depth 6 vs 145????
+
+
+circuit_flat.n: 10
+circuit_flat.num_gates:200
+---- Physic: 16; Logic: 10 
+########### SANITY TEST ################# 
+0 1 2 3 4 5 6 7 8 9 
+results[0].depth: 145
+results[0].num_gates: 326
+########### SANITY TEST ################# 
+
+
+
+old
+
+vs new
+
+tcarneiropessoa@chirop-5:~/qubitWorkInProgress$ ./qubit.exe NEW_Bechmark/qft_10.qasm 16 7 1
+circuit_flat.n: 10
+circuit_flat.num_gates:54
+---- Physic: 16; Logic: 10 
+########### SANITY TEST ################# 
+0 1 2 3 4 5 6 7 8 9 
+results[0].depth: 6
+results[0].num_gates: 54
+########### SANITY TEST ################# 
+
+
+
+
+tcarneiropessoa@flille:~/qubitWorkInProgress$ cat decod24-v2_43.out 
+circuit_flat.n: 4
+circuit_flat.num_gates:64
+---- Physic: 16; Logic: 4 
+########### SANITY TEST ################# 
+0 1 2 3 
+results[0].depth: 82
+results[0].num_gates: 103
+########### SANITY TEST ################# 
+
+only that???
+
+
+
+
+------------------------------------------------------------------------------
+
+---- Physic: 16; Logic: 15 
+########### SANITY TEST ################# 
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 
+results[0].depth: 9584
+results[0].num_gates: 13978
+########### SANITY TEST ################# 
+
+
+
+new
+
+---- Physic: 16; Logic: 15 
+########### SANITY TEST ################# 
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 
+results[0].depth: 10239
+results[0].num_gates: 14802
+########### SANITY TEST ################# 
+
+
+
+_______________________________________________________________________________
+old
+
+circuit_flat.n: 10
+circuit_flat.num_gates:21504
+---- Physic: 16; Logic: 10 
+########### SANITY TEST ################# 
+0 1 2 3 4 5 6 7 8 9 
+results[0].depth: 27469
+results[0].num_gates: 38067
+########### SANITY TEST ################# 
+
+new
+
+circuit_flat.n: 10
+circuit_flat.num_gates:22854
+---- Physic: 16; Logic: 10 
+########### SANITY TEST ################# 
+0 1 2 3 4 5 6 7 8 9 
+results[0].depth: 29451
+results[0].num_gates: 39417
+########### SANITY TEST ################# 
+
+
+
+_______________________________________________________________________________________________________________________________________________
+2) Let's test to see if we are talinking the same language. It is difficult to believe ive got ''better than the best solutions you've"
+
+-- NEW_Bechmark/sym9_148.qasm 16 7 0.0001
+
+
+New solution found: 
+	Solution: 28984
+	Num gates: 38685
+	Mapping:  - 10 - 14 - 13 - 15 - 4 - 7 - 9 - 3 - 11 - 5
+
+
+
+
+NEW_Bechmark/square_root_7.qasm 16 7 0.0001
+circuit_flat.n: 15
+circuit_flat.num_gates:8454
+---- Physic: 16; Logic: 15 
+
+
+New solution found: 
+	Solution: 9508
+	Num gates: 14346
+	Mapping:  - 3 - 9 - 13 - 7 - 1 - 10 - 6 - 2 - 4 - 0 - 11 - 12 - 5 - 15 - 14
+
+
+
+
+sym9_146.qasm 16 7 1
+circuit_flat.n: 12
+circuit_flat.num_gates:378
+---- Physic: 16; Logic: 12 
+
+New solution found: 
+solution: 307
+	Num gates: 621
+	Mapping:  - 0 - 15 - 11 - 13 - 7 - 9 - 5 - 8 - 4 - 14 - 2 - 3
+
+
+
+sym9_193.qasm 16 7 1
+circuit_flat.n: 11
+circuit_flat.num_gates:37675
+---- Physic: 16; Logic: 11 
+
+Solution:  48327
+	Num gates: 65611
+	Mapping:  - 4 - 12 - 15 - 11 - 0 - 5 - 9 - 7 - 8 - 6 - 1
+
+
+wim_266.qasm 16 7 1
+circuit_flat.n: 11
+circuit_flat.num_gates:1068
+---- Physic: 16; Logic: 11 
+solution: 1191
+	Num gates: 1794
+	Mapping:  - 14 - 11 - 15 - 4 - 9 - 7 - 5 - 10 - 3 - 2 - 6
+
+
+
+3) ising and qft10 -- i think there is somethig wrong with them  

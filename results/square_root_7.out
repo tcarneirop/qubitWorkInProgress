@@ -1,0 +1,126 @@
+circuit_flat.n: 15
+circuit_flat.num_gates:8454
+---- Physic: 16; Logic: 15 
+########### SANITY TEST ################# 
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 
+results[0].depth: 10239
+results[0].num_gates: 14802
+########### SANITY TEST ################# 
+
+######## RANDOM SEARCH ############
+	Working with 57657600 elements out of 57657600.
+ 
+Partial tree: 63994816 -- Number of subproblems: 57657600 
+
+### MCORE Search ###
+	Number of subproblems: 57657600 - Physic: 16, Logic: 15, Initial depth: 7,  Max threads: 128
+
+New solution found: 
+	Solution: 1, From 10239 to 10011
+	Num gates: 14655
+	Mapping:  - 13 - 10 - 1 - 12 - 8 - 3 - 5 - 0 - 2 - 4 - 6 - 7 - 9 - 11 - 14
+
+New solution found: 
+	Solution: 2, From 10011 to 9947
+	Num gates: 14820
+	Mapping:  - 13 - 10 - 1 - 12 - 8 - 3 - 5 - 0 - 2 - 4 - 6 - 7 - 9 - 11 - 15
+
+New solution found: 
+	Solution: 1, From 9947 to 9904
+	Num gates: 14487
+	Mapping:  - 2 - 10 - 5 - 7 - 8 - 12 - 11 - 0 - 1 - 3 - 4 - 6 - 9 - 13 - 14
+
+New solution found: 
+	Solution: 1, From 9904 to 9861
+	Num gates: 14637
+	Mapping:  - 8 - 13 - 9 - 4 - 11 - 3 - 7 - 0 - 1 - 2 - 5 - 6 - 10 - 12 - 14
+
+New solution found: 
+	Solution: 1, From 9861 to 9807
+	Num gates: 14580
+	Mapping:  - 7 - 0 - 12 - 8 - 4 - 11 - 2 - 1 - 3 - 5 - 6 - 9 - 10 - 13 - 14
+
+New solution found: 
+	Solution: 2, From 9807 to 9772
+	Num gates: 14487
+	Mapping:  - 7 - 12 - 5 - 6 - 15 - 10 - 2 - 0 - 1 - 3 - 4 - 8 - 9 - 11 - 14
+
+New solution found: 
+	Solution: 2, From 9772 to 9715
+	Num gates: 14514
+	Mapping:  - 12 - 5 - 6 - 10 - 1 - 0 - 9 - 2 - 3 - 4 - 7 - 8 - 11 - 13 - 15
+
+New solution found: 
+	Solution: 14, From 9715 to 9667
+	Num gates: 14637
+	Mapping:  - 8 - 2 - 12 - 14 - 1 - 6 - 13 - 0 - 3 - 4 - 5 - 7 - 11 - 9 - 15
+
+New solution found: 
+	Solution: 26, From 9667 to 9634
+	Num gates: 14439
+	Mapping:  - 10 - 11 - 8 - 0 - 2 - 5 - 9 - 1 - 3 - 4 - 6 - 12 - 7 - 13 - 15
+
+New solution found: 
+	Solution: 135, From 9634 to 9632
+	Num gates: 14457
+	Mapping:  - 10 - 11 - 8 - 0 - 2 - 5 - 9 - 1 - 3 - 4 - 7 - 6 - 14 - 13 - 12
+
+New solution found: 
+	Solution: 186, From 9632 to 9616
+	Num gates: 14577
+	Mapping:  - 14 - 9 - 1 - 12 - 8 - 13 - 11 - 0 - 2 - 3 - 5 - 7 - 10 - 15 - 6
+
+New solution found: 
+	Solution: 207, From 9616 to 9588
+	Num gates: 14439
+	Mapping:  - 0 - 15 - 12 - 4 - 1 - 10 - 8 - 2 - 3 - 5 - 7 - 13 - 11 - 9 - 6
+
+New solution found: 
+	Solution: 2487, From 9588 to 9585
+	Num gates: 14439
+	Mapping:  - 0 - 15 - 12 - 4 - 1 - 10 - 8 - 2 - 3 - 9 - 7 - 13 - 11 - 6 - 5
+
+New solution found: 
+	Solution: 3069, From 9585 to 9583
+	Num gates: 14439
+	Mapping:  - 0 - 15 - 12 - 4 - 1 - 10 - 8 - 2 - 3 - 11 - 6 - 9 - 14 - 7 - 5
+
+New solution found: 
+	Solution: 3451, From 9583 to 9556
+	Num gates: 14523
+	Mapping:  - 1 - 15 - 13 - 7 - 8 - 11 - 10 - 0 - 2 - 9 - 12 - 6 - 14 - 3 - 4
+
+New solution found: 
+	Solution: 4054, From 9556 to 9522
+	Num gates: 14523
+	Mapping:  - 11 - 5 - 7 - 12 - 14 - 6 - 9 - 0 - 1 - 13 - 8 - 10 - 15 - 3 - 4
+
+New solution found: 
+	Solution: 26851, From 9522 to 9507
+	Num gates: 14253
+	Mapping:  - 4 - 7 - 13 - 12 - 3 - 6 - 15 - 0 - 10 - 5 - 2 - 11 - 14 - 1 - 8
+
+New solution found: 
+	Solution: 73651, From 9507 to 9504
+	Num gates: 14253
+	Mapping:  - 4 - 7 - 13 - 12 - 3 - 6 - 15 - 1 - 11 - 9 - 2 - 10 - 14 - 0 - 5
+
+New solution found: 
+	Solution: 32406, From 9504 to 9500
+	Num gates: 14253
+	Mapping:  - 15 - 7 - 9 - 6 - 12 - 11 - 0 - 1 - 13 - 5 - 2 - 3 - 4 - 14 - 10
+
+New solution found: 
+	Solution: 32429, From 9500 to 9497
+	Num gates: 14253
+	Mapping:  - 15 - 7 - 9 - 6 - 12 - 11 - 0 - 1 - 13 - 5 - 2 - 4 - 3 - 14 - 8
+
+New solution found: 
+	Solution: 341143, From 9497 to 9496
+	Num gates: 14253
+	Mapping:  - 12 - 5 - 7 - 3 - 10 - 6 - 2 - 15 - 8 - 11 - 13 - 14 - 1 - 0 - 4
+
+New solution found: 
+	Solution: 39656, From 9496 to 9494
+	Num gates: 14346
+	Mapping:  - 10 - 12 - 0 - 2 - 4 - 6 - 8 - 1 - 15 - 14 - 3 - 9 - 7 - 5 - 13
