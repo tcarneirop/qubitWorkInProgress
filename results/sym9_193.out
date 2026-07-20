@@ -1,0 +1,151 @@
+circuit_flat.n: 11
+circuit_flat.num_gates:37675
+---- Physic: 16; Logic: 11 
+########### SANITY TEST ################# 
+0 1 2 3 4 5 6 7 8 9 10 
+results[0].depth: 49317
+results[0].num_gates: 66097
+########### SANITY TEST ################# 
+
+######## RANDOM SEARCH ############
+	Working with 57657600 elements out of 57657600.
+ 
+Partial tree: 63994816 -- Number of subproblems: 57657600 
+
+### MCORE Search ###
+	Number of subproblems: 57657600 - Physic: 16, Logic: 11, Initial depth: 7,  Max threads: 128
+
+New solution found: 
+	Solution: 1, From 49317 to 49126
+	Num gates: 66037
+	Mapping:  - 3 - 13 - 11 - 1 - 0 - 6 - 2 - 4 - 5 - 7 - 8
+
+New solution found: 
+	Solution: 1, From 49126 to 48951
+	Num gates: 65770
+	Mapping:  - 13 - 1 - 11 - 2 - 8 - 0 - 6 - 3 - 4 - 5 - 7
+
+New solution found: 
+	Solution: 1, From 48951 to 48869
+	Num gates: 65584
+	Mapping:  - 8 - 1 - 14 - 10 - 15 - 3 - 9 - 0 - 2 - 4 - 5
+
+New solution found: 
+	Solution: 2, From 48869 to 48856
+	Num gates: 65803
+	Mapping:  - 6 - 5 - 8 - 3 - 11 - 9 - 7 - 0 - 1 - 2 - 10
+
+New solution found: 
+	Solution: 2, From 48856 to 48847
+	Num gates: 65803
+	Mapping:  - 13 - 1 - 11 - 2 - 8 - 0 - 6 - 3 - 4 - 5 - 9
+
+New solution found: 
+	Solution: 1, From 48847 to 48690
+	Num gates: 65587
+	Mapping:  - 11 - 14 - 3 - 12 - 7 - 9 - 1 - 0 - 2 - 4 - 5
+
+New solution found: 
+	Solution: 1, From 48690 to 48604
+	Num gates: 65554
+	Mapping:  - 10 - 9 - 2 - 8 - 6 - 15 - 11 - 0 - 1 - 3 - 4
+
+New solution found: 
+	Solution: 3, From 48604 to 48542
+	Num gates: 65611
+	Mapping:  - 11 - 14 - 3 - 12 - 7 - 9 - 1 - 0 - 2 - 4 - 8
+
+New solution found: 
+	Solution: 9, From 48542 to 48389
+	Num gates: 65611
+	Mapping:  - 0 - 3 - 7 - 15 - 14 - 5 - 4 - 1 - 2 - 8 - 10
+
+New solution found: 
+	Solution: 13, From 48389 to 48368
+	Num gates: 65611
+	Mapping:  - 1 - 3 - 7 - 14 - 10 - 2 - 11 - 0 - 4 - 8 - 5
+
+New solution found: 
+	Solution: 71, From 48368 to 48363
+	Num gates: 65611
+	Mapping:  - 11 - 15 - 12 - 1 - 13 - 7 - 8 - 0 - 3 - 9 - 10
+
+New solution found: 
+	Solution: 135, From 48363 to 48359
+	Num gates: 65611
+	Mapping:  - 15 - 13 - 5 - 6 - 9 - 4 - 1 - 0 - 8 - 3 - 10
+
+New solution found: 
+	Solution: 147, From 48359 to 48351
+	Num gates: 65611
+	Mapping:  - 13 - 3 - 9 - 5 - 15 - 8 - 11 - 0 - 6 - 7 - 4
+
+New solution found: 
+	Solution: 314, From 48351 to 48343
+	Num gates: 65611
+	Mapping:  - 15 - 12 - 1 - 8 - 14 - 6 - 11 - 0 - 13 - 5 - 3
+
+New solution found: 
+	Solution: 479, From 48343 to 48341
+	Num gates: 65611
+	Mapping:  - 6 - 10 - 14 - 15 - 2 - 9 - 1 - 3 - 7 - 5 - 12
+
+New solution found: 
+	Solution: 739, From 48341 to 48340
+	Num gates: 65611
+	Mapping:  - 14 - 15 - 5 - 10 - 0 - 3 - 13 - 4 - 2 - 9 - 1
+
+New solution found: 
+	Solution: 964, From 48340 to 48339
+	Num gates: 65611
+	Mapping:  - 6 - 0 - 12 - 9 - 4 - 8 - 13 - 3 - 14 - 15 - 7
+
+New solution found: 
+	Solution: 1661, From 48339 to 48334
+	Num gates: 65611
+	Mapping:  - 5 - 13 - 6 - 9 - 12 - 0 - 8 - 7 - 15 - 4 - 11
+
+New solution found: 
+	Solution: 1722, From 48334 to 48333
+	Num gates: 65611
+	Mapping:  - 7 - 4 - 10 - 12 - 9 - 1 - 5 - 11 - 0 - 15 - 14
+
+New solution found: 
+	Solution: 207, From 48333 to 48332
+	Num gates: 65611
+	Mapping:  - 6 - 8 - 12 - 9 - 0 - 5 - 7 - 1 - 11 - 15 - 4
+
+New solution found: 
+	Solution: 761, From 48332 to 48329
+	Num gates: 65611
+	Mapping:  - 6 - 14 - 4 - 9 - 0 - 7 - 13 - 3 - 5 - 1 - 12
+
+New solution found: 
+	Solution: 2334, From 48329 to 48328
+	Num gates: 65611
+	Mapping:  - 11 - 2 - 13 - 9 - 8 - 4 - 5 - 12 - 15 - 6 - 14
+
+New solution found: 
+	Solution: 2921, From 48328 to 48319
+	Num gates: 65611
+	Mapping:  - 10 - 3 - 6 - 11 - 14 - 1 - 12 - 15 - 8 - 5 - 9
+
+New solution found: 
+	Solution: 257, From 48319 to 48315
+	Num gates: 65611
+	Mapping:  - 9 - 14 - 6 - 11 - 1 - 15 - 4 - 0 - 12 - 2 - 10
+
+New solution found: 
+	Solution: 2978, From 48315 to 48314
+	Num gates: 65611
+	Mapping:  - 6 - 11 - 5 - 10 - 12 - 0 - 4 - 15 - 13 - 14 - 2
+
+New solution found: 
+	Solution: 2984, From 48314 to 48313
+	Num gates: 65611
+	Mapping:  - 8 - 12 - 9 - 6 - 1 - 15 - 11 - 14 - 13 - 0 - 3
+
+New solution found: 
+	Solution: 2932, From 48313 to 48307
+	Num gates: 65611
+	Mapping:  - 8 - 10 - 7 - 5 - 1 - 12 - 11 - 15 - 9 - 13 - 4

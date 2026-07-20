@@ -1,0 +1,24 @@
+#!/bin/bash
+stdbuf -o0 -e0 timeout 7200s ./qubit.exe NEW_Bechmark/clip_206.qasm 16 7 1 > clip_206.out 2>&1
+stdbuf -o0 -e0 timeout 7200s ./qubit.exe NEW_Bechmark/cm42a_207.qasm 16 7 1 > cm42a_207.out 2>&1
+stdbuf -o0 -e0 timeout 7200s ./qubit.exe NEW_Bechmark/cm85a_209.qasm 16 7 1 > cm85a_209.out 2>&1
+stdbuf -o0 -e0 timeout 7200s ./qubit.exe NEW_Bechmark/co14_215.qasm 16 7 1 > co14_215.out 2>&1
+stdbuf -o0 -e0 timeout 7200s ./qubit.exe NEW_Bechmark/cycle10_2_110.qasm 16 7 1 > cycle10_2_110.out 2>&1
+stdbuf -o0 -e0 timeout 7200s ./qubit.exe NEW_Bechmark/decod24-v2_43.qasm 16 7 1 > decod24-v2_43.out 2>&1
+stdbuf -o0 -e0 timeout 7200s ./qubit.exe NEW_Bechmark/dist_223.qasm 16 7 1 > dist_223.out 2>&1
+stdbuf -o0 -e0 timeout 7200s ./qubit.exe NEW_Bechmark/inc_237.qasm 16 7 1 > inc_237.out 2>&1
+stdbuf -o0 -e0 timeout 7200s ./qubit.exe NEW_Bechmark/ising_model_16.qasm 16 7 1 > ising_model_16.out 2>&1
+stdbuf -o0 -e0 timeout 7200s ./qubit.exe NEW_Bechmark/misex1_241.qasm 16 7 1 > misex1_241.out 2>&1
+stdbuf -o0 -e0 timeout 7200s ./qubit.exe NEW_Bechmark/mlp4_245.qasm 16 7 1 > mlp4_245.out 2>&1
+stdbuf -o0 -e0 timeout 7200s ./qubit.exe NEW_Bechmark/qft_10.qasm 16 7 1 > qft_10.out 2>&1
+stdbuf -o0 -e0 timeout 7200s ./qubit.exe NEW_Bechmark/radd_250.qasm 16 7 1 > radd_250.out 2>&1
+stdbuf -o0 -e0 timeout 7200s ./qubit.exe NEW_Bechmark/rd32-v0_66.qasm 16 7 1 > rd32-v0_66.out 2>&1
+stdbuf -o0 -e0 timeout 7200s ./qubit.exe NEW_Bechmark/rd84_253.qasm 16 7 1 > rd84_253.out 2>&1
+stdbuf -o0 -e0 timeout 7200s ./qubit.exe NEW_Bechmark/root_255.qasm 16 7 1 > root_255.out 2>&1
+stdbuf -o0 -e0 timeout 7200s ./qubit.exe NEW_Bechmark/sqn_258.qasm 16 7 1 > sqn_258.out 2>&1
+stdbuf -o0 -e0 timeout 7200s ./qubit.exe NEW_Bechmark/square_root_7.qasm 16 7 1 > square_root_7.out 2>&1
+stdbuf -o0 -e0 timeout 7200s ./qubit.exe NEW_Bechmark/sym9_146.qasm 16 7 1 > sym9_146.out 2>&1
+stdbuf -o0 -e0 timeout 7200s ./qubit.exe NEW_Bechmark/sym9_148.qasm 16 7 1 > sym9_148.out 2>&1
+stdbuf -o0 -e0 timeout 7200s ./qubit.exe NEW_Bechmark/sym9_193.qasm 16 7 1 > sym9_193.out 2>&1
+stdbuf -o0 -e0 timeout 7200s ./qubit.exe NEW_Bechmark/wim_266.qasm 16 7 1 > wim_266.out 2>&1
+stdbuf -o0 -e0 timeout 7200s ./qubit.exe NEW_Bechmark/z4_268.qasm 16 7 1 > z4_268.out 2>&1

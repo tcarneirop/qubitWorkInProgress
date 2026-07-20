@@ -1,0 +1,106 @@
+circuit_flat.n: 13
+circuit_flat.num_gates:18493
+---- Physic: 16; Logic: 13 
+########### SANITY TEST ################# 
+0 1 2 3 4 5 6 7 8 9 10 11 12 
+results[0].depth: 22876
+results[0].num_gates: 32674
+########### SANITY TEST ################# 
+
+######## RANDOM SEARCH ############
+	Working with 57657600 elements out of 57657600.
+ 
+Partial tree: 63994816 -- Number of subproblems: 57657600 
+
+### MCORE Search ###
+	Number of subproblems: 57657600 - Physic: 16, Logic: 13, Initial depth: 7,  Max threads: 128
+
+New solution found: 
+	Solution: 1, From 22876 to 22626
+	Num gates: 32323
+	Mapping:  - 14 - 13 - 0 - 8 - 3 - 1 - 2 - 4 - 5 - 6 - 7 - 9 - 10
+
+New solution found: 
+	Solution: 1, From 22626 to 22587
+	Num gates: 32317
+	Mapping:  - 11 - 6 - 1 - 5 - 15 - 13 - 7 - 0 - 2 - 3 - 4 - 8 - 9
+
+New solution found: 
+	Solution: 2, From 22587 to 22478
+	Num gates: 32257
+	Mapping:  - 1 - 10 - 9 - 8 - 4 - 2 - 5 - 0 - 3 - 6 - 7 - 11 - 13
+
+New solution found: 
+	Solution: 8, From 22478 to 22382
+	Num gates: 32092
+	Mapping:  - 1 - 10 - 9 - 8 - 4 - 2 - 5 - 0 - 3 - 6 - 7 - 12 - 15
+
+New solution found: 
+	Solution: 20, From 22382 to 22377
+	Num gates: 32152
+	Mapping:  - 11 - 5 - 14 - 9 - 7 - 2 - 1 - 0 - 3 - 4 - 6 - 15 - 13
+
+New solution found: 
+	Solution: 25, From 22377 to 22340
+	Num gates: 32089
+	Mapping:  - 7 - 0 - 5 - 15 - 12 - 13 - 8 - 1 - 2 - 3 - 6 - 9 - 4
+
+New solution found: 
+	Solution: 89, From 22340 to 22299
+	Num gates: 32089
+	Mapping:  - 4 - 5 - 3 - 10 - 12 - 0 - 6 - 1 - 2 - 7 - 14 - 11 - 8
+
+New solution found: 
+	Solution: 227, From 22299 to 22287
+	Num gates: 32254
+	Mapping:  - 2 - 10 - 3 - 13 - 1 - 8 - 9 - 0 - 4 - 6 - 15 - 7 - 12
+
+New solution found: 
+	Solution: 834, From 22287 to 22284
+	Num gates: 32254
+	Mapping:  - 9 - 11 - 12 - 15 - 7 - 3 - 4 - 0 - 1 - 14 - 13 - 8 - 5
+
+New solution found: 
+	Solution: 7547, From 22284 to 22280
+	Num gates: 32254
+	Mapping:  - 9 - 11 - 12 - 15 - 7 - 3 - 4 - 1 - 0 - 14 - 13 - 5 - 8
+
+New solution found: 
+	Solution: 13543, From 22280 to 22268
+	Num gates: 32254
+	Mapping:  - 13 - 2 - 10 - 1 - 3 - 8 - 5 - 6 - 0 - 4 - 15 - 7 - 12
+
+New solution found: 
+	Solution: 27480, From 22268 to 22264
+	Num gates: 32254
+	Mapping:  - 13 - 9 - 11 - 5 - 14 - 4 - 6 - 7 - 0 - 10 - 15 - 12 - 8
+
+New solution found: 
+	Solution: 46815, From 22264 to 22262
+	Num gates: 32254
+	Mapping:  - 13 - 6 - 7 - 11 - 15 - 9 - 4 - 10 - 14 - 8 - 0 - 5 - 3
+
+New solution found: 
+	Solution: 49074, From 22262 to 22259
+	Num gates: 31960
+	Mapping:  - 14 - 2 - 6 - 10 - 1 - 15 - 13 - 11 - 4 - 5 - 12 - 8 - 3
+
+New solution found: 
+	Solution: 46833, From 22259 to 22250
+	Num gates: 32296
+	Mapping:  - 10 - 0 - 13 - 7 - 1 - 11 - 4 - 12 - 15 - 9 - 3 - 8 - 2
+
+New solution found: 
+	Solution: 42397, From 22250 to 22234
+	Num gates: 32254
+	Mapping:  - 5 - 1 - 4 - 12 - 14 - 7 - 9 - 11 - 3 - 8 - 2 - 15 - 0
+
+New solution found: 
+	Solution: 41229, From 22234 to 22221
+	Num gates: 31960
+	Mapping:  - 4 - 9 - 3 - 10 - 5 - 2 - 15 - 12 - 1 - 0 - 11 - 8 - 6
+
+New solution found: 
+	Solution: 3695, From 22221 to 22183
+	Num gates: 31879
+	Mapping:  - 13 - 4 - 11 - 9 - 8 - 2 - 15 - 0 - 7 - 5 - 12 - 10 - 6

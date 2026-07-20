@@ -1319,7 +1319,7 @@ unsigned long long  mcore_final_search_64(int *PHYSIC_MACHINE, int *circuit,  co
                     if(improved){
                         #pragma omp critical(printsol)
                         {
-                        std::cout<<"\nNew solution found: \n\tSolution: "<< numSolutions<<", From "<<local_best_depth<<" to "<<results[0].depth<<"\n\tNum gates: "<<results[0].num_gates<<"\n\tMapping: ";
+                        std::cout<<"\nNew solution found: \n\tSolution: "<< numSolutions<<", From "<<local_best_depth<<" to "<<results[0].depth<<"\n\tDepth: "<<local_best_depth<<"\n\tNum gates: "<<results[0].num_gates<<"\n\tMapping: ";
                         for(int m = 0;m<logic;++m)
                             printf(" - %i", mapping[m]);
                         }

@@ -1,0 +1,81 @@
+circuit_flat.n: 10
+circuit_flat.num_gates:11103
+---- Physic: 16; Logic: 10 
+########### SANITY TEST ################# 
+0 1 2 3 4 5 6 7 8 9 
+results[0].depth: 13831
+results[0].num_gates: 19056
+########### SANITY TEST ################# 
+
+######## RANDOM SEARCH ############
+	Working with 57657600 elements out of 57657600.
+ 
+Partial tree: 63994816 -- Number of subproblems: 57657600 
+
+### MCORE Search ###
+	Number of subproblems: 57657600 - Physic: 16, Logic: 10, Initial depth: 7,  Max threads: 128
+
+New solution found: 
+	Solution: 1, From 13831 to 13726
+	Num gates: 18807
+	Mapping:  - 13 - 5 - 10 - 4 - 11 - 3 - 6 - 0 - 1 - 2
+
+New solution found: 
+	Solution: 3, From 13726 to 13671
+	Num gates: 18906
+	Mapping:  - 3 - 2 - 8 - 14 - 0 - 13 - 1 - 4 - 5 - 9
+
+New solution found: 
+	Solution: 11, From 13671 to 13668
+	Num gates: 18906
+	Mapping:  - 3 - 2 - 8 - 14 - 0 - 13 - 1 - 4 - 6 - 10
+
+New solution found: 
+	Solution: 19, From 13668 to 13666
+	Num gates: 18906
+	Mapping:  - 3 - 2 - 8 - 14 - 0 - 13 - 1 - 4 - 7 - 11
+
+New solution found: 
+	Solution: 28, From 13666 to 13630
+	Num gates: 18858
+	Mapping:  - 12 - 2 - 0 - 13 - 15 - 1 - 6 - 3 - 8 - 14
+
+New solution found: 
+	Solution: 430, From 13630 to 13625
+	Num gates: 18852
+	Mapping:  - 11 - 14 - 12 - 6 - 8 - 13 - 3 - 10 - 7 - 2
+
+New solution found: 
+	Solution: 316, From 13625 to 13623
+	Num gates: 18858
+	Mapping:  - 5 - 3 - 0 - 11 - 1 - 10 - 2 - 12 - 13 - 4
+
+New solution found: 
+	Solution: 163, From 13623 to 13621
+	Num gates: 18852
+	Mapping:  - 2 - 15 - 12 - 3 - 11 - 4 - 14 - 5 - 13 - 1
+
+New solution found: 
+	Solution: 193, From 13621 to 13618
+	Num gates: 18858
+	Mapping:  - 9 - 6 - 3 - 2 - 12 - 7 - 4 - 8 - 10 - 11
+
+New solution found: 
+	Solution: 221, From 13618 to 13613
+	Num gates: 18858
+	Mapping:  - 9 - 6 - 3 - 2 - 12 - 7 - 4 - 8 - 15 - 10
+
+New solution found: 
+	Solution: 249, From 13613 to 13607
+	Num gates: 18858
+	Mapping:  - 9 - 6 - 2 - 11 - 14 - 3 - 8 - 7 - 5 - 10
+
+New solution found: 
+	Solution: 174, From 13607 to 13599
+	Num gates: 18858
+	Mapping:  - 11 - 4 - 1 - 14 - 2 - 3 - 9 - 7 - 0 - 13
+
+New solution found: 
+	Solution: 82, From 13599 to 13596
+	Num gates: 18858
+	Mapping:  - 8 - 6 - 10 - 12 - 2 - 5 - 9 - 1 - 7 - 13

@@ -1,0 +1,101 @@
+circuit_flat.n: 14
+circuit_flat.num_gates:12150
+---- Physic: 16; Logic: 14 
+########### SANITY TEST ################# 
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 
+results[0].depth: 16222
+results[0].num_gates: 21327
+########### SANITY TEST ################# 
+
+######## RANDOM SEARCH ############
+	Working with 57657600 elements out of 57657600.
+ 
+Partial tree: 63994816 -- Number of subproblems: 57657600 
+
+### MCORE Search ###
+	Number of subproblems: 57657600 - Physic: 16, Logic: 14, Initial depth: 7,  Max threads: 128
+
+New solution found: 
+	Solution: 1, From 16222 to 16095
+	Num gates: 21411
+	Mapping:  - 2 - 9 - 8 - 7 - 14 - 1 - 12 - 0 - 3 - 4 - 5 - 6 - 10 - 11
+
+New solution found: 
+	Solution: 1, From 16095 to 16003
+	Num gates: 21387
+	Mapping:  - 6 - 12 - 7 - 3 - 13 - 0 - 14 - 1 - 2 - 4 - 5 - 8 - 9 - 10
+
+New solution found: 
+	Solution: 9, From 16003 to 15947
+	Num gates: 21171
+	Mapping:  - 6 - 12 - 7 - 3 - 13 - 0 - 14 - 1 - 2 - 4 - 5 - 8 - 11 - 15
+
+New solution found: 
+	Solution: 14, From 15947 to 15912
+	Num gates: 21084
+	Mapping:  - 3 - 15 - 1 - 4 - 11 - 14 - 0 - 2 - 5 - 6 - 7 - 9 - 8 - 12
+
+New solution found: 
+	Solution: 40, From 15912 to 15856
+	Num gates: 20967
+	Mapping:  - 13 - 14 - 5 - 3 - 6 - 11 - 4 - 0 - 1 - 2 - 7 - 12 - 9 - 8
+
+New solution found: 
+	Solution: 181, From 15856 to 15851
+	Num gates: 21207
+	Mapping:  - 2 - 3 - 5 - 14 - 6 - 9 - 13 - 0 - 1 - 4 - 11 - 7 - 8 - 10
+
+New solution found: 
+	Solution: 751, From 15851 to 15809
+	Num gates: 21207
+	Mapping:  - 4 - 10 - 7 - 5 - 14 - 2 - 11 - 0 - 1 - 8 - 3 - 12 - 13 - 6
+
+New solution found: 
+	Solution: 3788, From 15809 to 15804
+	Num gates: 21207
+	Mapping:  - 5 - 15 - 9 - 11 - 8 - 10 - 3 - 0 - 2 - 7 - 12 - 1 - 13 - 6
+
+New solution found: 
+	Solution: 4268, From 15804 to 15743
+	Num gates: 20967
+	Mapping:  - 14 - 1 - 4 - 8 - 9 - 0 - 2 - 3 - 6 - 12 - 15 - 5 - 11 - 10
+
+New solution found: 
+	Solution: 32157, From 15743 to 15734
+	Num gates: 20802
+	Mapping:  - 15 - 4 - 1 - 11 - 7 - 12 - 3 - 2 - 9 - 13 - 5 - 14 - 8 - 10
+
+New solution found: 
+	Solution: 13113, From 15734 to 15731
+	Num gates: 20802
+	Mapping:  - 12 - 14 - 7 - 2 - 4 - 5 - 15 - 0 - 10 - 3 - 8 - 9 - 11 - 13
+
+New solution found: 
+	Solution: 151035, From 15731 to 15729
+	Num gates: 20967
+	Mapping:  - 2 - 7 - 8 - 14 - 4 - 13 - 9 - 12 - 5 - 15 - 6 - 1 - 0 - 11
+
+New solution found: 
+	Solution: 156851, From 15729 to 15720
+	Num gates: 20967
+	Mapping:  - 2 - 7 - 8 - 14 - 4 - 13 - 9 - 12 - 11 - 1 - 10 - 0 - 15 - 5
+
+New solution found: 
+	Solution: 169753, From 15720 to 15715
+	Num gates: 20967
+	Mapping:  - 0 - 9 - 7 - 15 - 2 - 14 - 8 - 13 - 5 - 4 - 10 - 3 - 1 - 6
+
+New solution found: 
+	Solution: 132255, From 15715 to 15713
+	Num gates: 20967
+	Mapping:  - 1 - 5 - 9 - 15 - 7 - 13 - 8 - 11 - 6 - 4 - 3 - 2 - 0 - 14
+
+New solution found: 
+	Solution: 133035, From 15713 to 15712
+	Num gates: 20967
+	Mapping:  - 1 - 5 - 9 - 15 - 7 - 13 - 8 - 11 - 6 - 12 - 4 - 2 - 0 - 14
+
+New solution found: 
+	Solution: 151215, From 15712 to 15709
+	Num gates: 20967
+	Mapping:  - 1 - 5 - 9 - 15 - 7 - 13 - 8 - 12 - 6 - 0 - 2 - 4 - 3 - 14

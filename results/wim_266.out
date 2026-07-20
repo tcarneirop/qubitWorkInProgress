@@ -1,0 +1,116 @@
+circuit_flat.n: 11
+circuit_flat.num_gates:1068
+---- Physic: 16; Logic: 11 
+########### SANITY TEST ################# 
+0 1 2 3 4 5 6 7 8 9 10 
+results[0].depth: 1255
+results[0].num_gates: 1839
+########### SANITY TEST ################# 
+
+######## RANDOM SEARCH ############
+	Working with 57657600 elements out of 57657600.
+ 
+Partial tree: 63994816 -- Number of subproblems: 57657600 
+
+### MCORE Search ###
+	Number of subproblems: 57657600 - Physic: 16, Logic: 11, Initial depth: 7,  Max threads: 128
+
+New solution found: 
+	Solution: 1, From 1255 to 1252
+	Num gates: 1830
+	Mapping:  - 1 - 10 - 6 - 3 - 4 - 12 - 14 - 0 - 2 - 5 - 7
+
+New solution found: 
+	Solution: 4, From 1252 to 1239
+	Num gates: 1851
+	Mapping:  - 4 - 1 - 2 - 3 - 14 - 6 - 12 - 0 - 5 - 7 - 11
+
+New solution found: 
+	Solution: 11, From 1239 to 1228
+	Num gates: 1815
+	Mapping:  - 12 - 11 - 10 - 4 - 15 - 2 - 7 - 0 - 1 - 5 - 13
+
+New solution found: 
+	Solution: 23, From 1228 to 1226
+	Num gates: 1824
+	Mapping:  - 4 - 1 - 2 - 3 - 14 - 6 - 12 - 0 - 5 - 10 - 13
+
+New solution found: 
+	Solution: 24, From 1226 to 1223
+	Num gates: 1827
+	Mapping:  - 12 - 6 - 5 - 11 - 7 - 15 - 0 - 1 - 2 - 9 - 14
+
+New solution found: 
+	Solution: 25, From 1223 to 1221
+	Num gates: 1824
+	Mapping:  - 12 - 11 - 10 - 4 - 15 - 2 - 7 - 0 - 1 - 9 - 3
+
+New solution found: 
+	Solution: 634, From 1221 to 1219
+	Num gates: 1794
+	Mapping:  - 14 - 5 - 10 - 13 - 15 - 2 - 4 - 1 - 12 - 0 - 8
+
+New solution found: 
+	Solution: 1203, From 1219 to 1218
+	Num gates: 1794
+	Mapping:  - 12 - 4 - 15 - 1 - 8 - 9 - 10 - 5 - 7 - 11 - 3
+
+New solution found: 
+	Solution: 1224, From 1218 to 1216
+	Num gates: 1836
+	Mapping:  - 4 - 3 - 10 - 13 - 9 - 2 - 7 - 6 - 12 - 0 - 15
+
+New solution found: 
+	Solution: 1592, From 1216 to 1215
+	Num gates: 1836
+	Mapping:  - 4 - 3 - 10 - 13 - 9 - 2 - 7 - 8 - 12 - 15 - 1
+
+New solution found: 
+	Solution: 1832, From 1215 to 1202
+	Num gates: 1794
+	Mapping:  - 12 - 4 - 15 - 1 - 8 - 9 - 10 - 7 - 5 - 11 - 2
+
+New solution found: 
+	Solution: 1731, From 1202 to 1201
+	Num gates: 1806
+	Mapping:  - 4 - 0 - 2 - 15 - 8 - 7 - 9 - 11 - 3 - 5 - 10
+
+New solution found: 
+	Solution: 1496, From 1201 to 1199
+	Num gates: 1788
+	Mapping:  - 13 - 4 - 11 - 0 - 10 - 7 - 5 - 8 - 6 - 12 - 2
+
+New solution found: 
+	Solution: 253, From 1199 to 1198
+	Num gates: 1797
+	Mapping:  - 11 - 13 - 3 - 6 - 10 - 0 - 1 - 2 - 14 - 4 - 5
+
+New solution found: 
+	Solution: 2409, From 1198 to 1196
+	Num gates: 1794
+	Mapping:  - 9 - 11 - 15 - 5 - 12 - 0 - 1 - 13 - 3 - 6 - 7
+
+New solution found: 
+	Solution: 554, From 1196 to 1195
+	Num gates: 1794
+	Mapping:  - 8 - 13 - 9 - 4 - 1 - 14 - 15 - 2 - 10 - 3 - 5
+
+New solution found: 
+	Solution: 255, From 1195 to 1191
+	Num gates: 1794
+	Mapping:  - 11 - 13 - 8 - 6 - 4 - 0 - 14 - 1 - 12 - 2 - 7
+
+New solution found: 
+	Solution: 1243, From 1191 to 1188
+	Num gates: 1794
+	Mapping:  - 13 - 5 - 15 - 0 - 3 - 8 - 9 - 6 - 11 - 10 - 1
+
+New solution found: 
+	Solution: 1903, From 1188 to 1187
+	Num gates: 1794
+	Mapping:  - 14 - 11 - 15 - 3 - 10 - 9 - 6 - 7 - 8 - 2 - 0
+
+New solution found: 
+	Solution: 1892, From 1187 to 1185
+	Num gates: 1794
+	Mapping:  - 13 - 11 - 15 - 1 - 10 - 9 - 6 - 7 - 8 - 0 - 3
