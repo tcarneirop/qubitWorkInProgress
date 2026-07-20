@@ -1,0 +1,257 @@
+
+clip_206.out 
+circuit_flat.n: 14
+circuit_flat.num_gates:36333
+---- Physic: 16; Logic: 14 
+
+
+	Solution: 45600
+	Num gates: 63633
+	Mapping:  - 13 - 4 - 7 - 11 - 9 - 6 - 1 - 2 - 0 - 14 - 10 - 5 - 8 - 3
+
+######################################################################################
+
+
+cm42a_207.out 
+circuit_flat.n: 14
+circuit_flat.num_gates:1928
+---- Physic: 16; Logic: 14 
+
+	Solution: 2218
+	Num gates: 3302
+	Mapping:  - 1 - 5 - 4 - 3 - 15 - 0 - 8 - 6 - 10 - 9 - 11 - 2 - 12 - 
+
+
+######################################################################################
+ cm85a_209.out 
+circuit_flat.n: 14
+circuit_flat.num_gates:12150
+---- Physic: 16; Logic: 14 
+
+	Solution: 15709
+	Num gates: 20967
+	Mapping:  - 1 - 5 - 9 - 15 - 7 - 13 - 8 - 12 - 6 - 0 - 2 - 4 - 3 - 14
+
+######################################################################################
+
+ co14_215.out 
+circuit_flat.n: 15
+circuit_flat.num_gates:19224
+---- Physic: 16; Logic: 15 
+
+
+	Solution: 21739
+	Num gates: 33423
+	Mapping:  - 14 - 1 - 11 - 9 - 7 - 12 - 5 - 10 - 0 - 2 - 6 - 8 - 3 - 15 - 4
+######################################################################################
+
+ cycle10_2_110.out 
+circuit_flat.n: 12
+circuit_flat.num_gates:6592
+---- Physic: 16; Logic: 12 
+
+	Solution: 8341
+	Num gates: 11152
+	Mapping:  - 1 - 11 - 7 - 15 - 2 - 3 - 8 - 5 - 10 - 14 - 4 - 12
+######################################################################################
+
+decod24-v2_43.out 
+circuit_flat.n: 4
+circuit_flat.num_gates:64
+---- Physic: 16; Logic: 4 
+
+Solution: 64
+	Num gates: 103
+	Mapping:  - 3 - 5 - 12 - 4
+
+
+
+
+######################################################################################
+
+dist_223.out 
+circuit_flat.n: 13
+circuit_flat.num_gates:41050
+---- Physic: 16; Logic: 13 
+
+	Solution: 50271
+	Num gates: 71485
+	Mapping:  - 7 - 1 - 3 - 11 - 9 - 0 - 4 - 12 - 6 - 2 - 8 - 15 - 10
+######################################################################################
+
+inc_237.out 
+circuit_flat.n: 16
+circuit_flat.num_gates:11431
+---- Physic: 16; Logic: 16 
+
+	Solution: 14377
+	Num gates: 19489
+	Mapping:  - 14 - 11 - 15 - 9 - 5 - 2 - 7 - 4 - 13 - 6 - 12 - 10 - 3 - 8 - 0 - 1
+
+######################################################################################
+
+ising_model_16.out 
+circuit_flat.n: 16
+circuit_flat.num_gates:858
+---- Physic: 16; Logic: 16 
+
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 
+results[0].depth: 73
+results[0].num_gates: 858
+
+######################################################################################
+
+
+misex1_241.out 
+circuit_flat.n: 15
+circuit_flat.num_gates:5143
+---- Physic: 16; Logic: 15 
+
+	Solution:  6393
+	Num gates: 8839
+	Mapping:  - 2 - 10 - 12 - 0 - 14 - 1 - 11 - 5 - 7 - 9 - 4 - 3 - 6 - 13 - 8
+######################################################################################
+
+mlp4_245.out 
+circuit_flat.n: 16
+circuit_flat.num_gates:20214
+---- Physic: 16; Logic: 16 
+
+
+	Solution:  25932
+	Num gates: 35295
+	Mapping:  - 3 - 4 - 7 - 0 - 5 - 12 - 1 - 15 - 11 - 2 - 9 - 14 - 10 - 13 - 8 - 6
+######################################################################################
+
+
+ qft_10.out 
+circuit_flat.n: 10
+circuit_flat.num_gates:54
+---- Physic: 16; Logic: 10 
+
+
+0 1 2 3 4 5 6 7 8 9 
+results[0].depth: 6
+results[0].num_gates: 54
+
+######################################################################################
+
+radd_250.out 
+circuit_flat.n: 13
+circuit_flat.num_gates:3401
+---- Physic: 16; Logic: 13 
+
+Solution: 4274
+	Num gates: 5798
+	Mapping:  - 7 - 8 - 9 - 1 - 14 - 10 - 15 - 4 - 6 - 2 - 5 - 11 - 12
+
+######################################################################################
+
+rd32-v0_66.qasm 
+circuit_flat.n: 4
+circuit_flat.num_gates:32
+---- Physic: 16; Logic: 4 
+
+Solution:  33
+	Num gates: 53
+	Mapping:  - 8 - 9 - 2 - 7
+
+######################################################################################
+rd84_253.out 
+circuit_flat.n: 12
+circuit_flat.num_gates:14680
+---- Physic: 16; Logic: 12 
+
+
+	Solution: 18282
+	Num gates: 25423
+	Mapping:  - 7 - 12 - 15 - 5 - 8 - 13 - 0 - 9 - 1 - 11 - 2 - 4
+
+
+######################################################################################
+
+
+root_255.out 
+circuit_flat.n: 13
+circuit_flat.num_gates:18493
+---- Physic: 16; Logic: 13 
+
+	Solution: 22183
+	Num gates: 31879
+	Mapping:  - 13 - 4 - 11 - 9 - 8 - 2 - 15 - 0 - 7 - 5 - 12 - 10 - 6
+######################################################################################
+
+sqn_258.out 
+circuit_flat.n: 10
+circuit_flat.num_gates:11103
+---- Physic: 16; Logic: 10 
+
+
+	Solution:  13595
+	Num gates: 18858
+	Mapping:  - 5 - 10 - 1 - 14 - 11 - 6 - 9 - 12 - 0 - 4
+
+######################################################################################
+
+square_root_7.out 
+circuit_flat.n: 15
+circuit_flat.num_gates:8454
+---- Physic: 16; Logic: 15 
+
+Solution: 9494
+	Num gates: 14346
+	Mapping:  - 10 - 12 - 0 - 2 - 4 - 6 - 8 - 1 - 15 - 14 - 3 - 9 - 7 - 5 - 13
+######################################################################################
+
+
+sym9_146.out 
+circuit_flat.n: 12
+circuit_flat.num_gates:378
+---- Physic: 16; Logic: 12 
+
+Solution: 303
+	Num gates: 615
+	Mapping:  - 10 - 5 - 1 - 0 - 13 - 15 - 12 - 2 - 3 - 4 - 11 - 14
+######################################################################################
+ sym9_148.out 
+circuit_flat.n: 10
+circuit_flat.num_gates:22854
+---- Physic: 16; Logic: 10 
+
+	Solution: 28965
+	Num gates: 38685
+	Mapping:  - 5 - 1 - 14 - 13 - 12 - 6 - 10 - 2 - 11 - 3
+
+######################################################################################
+
+
+ sym9_193.out 
+circuit_flat.n: 11
+circuit_flat.num_gates:37675
+---- Physic: 16; Logic: 11 
+
+	Solution: 48307
+	Num gates: 65611
+	Mapping:  - 8 - 10 - 7 - 5 - 1 - 12 - 11 - 15 - 9 - 13 - 4
+
+######################################################################################
+
+wim_266.out 
+circuit_flat.n: 11
+circuit_flat.num_gates:1068
+---- Physic: 16; Logic: 11 
+
+	Solution:1185
+	Num gates: 1794
+	Mapping:  - 13 - 11 - 15 - 1 - 10 - 9 - 6 - 7 - 8 - 0 - 3
+
+######################################################################################
+
+ z4_268.out 
+circuit_flat.n: 11
+circuit_flat.num_gates:3291
+---- Physic: 16; Logic: 11 
+
+	Solution: 3967
+	Num gates: 5499
+	Mapping:  - 2 - 11 - 4 - 5 - 13 - 6 - 9 - 12 - 3 - 10 - 1
