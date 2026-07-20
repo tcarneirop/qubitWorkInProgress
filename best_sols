@@ -252,8 +252,8 @@ circuit_flat.n: 11
 circuit_flat.num_gates:3291
 ---- Physic: 16; Logic: 11 
 
-	Solution: 
-	Depth: 3958
+New solution found: 
+	Depth: 3957
 	Num gates: 5598
-	Mapping:  - 7 - 12 - 5 - 4 - 8 - 11 - 2 - 13 - 6 - 3 - 10
+	Mapping: [9, 14, 10, 3, 7, 11, 2, 13, 6, 4, 8]
 
