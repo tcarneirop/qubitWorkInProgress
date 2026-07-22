@@ -1,6 +1,7 @@
 #!/bin/bash
 
-TIME_LIMIT="7200s"
+TIME_LIMIT="1200s"
+NUM_SABRE="10"
 
 for file in NEW_Bechmark/*.qasm
 do
@@ -11,7 +12,7 @@ do
 
     stdbuf -o0 -e0 \
         timeout "$TIME_LIMIT" \
-        ./qubit.exe "$file" 16 7 1 \
+        ./qubit.exe "$file" 16 7 1 10 \
         > "${name}.out" 2>&1
 
     status=$?
