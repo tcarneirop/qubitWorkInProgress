@@ -19,7 +19,7 @@
 #include <algorithm>
 #include <numeric>
 #include <random>
-
+#include <chrono>
 
 int ALBATROZ[256] = {
     0, 1, 2, 3, 4, 5, 6, 7, 8, 7, 6, 5, 4, 3, 2, 1,
@@ -58,6 +58,8 @@ int dist[DIST_SIZE * DIST_SIZE] = {
 
 #define MIN_BOARDSIZE 2
 #define H_TOL 1e-5f
+
+ using Clock = std::chrono::steady_clock;
 
 struct RoutingResult
 {
@@ -1205,7 +1207,7 @@ unsigned long long  mcore_final_search_64(int *PHYSIC_MACHINE, int *circuit,  co
     int *shared_best_num_gates, 
     int *shared_best_mapping, 
     unsigned long long *shared_sols_counter,
-    const int NUMBER_OF_SABRE_RUNS)
+    const int NUMBER_OF_SABRE_RUNS, Clock::time_point start)
 {
 
 
@@ -1322,8 +1324,10 @@ unsigned long long  mcore_final_search_64(int *PHYSIC_MACHINE, int *circuit,  co
                     if(improved){
                         #pragma omp critical(printsol)
                         {
+
                         (*shared_sols_counter)++;
-                        std::cout<<"\nNew solution found: \n\tSolution: "<< *shared_sols_counter <<", From "<<local_best_depth<<" to "<<results[0].depth<<"\n\tDepth: "<<results[0].depth<<"\n\tNum gates: "<<results[0].num_gates<<"\n\tMapping: ";
+
+                        std::cout<<"\nNew solution found at: "<< std::chrono::duration<double>(Clock::now() - start).count()<< "\n\tSolution: "<< *shared_sols_counter <<", From "<<local_best_depth<<" to "<<results[0].depth<<"\n\tDepth: "<<results[0].depth<<"\n\tNum gates: "<<results[0].num_gates<<"\n\tMapping: ";
                         std::cout<<"[";
                         for(int m = 0;m<logic-1;++m)
                             std::cout<<mapping[m]<<", ";
@@ -1363,10 +1367,6 @@ unsigned long long partial_search_64( const long long physic, const long long cu
     long long aStack[MAX_BOARDSIZE];
     unsigned long long numSolutions = 0ULL;
 
-
-    //@@@TODO:
-    //// I have to chenge this, i need to use C for the results instead of cpp 
-    ////// So i can use Chapel interoperability layer
 
     std::vector<RoutingResult> results;
     std::vector<int> best_mapping;
@@ -1481,6 +1481,7 @@ void call_mcore_search(int *PHYSIC_MACHINE, int *circuit, const int num_gates, c
     unsigned long long total_mcore_tree_size = 0ULL;
     unsigned long long num_sols = 0ULL;
 
+    const Clock::time_point start = Clock::now();
     
     unsigned long long initial_tree_size = partial_search_64(physic, cutoff_depth, &num_subproblems, subproblem_pool);
 
@@ -1502,18 +1503,16 @@ void call_mcore_search(int *PHYSIC_MACHINE, int *circuit, const int num_gates, c
     }
     #endif
 
-    #pragma omp parallel for schedule(runtime) default(none) shared( shared_sols_counter,best_depth, best_num_gates, vec_best_mapping,num_subproblems,PHYSIC_MACHINE, circuit, num_gates, physic, logic, subproblem_pool, cutoff_depth,NUMBER_OF_SABRE_RUNS) reduction(+:num_sols)
+    #pragma omp parallel for schedule(runtime) default(none) shared(start, shared_sols_counter,best_depth, best_num_gates, vec_best_mapping,num_subproblems,PHYSIC_MACHINE, circuit, num_gates, physic, logic, subproblem_pool, cutoff_depth,NUMBER_OF_SABRE_RUNS) reduction(+:num_sols)
     for(unsigned long long subproblem = 0; subproblem<num_subproblems;++subproblem){
         num_sols += mcore_final_search_64(PHYSIC_MACHINE, circuit, num_gates, physic, logic, subproblem_pool+subproblem, 
-            cutoff_depth, best_depth,best_num_gates,vec_best_mapping, shared_sols_counter,NUMBER_OF_SABRE_RUNS);
+            cutoff_depth, best_depth,best_num_gates,vec_best_mapping, shared_sols_counter,NUMBER_OF_SABRE_RUNS,start);
     }
 
     printf("\nNUM SOLS: %llu", num_sols);
     #ifdef CHECK
     check(physic, logic, num_sols);
     #endif
-
-
 
 
 }////////////////////////////////////////////////
@@ -1541,10 +1540,13 @@ void call_RANDOM_mcore_search(int *PHYSIC_MACHINE, int *circuit, const int num_g
     unsigned long long num_sols = 0ULL;
     unsigned long long shared_sols_counter = 0ULL;
 
-    
+   
+
+    const Clock::time_point start = Clock::now();
+
     unsigned long long initial_tree_size = partial_search_64(physic, cutoff_depth, &num_subproblems, subproblem_pool);
 
-
+    
 
     /////////////////////////////////////////////////////////////////////////
     const std::size_t sample_size = PERCENT * num_subproblems; 
@@ -1564,7 +1566,7 @@ void call_RANDOM_mcore_search(int *PHYSIC_MACHINE, int *circuit, const int num_g
     // Keep only 1%
     values.resize(sample_size);
 
-    printf("\n######## RANDOM SEARCH ############\n\tWorking with %zu elements out of %llu.\n ", values.size(), num_subproblems);
+    std::cout<<"\n######## RANDOM SEARCH ############\n\tWorking with "<< values.size() <<" elements out of "<<num_subproblems<<"\n "; 
 
     /////////////////////////////////////////////////////////////////////////////
 
@@ -1578,24 +1580,25 @@ void call_RANDOM_mcore_search(int *PHYSIC_MACHINE, int *circuit, const int num_g
     
     #ifdef VERBOSE
     for(unsigned long long subproblem = 0; subproblem<num_subproblems;++subproblem){
-        printf("\nSubproblem: %llu:\n\t ", subproblem);
+        std::cout<<"\nSubproblem: "<<subproblem<<" \n\t";
         for(int l = 0; l<cutoff_depth;++l){
-            printf("%d - ", subproblem_pool[subproblem].mapping[l]);
+            std::cout<< subproblem_pool[subproblem].mapping[l]<< " - ";
         }
     }
     #endif
 
-    #pragma omp parallel for schedule(runtime) default(none) shared(values, best_depth, best_num_gates, vec_best_mapping,shared_sols_counter,num_subproblems,PHYSIC_MACHINE, circuit, num_gates, physic, logic, subproblem_pool, cutoff_depth,NUMBER_OF_SABRE_RUNS) reduction(+:num_sols)
+    #pragma omp parallel for schedule(runtime) default(none) shared(start,values, best_depth, best_num_gates, vec_best_mapping,shared_sols_counter,num_subproblems,PHYSIC_MACHINE, circuit, num_gates, physic, logic, subproblem_pool, cutoff_depth,NUMBER_OF_SABRE_RUNS) reduction(+:num_sols)
     for(unsigned long long subproblem = 0; subproblem<values.size();++subproblem){
         num_sols += mcore_final_search_64(PHYSIC_MACHINE, circuit, num_gates, physic, logic, subproblem_pool+values[subproblem], 
-            cutoff_depth, best_depth, best_num_gates,vec_best_mapping,&shared_sols_counter, NUMBER_OF_SABRE_RUNS);
+            cutoff_depth, best_depth, best_num_gates,vec_best_mapping,&shared_sols_counter, NUMBER_OF_SABRE_RUNS,start);
     }
 
-    printf("\nNUM SOLS: %llu", num_sols);
+    std::cout<<"\nNUM SOLS: "<< num_sols<<std::endl;
     #ifdef CHECK
     check(physic, logic, num_sols);
     #endif
 
+    std::cout<<"\nElapsed time: "<< std::chrono::duration<double>(Clock::now() - start).count()<<std::endl;
 
 
 
