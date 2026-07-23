@@ -82,19 +82,58 @@ fi
 # Load previous executions
 ###############################################################################
 
+###############################################################################
+# Load previous executions
+###############################################################################
+
 declare -A DONE
 
 if $CONTINUE; then
-    while IFS=',' read -r executable timeout instance sabre pool depth runtime best_depth best_gates mapping status
+
+    # pula o cabeçalho
+    tail -n +2 "$CSV" | while IFS= read -r line
     do
-        [[ "$instance" == "instance" ]] && continue
-        [[ "$instance" == "" ]] && continue
+        # pega somente as seis primeiras colunas
+        first6=$(echo "$line" | cut -d',' -f1-6)
+
+        IFS=',' read -r executable timeout instance sabre pool depth <<< "$first6"
+
+        # remove aspas
+        executable=${executable//\"/}
+        timeout=${timeout//\"/}
+        instance=${instance//\"/}
 
         key="$instance|$timeout|$depth|$pool|$sabre"
-        DONE["$key"]=1
-    done < "$CSV"
-fi
 
+        DONE["$key"]=1
+    done
+
+    # como o while acima roda em um subshell por causa do pipe,
+    # fazemos a leitura novamente usando redirecionamento.
+
+    unset DONE
+    declare -A DONE
+
+    {
+        read    # cabeçalho
+
+        while IFS= read -r line
+        do
+            first6=$(echo "$line" | cut -d',' -f1-6)
+
+            IFS=',' read -r executable timeout instance sabre pool depth <<< "$first6"
+
+            executable=${executable//\"/}
+            timeout=${timeout//\"/}
+            instance=${instance//\"/}
+
+            key="$instance|$timeout|$depth|$pool|$sabre"
+
+            DONE["$key"]=1
+        done
+    } < "$CSV"
+
+fi
 ###############################################################################
 # Experiments
 ###############################################################################
