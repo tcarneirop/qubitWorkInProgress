@@ -1207,7 +1207,8 @@ unsigned long long  mcore_final_search_64(int *PHYSIC_MACHINE, int *circuit,  co
     int *shared_best_num_gates, 
     int *shared_best_mapping, 
     unsigned long long *shared_sols_counter,
-    const int NUMBER_OF_SABRE_RUNS, Clock::time_point start)
+    const int NUMBER_OF_SABRE_RUNS, Clock::time_point start, 
+    std::vector<unsigned long long> &number_of_sols)
 {
 
 
@@ -1286,7 +1287,7 @@ unsigned long long  mcore_final_search_64(int *PHYSIC_MACHINE, int *circuit,  co
             bitfield = mask & ~(aQueenBitCol[numrows]);
 
 
-            if (numrows == logic)
+            if (numrows == logic) /////// IT IS A SOLUTION!
             {
 
                 ++numSolutions;
@@ -1298,13 +1299,18 @@ unsigned long long  mcore_final_search_64(int *PHYSIC_MACHINE, int *circuit,  co
                 }
                 #endif
                 
+               
             
                 #ifdef SABRE
                 results = SABRE_routing_many(circuit, num_gates, PHYSIC_MACHINE, physic,logic, 1, mapping, 1 , NUMBER_OF_SABRE_RUNS, 1);
                 ++num_sabres;
                 
+                number_of_sols[results[0].depth]++;
+
                 #pragma omp atomic read
                 local_best_depth = *shared_best_depth;
+
+
 
 
                 if(results[0].depth<local_best_depth){
@@ -1463,63 +1469,6 @@ unsigned long long partial_search_64( const long long physic, const long long cu
 }
 
 
-void call_mcore_search(int *PHYSIC_MACHINE, int *circuit, const int num_gates, const long long physic,  
-    const long long logic,  const long long cutoff_depth, int *best_depth,
-    int *best_num_gates,
-    int *vec_best_mapping, 
-    unsigned long long *shared_sols_counter,
-    const int NUMBER_OF_SABRE_RUNS){
-    
-
-    Subproblem *subproblem_pool = (Subproblem*)(malloc(sizeof(Subproblem)*(unsigned)100000000));
-    
-    unsigned long long num_subproblems = 0ULL;
-    unsigned long long num_sols_search = 0ULL;
-    unsigned long long mcore_tree_size[num_subproblems];
-    unsigned long long mcore_num_sols[num_subproblems];
-    unsigned long long total_mcore_num_sols = 0ULL;
-    unsigned long long total_mcore_tree_size = 0ULL;
-    unsigned long long num_sols = 0ULL;
-
-    const Clock::time_point start = Clock::now();
-    
-    unsigned long long initial_tree_size = partial_search_64(physic, cutoff_depth, &num_subproblems, subproblem_pool);
-
-    
-    for(unsigned long long i = 0; i<num_subproblems;++i){
-        mcore_num_sols[i] = 0ULL;
-        mcore_tree_size[i] = 0ULL;
-    }
-
-    printf("\nPartial tree: %llu -- Number of subproblems: %llu \n", initial_tree_size, num_subproblems);
-    printf("\n### MCORE Search ###\n\tNumber of subproblems: %lld - Physic: %lld, Logic: %lld, Initial depth: %lld,  Max threads: %d\n", num_subproblems, physic, logic, cutoff_depth, omp_get_max_threads());
-    
-    #ifdef VERBOSE
-    for(unsigned long long subproblem = 0; subproblem<num_subproblems;++subproblem){
-        printf("\nSubproblem: %llu:\n\t ", subproblem);
-        for(int l = 0; l<cutoff_depth;++l){
-            printf("%d - ", subproblem_pool[subproblem].mapping[l]);
-        }
-    }
-    #endif
-
-    #pragma omp parallel for schedule(runtime) default(none) shared(start, shared_sols_counter,best_depth, best_num_gates, vec_best_mapping,num_subproblems,PHYSIC_MACHINE, circuit, num_gates, physic, logic, subproblem_pool, cutoff_depth,NUMBER_OF_SABRE_RUNS) reduction(+:num_sols)
-    for(unsigned long long subproblem = 0; subproblem<num_subproblems;++subproblem){
-        num_sols += mcore_final_search_64(PHYSIC_MACHINE, circuit, num_gates, physic, logic, subproblem_pool+subproblem, 
-            cutoff_depth, best_depth,best_num_gates,vec_best_mapping, shared_sols_counter,NUMBER_OF_SABRE_RUNS,start);
-    }
-
-    printf("\nNUM SOLS: %llu", num_sols);
-    #ifdef CHECK
-    check(physic, logic, num_sols);
-    #endif
-
-
-}////////////////////////////////////////////////
-
-
-
-
 
 void call_RANDOM_mcore_search(int *PHYSIC_MACHINE, int *circuit, const int num_gates, const long long physic,  
     const long long logic,  const long long cutoff_depth, int *best_depth, 
@@ -1540,7 +1489,10 @@ void call_RANDOM_mcore_search(int *PHYSIC_MACHINE, int *circuit, const int num_g
     unsigned long long num_sols = 0ULL;
     unsigned long long shared_sols_counter = 0ULL;
 
+    unsigned long long BIGGEST_SOL = 100000ULL;
+
    
+    std::vector<unsigned long long> number_of_sols_value(100000, 0ULL);
 
     const Clock::time_point start = Clock::now();
 
@@ -1587,10 +1539,10 @@ void call_RANDOM_mcore_search(int *PHYSIC_MACHINE, int *circuit, const int num_g
     }
     #endif
 
-    #pragma omp parallel for schedule(runtime) default(none) shared(start,values, best_depth, best_num_gates, vec_best_mapping,shared_sols_counter,num_subproblems,PHYSIC_MACHINE, circuit, num_gates, physic, logic, subproblem_pool, cutoff_depth,NUMBER_OF_SABRE_RUNS) reduction(+:num_sols)
+    #pragma omp parallel for schedule(runtime) default(none) shared(number_of_sols_value,start,values, best_depth, best_num_gates, vec_best_mapping,shared_sols_counter,num_subproblems,PHYSIC_MACHINE, circuit, num_gates, physic, logic, subproblem_pool, cutoff_depth,NUMBER_OF_SABRE_RUNS) reduction(+:num_sols)
     for(unsigned long long subproblem = 0; subproblem<values.size();++subproblem){
         num_sols += mcore_final_search_64(PHYSIC_MACHINE, circuit, num_gates, physic, logic, subproblem_pool+values[subproblem], 
-            cutoff_depth, best_depth, best_num_gates,vec_best_mapping,&shared_sols_counter, NUMBER_OF_SABRE_RUNS,start);
+            cutoff_depth, best_depth, best_num_gates,vec_best_mapping,&shared_sols_counter, NUMBER_OF_SABRE_RUNS,start,number_of_sols_value);
     }
 
     std::cout<<"\nNUM SOLS: "<< num_sols<<std::endl;
@@ -1600,7 +1552,11 @@ void call_RANDOM_mcore_search(int *PHYSIC_MACHINE, int *circuit, const int num_g
 
     std::cout<<"\nElapsed time: "<< std::chrono::duration<double>(Clock::now() - start).count()<<std::endl;
 
-
+    for(unsigned long long index = 0; index<BIGGEST_SOL;++index){ 
+        if(number_of_sols_value[index]>0){
+             std::cout<<"Solution Value: "<<index<<"\n\tNumber of mappings: "<<number_of_sols_value[index]<<std::endl;
+        }
+    }
 
 }////////////////////////////////////////////////
 
