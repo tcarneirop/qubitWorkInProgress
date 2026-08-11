@@ -1,0 +1,90 @@
+argc: 6
+circuit_flat.n: 10
+circuit_flat.num_gates:22854
+Number of SABRE runs: 1
+---- Physic: 16 Logic: 10
+########### SANITY TEST ################# 
+0 1 2 3 4 5 6 7 8 9 
+results[0].depth: 29451
+results[0].num_gates: 39417
+########### SANITY TEST ################# 
+
+######## RANDOM SEARCH ############
+	Working with 57657600 elements out of 57657600
+ 
+Partial tree: 63994816 -- Number of subproblems: 57657600 
+
+### MCORE Search ###
+	Number of subproblems: 57657600 - Physic: 16, Logic: 10, Initial depth: 7,  Max threads: 128
+
+New solution found at: 1.77939
+	Solution: 1, From 29451 to 29343
+	Depth: 29343
+	Num gates: 39027
+	Mapping: [13, 3, 2, 7, 0, 14, 12, 1, 4, 5]
+
+New solution found at: 1.786
+	Solution: 2, From 29343 to 29235
+	Depth: 29235
+	Num gates: 39267
+	Mapping: [11, 7, 3, 6, 10, 12, 15, 0, 1, 5]
+
+New solution found at: 1.79571
+	Solution: 3, From 29235 to 29200
+	Depth: 29200
+	Num gates: 39345
+	Mapping: [9, 11, 2, 0, 1, 12, 13, 3, 4, 7]
+
+New solution found at: 1.80086
+	Solution: 4, From 29200 to 29189
+	Depth: 29189
+	Num gates: 39468
+	Mapping: [11, 7, 3, 6, 10, 12, 15, 0, 1, 13]
+
+New solution found at: 1.81162
+	Solution: 5, From 29189 to 29097
+	Depth: 29097
+	Num gates: 39051
+	Mapping: [11, 7, 3, 6, 10, 12, 15, 0, 2, 1]
+
+New solution found at: 1.89545
+	Solution: 6, From 29097 to 29083
+	Depth: 29083
+	Num gates: 39051
+	Mapping: [13, 12, 6, 14, 3, 0, 8, 1, 5, 10]
+
+New solution found at: 2.03557
+	Solution: 7, From 29083 to 29071
+	Depth: 29071
+	Num gates: 38898
+	Mapping: [6, 4, 11, 14, 5, 3, 15, 0, 9, 1]
+
+New solution found at: 2.22151
+	Solution: 8, From 29071 to 29053
+	Depth: 29053
+	Num gates: 39468
+	Mapping: [9, 11, 14, 13, 4, 0, 12, 1, 10, 5]
+
+New solution found at: 3.34594
+	Solution: 9, From 29053 to 29038
+	Depth: 29038
+	Num gates: 39468
+	Mapping: [1, 10, 14, 9, 8, 12, 4, 3, 15, 11]
+
+New solution found at: 8.07898
+	Solution: 10, From 29038 to 29003
+	Depth: 29003
+	Num gates: 38685
+	Mapping: [4, 5, 15, 12, 11, 6, 13, 3, 7, 9]
+
+New solution found at: 9.00535
+	Solution: 11, From 29003 to 29002
+	Depth: 29002
+	Num gates: 38685
+	Mapping: [7, 2, 9, 5, 6, 10, 14, 11, 3, 8]
+
+New solution found at: 9.5721
+	Solution: 12, From 29002 to 29000
+	Depth: 29000
+	Num gates: 38685
+	Mapping: [7, 2, 9, 5, 6, 10, 14, 12, 4, 8]
