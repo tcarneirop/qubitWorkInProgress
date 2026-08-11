@@ -1,0 +1,96 @@
+argc: 6
+circuit_flat.n: 10
+circuit_flat.num_gates:22854
+Number of SABRE runs: 10
+---- Physic: 16 Logic: 10
+########### SANITY TEST ################# 
+0 1 2 3 4 5 6 7 8 9 
+results[0].depth: 29451
+results[0].num_gates: 39417
+########### SANITY TEST ################# 
+
+######## RANDOM SEARCH ############
+	Working with 57657600 elements out of 57657600.
+ 
+Partial tree: 63994816 -- Number of subproblems: 57657600 
+
+### MCORE Search ###
+	Number of subproblems: 57657600 - Physic: 16, Logic: 10, Initial depth: 7,  Max threads: 128
+
+New solution found: 
+	Solution: 1, From 29451 to 29257
+	Depth: 29257
+	Num gates: 38784
+	Mapping: [3, 7, 14, 0, 9, 10, 11, 1, 2, 4]
+
+New solution found: 
+	Solution: 2, From 29257 to 29168
+	Depth: 29168
+	Num gates: 38931
+	Mapping: [12, 11, 2, 10, 8, 4, 3, 0, 1, 5]
+
+New solution found: 
+	Solution: 3, From 29168 to 29152
+	Depth: 29152
+	Num gates: 39111
+	Mapping: [3, 0, 14, 10, 8, 9, 15, 1, 2, 5]
+
+New solution found: 
+	Solution: 4, From 29152 to 29151
+	Depth: 29151
+	Num gates: 38676
+	Mapping: [5, 8, 11, 10, 4, 14, 13, 0, 1, 3]
+
+New solution found: 
+	Solution: 5, From 29151 to 29114
+	Depth: 29114
+	Num gates: 38940
+	Mapping: [12, 4, 2, 8, 9, 10, 3, 0, 1, 6]
+
+New solution found: 
+	Solution: 6, From 29114 to 29086
+	Depth: 29086
+	Num gates: 39051
+	Mapping: [5, 9, 10, 1, 0, 11, 12, 2, 3, 7]
+
+New solution found: 
+	Solution: 7, From 29086 to 29009
+	Depth: 29009
+	Num gates: 38940
+	Mapping: [10, 11, 8, 14, 1, 2, 9, 0, 3, 15]
+
+New solution found: 
+	Solution: 8, From 29009 to 29008
+	Depth: 29008
+	Num gates: 38940
+	Mapping: [0, 5, 10, 1, 3, 13, 6, 2, 9, 4]
+
+New solution found: 
+	Solution: 9, From 29008 to 28934
+	Depth: 28934
+	Num gates: 38565
+	Mapping: [0, 1, 13, 9, 10, 6, 2, 5, 11, 3]
+
+New solution found: 
+	Solution: 10, From 28934 to 28923
+	Depth: 28923
+	Num gates: 38565
+	Mapping: [6, 2, 3, 10, 14, 9, 8, 7, 0, 5]
+
+New solution found: 
+	Solution: 11, From 28923 to 28910
+	Depth: 28910
+	Num gates: 38565
+	Mapping: [15, 1, 12, 5, 11, 10, 8, 7, 2, 6]
+
+New solution found: 
+	Solution: 12, From 28910 to 28908
+	Depth: 28908
+	Num gates: 38565
+	Mapping: [1, 2, 10, 4, 13, 12, 14, 5, 15, 0]
+
+New solution found: 
+	Solution: 13, From 28908 to 28904
+	Depth: 28904
+	Num gates: 38565
+	Mapping: [2, 1, 3, 0, 15, 5, 11, 9, 4, 13]

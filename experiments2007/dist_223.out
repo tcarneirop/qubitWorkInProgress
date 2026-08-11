@@ -1,0 +1,78 @@
+argc: 6
+circuit_flat.n: 13
+circuit_flat.num_gates:41050
+Number of SABRE runs: 10
+---- Physic: 16 Logic: 13
+########### SANITY TEST ################# 
+0 1 2 3 4 5 6 7 8 9 10 11 12 
+results[0].depth: 50469
+results[0].num_gates: 71416
+########### SANITY TEST ################# 
+
+######## RANDOM SEARCH ############
+	Working with 57657600 elements out of 57657600.
+ 
+Partial tree: 63994816 -- Number of subproblems: 57657600 
+
+### MCORE Search ###
+	Number of subproblems: 57657600 - Physic: 16, Logic: 13, Initial depth: 7,  Max threads: 128
+
+New solution found: 
+	Solution: 1, From 50469 to 50420
+	Depth: 50420
+	Num gates: 71221
+	Mapping: [5, 10, 6, 7, 0, 8, 14, 1, 2, 3, 4, 9, 11]
+
+New solution found: 
+	Solution: 2, From 50420 to 50413
+	Depth: 50413
+	Num gates: 71428
+	Mapping: [8, 0, 10, 1, 2, 11, 14, 3, 4, 5, 6, 7, 15]
+
+New solution found: 
+	Solution: 3, From 50413 to 50412
+	Depth: 50412
+	Num gates: 71698
+	Mapping: [12, 8, 0, 9, 15, 10, 6, 1, 2, 3, 4, 7, 11]
+
+New solution found: 
+	Solution: 4, From 50412 to 50362
+	Depth: 50362
+	Num gates: 71485
+	Mapping: [8, 5, 4, 15, 11, 2, 12, 0, 1, 3, 6, 9, 10]
+
+New solution found: 
+	Solution: 5, From 50362 to 50326
+	Depth: 50326
+	Num gates: 71047
+	Mapping: [14, 7, 15, 0, 9, 10, 12, 1, 2, 3, 4, 6, 11]
+
+New solution found: 
+	Solution: 6, From 50326 to 50106
+	Depth: 50106
+	Num gates: 71047
+	Mapping: [5, 12, 7, 15, 0, 10, 6, 1, 2, 3, 4, 14, 11]
+
+New solution found: 
+	Solution: 7, From 50106 to 50028
+	Depth: 50028
+	Num gates: 71116
+	Mapping: [4, 6, 0, 8, 1, 3, 7, 2, 5, 9, 12, 10, 11]
+
+New solution found: 
+	Solution: 8, From 50028 to 49986
+	Depth: 49986
+	Num gates: 71116
+	Mapping: [12, 1, 14, 5, 9, 0, 11, 2, 3, 4, 8, 15, 6]
+
+New solution found: 
+	Solution: 9, From 49986 to 49985
+	Depth: 49985
+	Num gates: 71116
+	Mapping: [3, 11, 7, 14, 9, 0, 4, 1, 10, 8, 15, 6, 5]
+
+New solution found: 
+	Solution: 10, From 49985 to 49984
+	Depth: 49984
+	Num gates: 71116
+	Mapping: [8, 2, 13, 3, 6, 10, 0, 1, 14, 9, 7, 4, 5]

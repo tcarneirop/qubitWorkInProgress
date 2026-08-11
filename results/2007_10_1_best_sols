@@ -1,0 +1,109 @@
+=== clip_206.out ===
+	Depth: 45447
+	Num gates: 63390
+	Mapping: [1, 0, 5, 14, 12, 8, 15, 2, 3, 13, 4, 11, 6, 9]
+
+=== cm42a_207.out ===
+	Depth: 2228
+	Num gates: 3302
+	Mapping: [15, 12, 14, 8, 5, 13, 7, 9, 3, 6, 1, 10, 0, 11]
+
+=== cm85a_209.out ===
+	Depth: 15713
+	Num gates: 21015
+	Mapping: [9, 6, 8, 0, 14, 3, 7, 1, 10, 2, 12, 13, 5, 4]
+
+=== co14_215.out ===
+	Depth: 21760
+	Num gates: 33423
+	Mapping: [2, 14, 12, 7, 5, 11, 3, 0, 6, 8, 9, 10, 15, 1, 4]
+
+=== cycle10_2_110.out ===
+	Depth: 8317
+	Num gates: 11098
+	Mapping: [9, 15, 1, 5, 4, 0, 12, 13, 3, 11, 14, 2]
+
+=== dist_223.out ===
+	Depth: 49984
+	Num gates: 71116
+	Mapping: [8, 2, 13, 3, 6, 10, 0, 1, 14, 9, 7, 4, 5]
+
+=== inc_237.out ===
+	Depth: 14386
+	Num gates: 19489
+	Mapping: [14, 6, 13, 2, 4, 10, 15, 0, 7, 1, 5, 3, 8, 11, 12, 9]
+
+=== ising_model_16.out ===
+
+### MCORE Search ###
+	Number of subproblems: 57657600 - Physic: 16, Logic: 16, Initial depth: 7,  Max threads: 128
+
+=== misex1_241.out ===
+	Depth: 6409
+	Num gates: 8863
+	Mapping: [6, 9, 10, 12, 5, 1, 13, 0, 7, 4, 14, 2, 11, 8, 3]
+
+=== mlp4_245.out ===
+	Depth: 25921
+	Num gates: 35259
+	Mapping: [7, 0, 15, 1, 12, 9, 2, 3, 6, 5, 13, 11, 4, 8, 10, 14]
+
+=== nohup.out ===
+Running z4_268 (Tue 21 Jul 2026 01:13:47 AM CEST)
+z4_268 timed out after 1200s.
+All instances processed.
+
+=== qft_10.out ===
+
+### MCORE Search ###
+	Number of subproblems: 57657600 - Physic: 16, Logic: 10, Initial depth: 7,  Max threads: 128
+
+=== radd_250.out ===
+	Depth: 4287
+	Num gates: 5870
+	Mapping: [3, 9, 2, 8, 6, 7, 0, 12, 4, 15, 13, 14, 1]
+
+=== rd84_253.out ===
+	Depth: 18289
+	Num gates: 25672
+	Mapping: [7, 14, 15, 12, 3, 13, 9, 0, 4, 8, 2, 10]
+
+=== root_255.out ===
+	Depth: 22088
+	Num gates: 31993
+	Mapping: [8, 4, 11, 3, 0, 6, 12, 1, 13, 14, 2, 10, 5]
+
+=== sqn_258.out ===
+	Depth: 13508
+	Num gates: 18753
+	Mapping: [2, 10, 0, 15, 14, 11, 5, 4, 6, 12]
+
+=== square_root_7.out ===
+	Depth: 9471
+	Num gates: 14427
+	Mapping: [10, 4, 15, 5, 9, 3, 14, 0, 7, 11, 2, 8, 6, 13, 1]
+
+=== sym9_146.out ===
+	Depth: 303
+	Num gates: 630
+	Mapping: [0, 15, 10, 13, 4, 8, 3, 9, 1, 14, 5, 2]
+
+=== sym9_148.out ===
+	Depth: 28904
+	Num gates: 38565
+	Mapping: [2, 1, 3, 0, 15, 5, 11, 9, 4, 13]
+
+=== sym9_193.out ===
+	Depth: 48321
+	Num gates: 65611
+	Mapping: [7, 11, 13, 9, 0, 15, 4, 10, 14, 3, 6]
+
+=== wim_266.out ===
+	Depth: 1182
+	Num gates: 1803
+	Mapping: [13, 3, 0, 12, 10, 6, 9, 7, 4, 14, 2]
+
+=== z4_268.out ===
+	Depth: 3957
+	Num gates: 5598
+	Mapping: [7, 1, 3, 10, 6, 11, 2, 12, 8, 4, 9]

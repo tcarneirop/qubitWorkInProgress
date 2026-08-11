@@ -1,0 +1,84 @@
+argc: 6
+circuit_flat.n: 10
+circuit_flat.num_gates:11103
+Number of SABRE runs: 10
+---- Physic: 16 Logic: 10
+########### SANITY TEST ################# 
+0 1 2 3 4 5 6 7 8 9 
+results[0].depth: 13831
+results[0].num_gates: 19056
+########### SANITY TEST ################# 
+
+######## RANDOM SEARCH ############
+	Working with 57657600 elements out of 57657600.
+ 
+Partial tree: 63994816 -- Number of subproblems: 57657600 
+
+### MCORE Search ###
+	Number of subproblems: 57657600 - Physic: 16, Logic: 10, Initial depth: 7,  Max threads: 128
+
+New solution found: 
+	Solution: 1, From 13831 to 13819
+	Depth: 13819
+	Num gates: 18945
+	Mapping: [6, 13, 1, 7, 15, 4, 3, 0, 2, 5]
+
+New solution found: 
+	Solution: 2, From 13819 to 13732
+	Depth: 13732
+	Num gates: 18852
+	Mapping: [14, 1, 2, 10, 11, 7, 12, 0, 3, 4]
+
+New solution found: 
+	Solution: 3, From 13732 to 13721
+	Depth: 13721
+	Num gates: 18924
+	Mapping: [7, 10, 9, 14, 6, 8, 4, 0, 1, 2]
+
+New solution found: 
+	Solution: 4, From 13721 to 13716
+	Depth: 13716
+	Num gates: 18714
+	Mapping: [9, 10, 1, 13, 2, 11, 3, 0, 4, 5]
+
+New solution found: 
+	Solution: 5, From 13716 to 13673
+	Depth: 13673
+	Num gates: 18924
+	Mapping: [1, 2, 7, 13, 6, 3, 8, 0, 4, 9]
+
+New solution found: 
+	Solution: 6, From 13673 to 13637
+	Depth: 13637
+	Num gates: 18897
+	Mapping: [7, 13, 1, 10, 2, 6, 8, 0, 3, 15]
+
+New solution found: 
+	Solution: 7, From 13637 to 13620
+	Depth: 13620
+	Num gates: 18702
+	Mapping: [3, 14, 5, 4, 10, 0, 15, 1, 6, 7]
+
+New solution found: 
+	Solution: 8, From 13620 to 13613
+	Depth: 13613
+	Num gates: 18702
+	Mapping: [9, 10, 1, 13, 2, 11, 3, 0, 5, 8]
+
+New solution found: 
+	Solution: 9, From 13613 to 13512
+	Depth: 13512
+	Num gates: 18753
+	Mapping: [7, 3, 13, 5, 15, 1, 12, 0, 6, 14]
+
+New solution found: 
+	Solution: 10, From 13512 to 13510
+	Depth: 13510
+	Num gates: 18753
+	Mapping: [4, 6, 3, 13, 11, 5, 12, 0, 9, 10]
+
+New solution found: 
+	Solution: 11, From 13510 to 13508
+	Depth: 13508
+	Num gates: 18753
+	Mapping: [2, 10, 0, 15, 14, 11, 5, 4, 6, 12]
