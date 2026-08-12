@@ -1,10 +1,10 @@
-#Making
+# Making
 ```bash
 make clean 
 make all
 ```
 
-#Executing for a specific instance:
+# Executing for a specific instance:
 ```bash
 $./qubit.exe NEW_Bechmark/sym9_146.qasm 16 0.5 1 1 
 ```
