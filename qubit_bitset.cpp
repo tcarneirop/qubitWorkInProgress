@@ -1062,7 +1062,6 @@ void check(const long long m, const long long d, const unsigned long long nsols)
 
 
 
-
 std::vector<int> SERIAL_search_64(int *PHYSIC_MACHINE, int *circuit,  const int num_gates, const long long physic, const long long logic)
 {
 
@@ -1193,10 +1192,9 @@ std::vector<int> SERIAL_search_64(int *PHYSIC_MACHINE, int *circuit,  const int 
 
 
 typedef struct subproblem_t{
-    int mapping[11];
+    int mapping[12];
     long long  aQueenBitCol; 
 }Subproblem;
-
 
 
 
@@ -1304,14 +1302,13 @@ unsigned long long  mcore_final_search_64(int *PHYSIC_MACHINE, int *circuit,  co
                 #ifdef SABRE
                 results = SABRE_routing_many(circuit, num_gates, PHYSIC_MACHINE, physic,logic, 1, mapping, 1 , NUMBER_OF_SABRE_RUNS, 1);
                 ++num_sabres;
-                
+
+                #ifdef SOLREPORT
                 number_of_sols[results[0].depth]++;
+                #endif
 
                 #pragma omp atomic read
                 local_best_depth = *shared_best_depth;
-
-
-
 
                 if(results[0].depth<local_best_depth){
 
@@ -1478,7 +1475,7 @@ void call_RANDOM_mcore_search(int *PHYSIC_MACHINE, int *circuit, const int num_g
     const int NUMBER_OF_SABRE_RUNS){
     
 
-    Subproblem *subproblem_pool = (Subproblem*)(malloc(sizeof(Subproblem)*(unsigned)100000000));
+    Subproblem *subproblem_pool = (Subproblem*)(malloc(sizeof(Subproblem)*(unsigned)1000000000));
     
     unsigned long long num_subproblems = 0ULL;
     unsigned long long num_sols_search = 0ULL;
@@ -1502,6 +1499,11 @@ void call_RANDOM_mcore_search(int *PHYSIC_MACHINE, int *circuit, const int num_g
 
     /////////////////////////////////////////////////////////////////////////
     const std::size_t sample_size = PERCENT * num_subproblems; 
+
+    if(sample_size<1){
+        std::cerr << "\n### ERROR: Number of sobproblems < 1: "<<sample_size<<std::endl;        
+    }
+
 
     std::vector<unsigned long long> values(num_subproblems);
     std::iota(values.begin(), values.end(), 0);
@@ -1545,32 +1547,35 @@ void call_RANDOM_mcore_search(int *PHYSIC_MACHINE, int *circuit, const int num_g
             cutoff_depth, best_depth, best_num_gates,vec_best_mapping,&shared_sols_counter, NUMBER_OF_SABRE_RUNS,start,number_of_sols_value);
     }
 
-    std::cout<<"\nNUM SOLS: "<< num_sols<<std::endl;
+    
+    std::cout<<"\n######################################################################\n";
+    std::cout<<"\nNumber of complete solutions found: "<< num_sols<<"\n";
+    std::cout<<"\tNumber of SABRE runs: "<< num_sols*NUMBER_OF_SABRE_RUNS<<"\n";
+    std::cout<<"Elapsed time: "<< std::chrono::duration<double>(Clock::now() - start).count()<<std::endl;
+    std::cout<<"\n######################################################################\n";
+
     #ifdef CHECK
     check(physic, logic, num_sols);
     #endif
 
-    std::cout<<"\nElapsed time: "<< std::chrono::duration<double>(Clock::now() - start).count()<<std::endl;
+  
 
+    #ifdef SOLREPORT
     for(unsigned long long index = 0; index<BIGGEST_SOL;++index){ 
         if(number_of_sols_value[index]>0){
              std::cout<<"Solution Value: "<<index<<"\n\tNumber of mappings: "<<number_of_sols_value[index]<<std::endl;
         }
     }
+    #endif
 
 }////////////////////////////////////////////////
 
 
 
-///////@@OBS: I'm doing this, the search in C, because we will use a search in Chapel, which has only a C
-///////////// Interoperability layer
-
 /* main routine for N Queens program.*/
 int main(int argc, char **argv)
 {
 
-
-    //@todo: we are not goind many, why dont we do routing_sabre_one?
 
     if (argc < 5)
     {
@@ -1587,7 +1592,7 @@ int main(int argc, char **argv)
 
 
     int nb_physic = atoi(argv[2]);
-    int cutoff_depth = atoi(argv[3]);
+    float percent_permutation = atof(argv[3]);
     float PERCENT = atof(argv[4]);
     int number_of_sabre_runs = 1;
 
@@ -1603,12 +1608,6 @@ int main(int argc, char **argv)
         }
     }
 
-    if(nb_physic<nb_logic){
-        std::cout<<"####### ERROR ########\n\t"<<"Number of physic gantes needs to be >= number of logic gates.\n";
-        exit(1);
-    }
-
-
 
     int *PHYSIC_MACHINE; 
     int best_depth = 0;
@@ -1616,19 +1615,28 @@ int main(int argc, char **argv)
     int best_mapping[MAX_BOARDSIZE];
 
 
+    if(nb_physic<nb_logic){
+        std::cout<<"####### ERROR ########\n\t"<<"Number of physic gantes needs to be >= number of logic gates.\n";
+        exit(1);
+    }
+
+
+    nb_logic = circuit_flat.n;
+
+    int cutoff_depth = percent_permutation * nb_logic;
+
+    if(cutoff_depth > nb_logic ||  cutoff_depth < 1){
+        std::cout<<"####### ERROR ########\n\t"<<"cutoff depth ( "<<cutoff_depth<< " ) needs to be <= nb_logic and >=1."<<std::endl;
+        exit(1);
+    }
+
 
     std::cout<<"circuit_flat.n: "<<circuit_flat.n<<std::endl;
     std::cout<<"circuit_flat.num_gates:"<<circuit_flat.num_gates<<std::endl;
     std::cout<<"Number of SABRE runs: "<<number_of_sabre_runs<<std::endl;
-
-    nb_logic = circuit_flat.n;
-    std::cout<<"---- Physic: "<< (long long)(nb_physic)<<" Logic: "<< (long long)(nb_logic)<<std::endl;
-
-
-    if(cutoff_depth > nb_logic){
-        std::cout<<"####### ERROR ########\n\t"<<"cutoff depth needs to be <= nb_logic."<<std::endl;
-        exit(1);
-    }
+    std::cout<<"Physic QUBITS: "<< (long long)(nb_physic)<<" Logic QUBITS: "<< (long long)(nb_logic)<<std::endl;
+    std::cout<<"Cutoff depth: "<< cutoff_depth<<std::endl;
+    std::cout<<"\tPercentage of the permutation: "<< percent_permutation*100<<"%"<<std::endl;
 
 
     std::cout<<"########### SANITY TEST ################# "<<"\n";
