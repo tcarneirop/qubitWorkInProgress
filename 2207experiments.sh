@@ -15,6 +15,8 @@ TIME_LIMITS=()
 
 CONTINUE=false
 
+export OMP_NUM_THREADS=256
+
 ###############################################################################
 # Parse arguments
 ###############################################################################
@@ -49,10 +51,43 @@ while [[ $# -gt 0 ]]; do
             CONTINUE=true
             shift
             ;;
+
+        --help|-h)
+            cat << EOF
+Usage:
+  $0 [OPTIONS]
+
+Options:
+  --binary <path>          Executable to run
+  --depths <list>          Percent of the partial permutation that is going to be fixed.
+                           Example: 0.25
+  --pool <list>            Pool percentages, comma-separated
+                           Example: 1,0.1,0.01,0.001
+  --sabre <list>           Number of SABRE runs, comma-separated
+                           Example: 1,5,10
+  --timelimits <list>      Time limits, comma-separated
+                           Example: 10s,60s,1200s
+  --csv <file>             CSV output file
+  --continue               Skip experiments already present in CSV
+  -h, --help               Show this help message
+
+Example:
+  $0 --binary ./qubit.exe \\
+     --depths 7 \\
+     --pool 1 \\
+     --sabre 1 \\
+     --timelimits 10s \\
+     --csv 10sresults.csv \\
+     --continue
+EOF
+            exit 0
+            ;;
+
         *)
             echo "Unknown option: $1"
             exit 1
             ;;
+
     esac
 done
 
@@ -179,7 +214,7 @@ do
 
                     stdbuf -o0 -e0 \
                         timeout "$TIME_LIMIT" \
-                        "$BINARY" \
+                        likwid-pin -c 0-255 "$BINARY" \
                         "$file" \
                         16 \
                         "$DEPTH" \
@@ -207,7 +242,8 @@ do
                     best_depth=$(grep "Depth:" "$outfile" | tail -n1 | sed 's/.*Depth:[[:space:]]*//')
                     best_gates=$(grep "Num gates:" "$outfile" | tail -n1 | sed 's/.*Num gates:[[:space:]]*//')
                     best_mapping=$(grep "Mapping:" "$outfile" | tail -n1 | sed 's/.*Mapping:[[:space:]]*//')
-                    solutions=$(grep "Solution:" "$outfile" | tail -n1 | sed 's/.*Solution:[[:space:]]*//')
+                    #solutions=$(grep "Solution:" "$outfile" | tail -n1 | sed 's/.*Solution:[[:space:]]*//')
+		    solutions=$(grep "Solution:" "$outfile" | tail -n1 | sed 's/.*Solution:[[:space:]]*//' | sed 's/,.*//')
 
                     #echo "\"$BINARY\",\"$TIME_LIMIT\",\"$instance\",$NUM_SABRE,$POOL,$DEPTH,$elapsed,\"$best_depth\",\"$best_gates\",\"$best_mapping\",$status" >> "$CSV"
                     echo "\"$BINARY\",\"$TIME_LIMIT\",\"$instance\",$NUM_SABRE,$POOL,$DEPTH,$elapsed,\"$best_depth\",\"$best_gates\",\"$best_mapping\",\"$solutions\",$status" >> "$CSV"
