@@ -12,10 +12,9 @@ DEPTHS=()
 POOLS=()
 SABRE_RUNS=()
 TIME_LIMITS=()
-
+NUMTHREADS=($(nproc))
 CONTINUE=false
-
-export OMP_NUM_THREADS=256
+LIKWID=false
 
 ###############################################################################
 # Parse arguments
@@ -47,6 +46,14 @@ while [[ $# -gt 0 ]]; do
             CSV="$2"
             shift 2
             ;;
+        --numthreads)
+            IFS=',' read -ra NUMTHREADS <<< "$2"
+            shift 2
+            ;;
+        --likwid)
+            LIKWID=true
+            shift
+            ;;
         --continue)
             CONTINUE=true
             shift
@@ -60,24 +67,29 @@ Usage:
 Options:
   --binary <path>          Executable to run
   --depths <list>          Percent of the partial permutation that is going to be fixed.
-                           Example: 0.25
+                           Example: --depths 0.2,0.3,0.4,0.5 
+                           Obs: 0.5 can be VERY memory demanding for some instances.
   --pool <list>            Pool percentages, comma-separated
-                           Example: 1,0.1,0.01,0.001
+                           Example: 1,0.1,0.01,0.001, and one experiment is executed per depth
   --sabre <list>           Number of SABRE runs, comma-separated
                            Example: 1,5,10
   --timelimits <list>      Time limits, comma-separated
                            Example: 10s,60s,1200s
+  --numthreads <n>         Number of OpenMP threads.
+                           Example:  --numthreads 1,2,4,8,16 overrides the default and runs one experiment per parameter.
+  --likwid                 Run using LIKWID to pin threads
   --csv <file>             CSV output file
   --continue               Skip experiments already present in CSV
   -h, --help               Show this help message
 
 Example:
   $0 --binary ./qubit.exe \\
-     --depths 7 \\
+     --depths 0.25,0.30 \\
      --pool 1 \\
-     --sabre 1 \\
-     --timelimits 10s \\
+     --sabre 1,10 \\
+     --timelimits 5s,10s,60S \\
      --csv 10sresults.csv \\
+     --numthreads 256 \\
      --continue
 EOF
             exit 0
@@ -110,12 +122,19 @@ mkdir -p "$OUTDIR"
 ###############################################################################
 
 if [[ ! -f "$CSV" ]]; then
-    echo "executable,timeout,instance,number_of_sabre,pool_percent,initial_depth,execution_time,depth,gates,mapping,solutions,status" > "$CSV"
+   echo "executable,timeout,instance,number_of_sabre,pool_percent,initial_depth,num_threads,execution_time,depth,gates,mapping,solutions,status" > "$CSV"
 fi
 
 ###############################################################################
-# Load previous executions
+# Likwid check
 ###############################################################################
+
+if $LIKWID; then
+    if ! command -v likwid-pin &> /dev/null; then
+        echo "Error: --likwid was specified, but 'likwid-pin' was not found in PATH."
+        exit 1
+    fi
+fi
 
 ###############################################################################
 # Load previous executions
@@ -208,19 +227,28 @@ do
                     echo "Pool     : $POOL"
                     echo "Sabre    : $NUM_SABRE"
                     echo "Timeout  : $TIME_LIMIT"
+                    echo "Threads  : $NUMTHREADS"
+                    ECHO "Likwid   : $LIKWID"
                     echo "Started  : $(date)"
 
                     start=$(date +%s)
+                    export OMP_NUM_THREADS=${NUMTHREADS}
 
-                    stdbuf -o0 -e0 \
-                        timeout "$TIME_LIMIT" \
-                        likwid-pin -c 0-255 "$BINARY" \
-                        "$file" \
-                        16 \
-                        "$DEPTH" \
-                        "$POOL" \
-                        "$NUM_SABRE" \
-                        > "$outfile" 2>&1
+                if $LIKWID; then
+                    LIKWID_CMD=(likwid-pin -c "0-$((NUMTHREADS - 1))")
+                else
+                    LIKWID_CMD=()
+                fi
+
+                stdbuf -o0 -e0 \
+                    timeout "$TIME_LIMIT" \
+                    "${LIKWID_CMD[@]}" "$BINARY" \
+                    "$file" \
+                    16 \
+                    "$DEPTH" \
+                    "$POOL" \
+                    "$NUM_SABRE" \
+                    > "$outfile" 2>&1
 
                     exitcode=$?
 
@@ -243,10 +271,10 @@ do
                     best_gates=$(grep "Num gates:" "$outfile" | tail -n1 | sed 's/.*Num gates:[[:space:]]*//')
                     best_mapping=$(grep "Mapping:" "$outfile" | tail -n1 | sed 's/.*Mapping:[[:space:]]*//')
                     #solutions=$(grep "Solution:" "$outfile" | tail -n1 | sed 's/.*Solution:[[:space:]]*//')
-		    solutions=$(grep "Solution:" "$outfile" | tail -n1 | sed 's/.*Solution:[[:space:]]*//' | sed 's/,.*//')
+		            solutions=$(grep "Solution:" "$outfile" | tail -n1 | sed 's/.*Solution:[[:space:]]*//' | sed 's/,.*//')
 
                     #echo "\"$BINARY\",\"$TIME_LIMIT\",\"$instance\",$NUM_SABRE,$POOL,$DEPTH,$elapsed,\"$best_depth\",\"$best_gates\",\"$best_mapping\",$status" >> "$CSV"
-                    echo "\"$BINARY\",\"$TIME_LIMIT\",\"$instance\",$NUM_SABRE,$POOL,$DEPTH,$elapsed,\"$best_depth\",\"$best_gates\",\"$best_mapping\",\"$solutions\",$status" >> "$CSV"
+                    echo "\"$BINARY\",\"$TIME_LIMIT\",\"$instance\",$NUM_SABRE,$POOL,$DEPTH,$NUMTHREADS,$elapsed,\"$best_depth\",\"$best_gates\",\"$best_mapping\",\"$solutions\",$status" >> "$CSV"
                 done
             done
         done
