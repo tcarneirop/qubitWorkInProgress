@@ -1,0 +1,1 @@
+python3 plot_solution2.py    sym9_146.log  --instance sym9_146.qasm --sabre 1  --instance square_root_7   --depth 7  --qubits 16     --logic-qubits 15     --timelimit 120 --graphsols 
