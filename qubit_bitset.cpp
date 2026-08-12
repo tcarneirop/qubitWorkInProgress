@@ -15,7 +15,6 @@
 #include <fstream>
 #include <cstdint>
 #include <numeric>
-#include <omp.h>
 #include <algorithm>
 #include <numeric>
 #include <random>
