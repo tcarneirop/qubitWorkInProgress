@@ -204,82 +204,84 @@ do
             do
                 for NUM_SABRE in "${SABRE_RUNS[@]}"
                 do
+                    for NUM_THREADS in "${NUMTHREADS[@]}"
+                    do
 
-                    key="$instance|$TIME_LIMIT|$DEPTH|$POOL|$NUM_SABRE"
+                        key="$instance|$TIME_LIMIT|$DEPTH|$POOL|$NUM_SABRE|$NUM_THREADS"
 
-                    if $CONTINUE && [[ -n "${DONE[$key]}" ]]; then
-                        echo "Skipping $key"
-                        continue
-                    fi
+                        if $CONTINUE && [[ -n "${DONE[$key]}" ]]; then
+                            echo "Skipping $key"
+                            continue
+                        fi
 
-                    #outfile="${OUTDIR}/${instance}_d${DEPTH}_p${POOL}_s${NUM_SABRE}_t${TIME_LIMIT}.out"
+                        #outfile="${OUTDIR}/${instance}_d${DEPTH}_p${POOL}_s${NUM_SABRE}_t${TIME_LIMIT}.out"
 
-                    DATE=$(date +%Y%m%d)
+                        DATE=$(date +%Y%m%d)
 
-                    RESULT_DIR="results/${DATE}_d${DEPTH}_p${POOL}_s${NUM_SABRE}_t${TIME_LIMIT}/${instance}"
-                    mkdir -p "$RESULT_DIR"
+                        RESULT_DIR="results/${DATE}_d${DEPTH}_p${POOL}_s${NUM_SABRE}_t${TIME_LIMIT}_nt${NUM_THREADS}/${instance}"
+                        mkdir -p "$RESULT_DIR"
 
-                    outfile="${RESULT_DIR}/${instance}.out"
+                        outfile="${RESULT_DIR}/${instance}.out"
 
-                    echo "=================================================="
-                    echo "Instance : $instance"
-                    echo "Depth    : $DEPTH"
-                    echo "Pool     : $POOL"
-                    echo "Sabre    : $NUM_SABRE"
-                    echo "Timeout  : $TIME_LIMIT"
-                    echo "Threads  : $NUMTHREADS"
-                    ECHO "Likwid   : $LIKWID"
-                    echo "Started  : $(date)"
+                        echo "=================================================="
+                        echo "Instance : $instance"
+                        echo "Depth    : $DEPTH"
+                        echo "Pool     : $POOL"
+                        echo "Sabre    : $NUM_SABRE"
+                        echo "Timeout  : $TIME_LIMIT"
+                        echo "Threads  : $NUM_THREADS"
+                        echo "Likwid   : $LIKWID"
+                        echo "Started  : $(date)"
 
-                    start=$(date +%s)
-                    export OMP_NUM_THREADS=${NUMTHREADS}
+                        start=$(date +%s)
+                       export OMP_NUM_THREADS="$NUM_THREADS"
 
-                if $LIKWID; then
-                    LIKWID_CMD=(likwid-pin -c "0-$((NUMTHREADS - 1))")
-                else
-                    LIKWID_CMD=()
-                fi
+                        if $LIKWID; then
+                            LIKWID_CMD=(likwid-pin -c "0-$((NUM_THREADS - 1))")
+                        else
+                            LIKWID_CMD=()
+                        fi
 
-                stdbuf -o0 -e0 \
-                    timeout "$TIME_LIMIT" \
-                    "${LIKWID_CMD[@]}" "$BINARY" \
-                    "$file" \
-                    16 \
-                    "$DEPTH" \
-                    "$POOL" \
-                    "$NUM_SABRE" \
-                    > "$outfile" 2>&1
+                        stdbuf -o0 -e0 \
+                            timeout "$TIME_LIMIT" \
+                            "${LIKWID_CMD[@]}" "$BINARY" \
+                            "$file" \
+                            16 \
+                            "$DEPTH" \
+                            "$POOL" \
+                            "$NUM_SABRE" \
+                            > "$outfile" 2>&1
 
-                    exitcode=$?
+                            exitcode=$?
 
-                    end=$(date +%s)
-                    elapsed=$((end-start))
+                            end=$(date +%s)
+                            elapsed=$((end-start))
 
-                    case $exitcode in
-                        0)
-                            status="SUCCESS"
-                            ;;
-                        124)
-                            status="TIMEOUT"
-                            ;;
-                        *)
-                            status="ERROR($exitcode)"
-                            ;;
-                    esac
+                            case $exitcode in
+                                0)
+                                    status="SUCCESS"
+                                    ;;
+                                124)
+                                    status="TIMEOUT"
+                                    ;;
+                                *)
+                                    status="ERROR($exitcode)"
+                                    ;;
+                            esac
 
-                    best_depth=$(grep "Depth:" "$outfile" | tail -n1 | sed 's/.*Depth:[[:space:]]*//')
-                    best_gates=$(grep "Num gates:" "$outfile" | tail -n1 | sed 's/.*Num gates:[[:space:]]*//')
-                    best_mapping=$(grep "Mapping:" "$outfile" | tail -n1 | sed 's/.*Mapping:[[:space:]]*//')
-                    #solutions=$(grep "Solution:" "$outfile" | tail -n1 | sed 's/.*Solution:[[:space:]]*//')
-		            solutions=$(grep "Solution:" "$outfile" | tail -n1 | sed 's/.*Solution:[[:space:]]*//' | sed 's/,.*//')
+                            best_depth=$(grep "Depth:" "$outfile" | tail -n1 | sed 's/.*Depth:[[:space:]]*//')
+                            best_gates=$(grep "Num gates:" "$outfile" | tail -n1 | sed 's/.*Num gates:[[:space:]]*//')
+                            best_mapping=$(grep "Mapping:" "$outfile" | tail -n1 | sed 's/.*Mapping:[[:space:]]*//')
+                            #solutions=$(grep "Solution:" "$outfile" | tail -n1 | sed 's/.*Solution:[[:space:]]*//')
+                            solutions=$(grep "Solution:" "$outfile" | tail -n1 | sed 's/.*Solution:[[:space:]]*//' | sed 's/,.*//')
 
-                    #echo "\"$BINARY\",\"$TIME_LIMIT\",\"$instance\",$NUM_SABRE,$POOL,$DEPTH,$elapsed,\"$best_depth\",\"$best_gates\",\"$best_mapping\",$status" >> "$CSV"
-                    echo "\"$BINARY\",\"$TIME_LIMIT\",\"$instance\",$NUM_SABRE,$POOL,$DEPTH,$NUMTHREADS,$elapsed,\"$best_depth\",\"$best_gates\",\"$best_mapping\",\"$solutions\",$status" >> "$CSV"
-                done
-            done
-        done
-    done
-done
+                           echo "\"$BINARY\",\"$TIME_LIMIT\",\"$instance\",$NUM_SABRE,$POOL,$DEPTH,$NUM_THREADS,$elapsed,\"$best_depth\",\"$best_gates\",\"$best_mapping\",\"$solutions\",$status" >> "$CSV"
+                    done   # NUM_THREADS
+                done       # NUM_SABRE
+            done           # POOL
+        done               # DEPTH
+    done                   # TIME_LIMIT
+done                       # file
 
 echo
 echo "Finished."
