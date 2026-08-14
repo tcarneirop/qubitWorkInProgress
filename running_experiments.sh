@@ -216,7 +216,7 @@ do
 
                                 DATE=$(date +%Y%m%d)
 
-                                RESULT_DIR="results/${DATE}_d${DEPTH}_p${POOL}_s${NUM_SABRE}_t${TIME_LIMIT}_nt${NUM_THREADS}_ss${SKIPSOL}/${instance}"
+                                RESULT_DIR="results/${DATE}_d${DEPTH}_p${POOL}_s${NUM_SABRE}_t${TIME_LIMIT}_nt${NUM_THREADS}_ss${SKIPSOL}_nr${NUM_RANDS}/${instance}"
                                 mkdir -p "$RESULT_DIR"
 
                                 outfile="${RESULT_DIR}/${instance}.out"
@@ -227,7 +227,9 @@ do
                                 echo "Pool     : $POOL"
                                 echo "Sabre    : $NUM_SABRE"
                                 echo "Timeout  : $TIME_LIMIT"
+                                echo "Skipsols : $SKIPSOL"
                                 echo "Threads  : $NUM_THREADS"
+                                echo "Num rand : $NUM_RANDS"
                                 echo "Likwid   : $LIKWID"
                                 echo "Started  : $(date)"
 
