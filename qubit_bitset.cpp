@@ -25,6 +25,7 @@
 
 #include "headers/sabre.h"
 #include "headers/parser.h"
+#include "headers/random.h"
 
 
 #ifndef MAX_BOARDSIZE
@@ -398,7 +399,7 @@ void call_RANDOM_mcore_search(int *PHYSIC_MACHINE, int *circuit, const int num_g
     // Keep only 1%
     values.resize(sample_size);
 
-    std::cout<<"\n######## RANDOM SEARCH ############\n\tWorking with "<< values.size() <<" elements out of "<<num_subproblems<<"\n "; 
+    std::cout<<"\n################# STARTING THE RANDOM DFS SEARCH #################\n\tWorking with "<< values.size() <<" elements out of "<<num_subproblems<<"\n "; 
 
     /////////////////////////////////////////////////////////////////////////////
 
@@ -429,6 +430,7 @@ void call_RANDOM_mcore_search(int *PHYSIC_MACHINE, int *circuit, const int num_g
 
     
     std::cout<<"\n######################################################################\n";
+    std::cout<<"\nNumber of solutions that improved the incumbent: "<< shared_sols_counter<<"\n";
     std::cout<<"\nNumber of complete solutions found: "<< num_sols<<"\n";
     std::cout<<"\tNumber of SABRE runs: "<< num_sols*NUMBER_OF_SABRE_RUNS<<"\n";
     std::cout<<"Elapsed time: "<< std::chrono::duration<double>(Clock::now() - start).count()<<std::endl;
@@ -475,11 +477,12 @@ int main(int argc, char **argv)
     float percent_permutation = atof(argv[3]);
     float PERCENT = atof(argv[4]);
     int number_of_sabre_runs = 1;
+    int num_random_sols = 10;
     unsigned long long num_sols_to_check = 0ULL;
 
     std::cout<<"argc: "<<argc<<std::endl;
     
-    if(argc == 7){
+    if(argc >= 7){
 
         number_of_sabre_runs = atoi(argv[5]);
         num_sols_to_check = atoi(argv[6]);
@@ -494,8 +497,16 @@ int main(int argc, char **argv)
             exit(1);
         }
 
-    }
+        if(argc == 8){
+            num_random_sols = atoi(argv[7]);
 
+            if(num_random_sols < 1){
+                std::cout<<"####### ERROR ########\n\t"<<"Number of Random sols runs < 1.\n";
+                exit(1);
+            }
+        }
+
+    }
 
     int *PHYSIC_MACHINE; 
     int best_depth = 0;
@@ -525,7 +536,8 @@ int main(int argc, char **argv)
     std::cout<<"Physic QUBITS: "<< (long long)(nb_physic)<<" Logic QUBITS: "<< (long long)(nb_logic)<<std::endl;
     std::cout<<"Cutoff depth: "<< cutoff_depth<<std::endl;
     std::cout<<"\tPercentage of the permutation: "<< percent_permutation*100<<"%"<<std::endl;
-
+    std::cout<<"Number of random sols: "<< num_random_sols<<std::endl;
+    
 
     std::cout<<"########### SANITY TEST ################# "<<"\n";
     
@@ -533,23 +545,39 @@ int main(int argc, char **argv)
     std::vector<int> mapping( nb_logic );
     std::iota(mapping.begin(), mapping.end(), 0);
     for(auto m: mapping)
-        std::cout<<m<<" ";
+    std::cout<<m<<" ";
     std::cout<<"\n";
     std::vector<RoutingResult> results = SABRE_routing_many(circuit_flat.gates_flat.data(), circuit_flat.num_gates, PHYSIC_MACHINE , nb_physic,circuit_flat.n, 1, mapping.data(), 1,1, 1);
 
     std::cout<<"results[0].depth: "<< results[0].depth<<"\n";
     std::cout<<"results[0].num_gates: "<< results[0].num_gates<<"\n";
 
-    std::cout<<"########### SANITY TEST ################# "<<"\n";
+    
+    std::cout<<"################# END OF SANITY TEST ##########################"<<std::endl;
 
 
-    //SERIAL_search_64(PHYSIC_MACHINE, circuit_flat.gates_flat.data(), circuit_flat.num_gates, (long long)nb_physic, (long long)nb_logic);
-    //partial_search_64((long long)atoi(argv[2]), (long long)(atoi(argv[3])));
+
+    std::cout<<"################# STARTING THE RANDOM SEARCH ##########################"<<std::endl;
 
     best_depth = results[0].depth;
     best_num_gates = results[0].num_gates;
     memcpy(best_mapping, mapping.data(), nb_logic * sizeof(int));
     
+    random_heuristic(
+        PHYSIC_MACHINE, 
+        circuit_flat.gates_flat.data(), 
+        circuit_flat.num_gates,
+        nb_physic,  nb_logic,   
+        &best_depth, 
+        &best_num_gates,
+        best_mapping, 
+        number_of_sabre_runs,  num_random_sols
+    );
+    
+    std::cout<<"################# END OF THE RANDOM SEARCH ##########################"<<std::endl;
+    
+
+
     call_RANDOM_mcore_search(PHYSIC_MACHINE, circuit_flat.gates_flat.data(), circuit_flat.num_gates, (long long)nb_physic, 
         (long long)nb_logic,(long long)cutoff_depth,&best_depth,&best_num_gates,best_mapping,PERCENT, number_of_sabre_runs,num_sols_to_check );
 
