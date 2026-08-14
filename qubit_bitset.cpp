@@ -353,7 +353,7 @@ void call_RANDOM_mcore_search(int *PHYSIC_MACHINE, int *circuit, const int num_g
     const int NUMBER_OF_SABRE_RUNS, const unsigned long long num_sols_to_check){
     
 
-    Subproblem *subproblem_pool = (Subproblem*)(malloc(sizeof(Subproblem)*(unsigned)1000000000));
+    Subproblem *subproblem_pool = (Subproblem*)(malloc(sizeof(Subproblem)*(unsigned)100000000));
     
     unsigned long long num_subproblems = 0ULL;
     unsigned long long num_sols_search = 0ULL;

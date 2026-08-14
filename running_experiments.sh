@@ -80,7 +80,9 @@ Options:
                            Example: 1,5,10
   --timelimits <list>      Time limits, comma-separated
                            Example: 10s,60s,1200s
-  --numthreads <n>         Number of OpenMP threads.
+  --skilsols <list>        Number of sols that do not improve the current solutions before skipping the whole subsolution space.
+                           Example: 1,10,100,150
+  --numthreads <list>         Number of OpenMP threads.
                            Example:  --numthreads 1,2,4,8,16 overrides the default and runs one experiment per parameter.
   --likwid                 Run using LIKWID to pin threads
   --csv <file>             CSV output file
@@ -93,6 +95,7 @@ Example:
      --pool 1 \\
      --sabre 1,10 \\
      --timelimits 5s,10s,60S \\
+     --numsols 1,10,100 \\
      --csv 10sresults.csv \\
      --numthreads 256 \\
      --continue
@@ -149,44 +152,27 @@ declare -A DONE
 
 if $CONTINUE; then
 
-    # pula o cabeçalho
-    tail -n +2 "$CSV" | while IFS= read -r line
-    do
-        # pega somente as seis primeiras colunas
-        first6=$(echo "$line" | cut -d',' -f1-6)
-
-        IFS=',' read -r executable timeout instance sabre pool depth <<< "$first6"
-
-        # remove aspas
-        executable=${executable//\"/}
-        timeout=${timeout//\"/}
-        instance=${instance//\"/}
-
-        key="$instance|$timeout|$depth|$pool|$sabre"
-
-        DONE["$key"]=1
-    done
-
-    # como o while acima roda em um subshell por causa do pipe,
-    # fazemos a leitura novamente usando redirecionamento.
-
-    unset DONE
-    declare -A DONE
-
     {
-        read    # cabeçalho
+        read    # header
 
         while IFS= read -r line
         do
-            first6=$(echo "$line" | cut -d',' -f1-6)
+            # Get the columns needed for the experiment key
+            first7=$(echo "$line" | cut -d',' -f1-7)
 
-            IFS=',' read -r executable timeout instance sabre pool depth <<< "$first6"
+            IFS=',' read -r executable timeout instance sabre pool depth numthreads <<< "$first7"
 
+            # The skip_sols column is the 8th column
+            skipsols=$(echo "$line" | cut -d',' -f8)
+
+            # Remove quotes
             executable=${executable//\"/}
             timeout=${timeout//\"/}
             instance=${instance//\"/}
+            numthreads=${numthreads//\"/}
+            skipsols=${skipsols//\"/}
 
-            key="$instance|$timeout|$depth|$pool|$sabre"
+            key="$instance|$timeout|$depth|$pool|$sabre|$numthreads|$skipsols"
 
             DONE["$key"]=1
         done
