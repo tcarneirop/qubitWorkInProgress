@@ -60,6 +60,7 @@ int main(int argc, char **argv)
     int number_of_sabre_runs = 1;
     int num_random_sols = 10;
     unsigned long long num_sols_to_check = 0ULL;
+    unsigned long long shared_sols_counter = 0ULL;
 
     std::cout<<"argc: "<<argc<<std::endl;
     
@@ -138,33 +139,70 @@ int main(int argc, char **argv)
 
 
 
-    std::cout<<"################# STARTING THE RANDOM SEARCH ##########################"<<std::endl;
 
-    best_depth = results[0].depth;
-    best_num_gates = results[0].num_gates;
-    memcpy(best_mapping, mapping.data(), nb_logic * sizeof(int));
+    if(num_random_sols>0){
     
-    random_heuristic(
-        PHYSIC_MACHINE, 
-        circuit_flat.gates_flat.data(), 
-        circuit_flat.num_gates,
-        nb_physic,  nb_logic,   
-        &best_depth, 
-        &best_num_gates,
-        best_mapping, 
-        number_of_sabre_runs,  num_random_sols
-    );
-    
-    std::cout<<"################# END OF THE RANDOM SEARCH ##########################"<<std::endl;
-    
+        std::cout<<"################# STARTING THE RANDOM SEARCH ##########################"<<std::endl;
+
+        best_depth = results[0].depth;
+        best_num_gates = results[0].num_gates;
+        memcpy(best_mapping, mapping.data(), nb_logic * sizeof(int));
+            
+            std::vector<int> solutions = random_heuristic(
+            PHYSIC_MACHINE, 
+            circuit_flat.gates_flat.data(), 
+            circuit_flat.num_gates,
+            nb_physic,  nb_logic,   
+            &best_depth, 
+            &best_num_gates,
+            best_mapping, 
+            number_of_sabre_runs,  num_random_sols
+        );
+        
+        std::cout<<"################# END OF THE RANDOM SEARCH ##########################"<<std::endl;
+
+    }
 
 
-    //call_RANDOM_mcore_search(PHYSIC_MACHINE, circuit_flat.gates_flat.data(), circuit_flat.num_gates, (long long)nb_physic, 
-    //    (long long)nb_logic,(long long)cutoff_depth,&best_depth,&best_num_gates,best_mapping,PERCENT, number_of_sabre_runs,num_sols_to_check );
+    if(search == 'j'){
+        std::cout<<"############ STARTING THE DFS SEARCH ################";
+        call_RANDOM_mcore_search(PHYSIC_MACHINE, 
+            circuit_flat.gates_flat.data(), 
+            circuit_flat.num_gates, 
+            (long long)nb_physic, 
+            (long long)nb_logic,
+            (long long)cutoff_depth,
+            &best_depth,&best_num_gates,
+            best_mapping,PERCENT, 
+            number_of_sabre_runs,
+            num_sols_to_check );
+    }
+    else{
+        if(search == 'd' && num_random_sols>0){ //we can only do jurema having complete solutions
+            std::cout<<"############ STARTING THE JUREMA SEARCH ################";
+            call_jurema(
+                PHYSIC_MACHINE,
+                circuit_flat.gates_flat.data(), 
+                circuit_flat.num_gates,
+                nb_physic,   
+                nb_logic,   
+                solutions.data(),
+                cutoff_depth, 
+                &best_depth,
+                &best_num_gates,
+                best_mapping,
+                &shared_sols_counter,
+                num_sols_to_check,
+                number_of_sabre_runs,
+                num_random_sols
+            );
 
-  
-    jurema_search_64(PHYSIC_MACHINE, circuit_flat.gates_flat.data(),  circuit_flat.num_gates, (long long)nb_physic, 
-        (long long)nb_logic, mapping.data());
+        }
+        else{
+            std::cout<<"############ ERROR: Wrong search parameters ################";
+            exit(1);
+        }
+    }
 
 
     return 0;
