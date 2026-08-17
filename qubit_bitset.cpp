@@ -31,9 +31,6 @@
 #include "headers/jurema.h"
 
 
-
-
-
 /* main routine for N Queens program.*/
 int main(int argc, char **argv)
 {
@@ -75,21 +72,10 @@ int main(int argc, char **argv)
 
         std::cout<<"search: "<<search<<std::endl;
 
-        if(search == 'd'){
-            percent_permutation = atof(argv[4]);
-            cutoff_depth = percent_permutation * nb_logic;
-            std::cout<<"Depth-first search: "<<cutoff_depth<<std::endl;
-        }   
-        else{
-            if(search =='j')
-                cutoff_depth = atoi(argv[4]);
-            else{
-                std::cout<<"########### Wrong search parameter: "<<search<<std::endl;
-                return EXIT_FAILURE;  
-            }
-        }
-
        
+        percent_permutation = atof(argv[4]);
+        cutoff_depth = percent_permutation * nb_logic;
+        
         number_of_sabre_runs = atoi(argv[5]);
         PERCENT = atof(argv[6]);
         num_sols_to_check = atoi(argv[7]);
@@ -113,7 +99,7 @@ int main(int argc, char **argv)
         }
     }
     else{
-        std::cerr << "Usage: " << argv[0] << "<qasm_file> <d or j> <n physic gates of the desired machine> <cutoff depth for jurema/perfenct of the depth for dfs> <number_of_sabre_runs> <percent of the pool> <sols to skip> <num of random sols> \n";
+        std::cerr << "Usage: " << argv[0] << "<qasm_file> <d or j> <n physic gates of the desired machine> <percent of the depth for dfs> <number_of_sabre_runs> <percent of the pool> <sols to skip> <num of random sols> \n";
         return EXIT_FAILURE;
 
     }
@@ -123,8 +109,6 @@ int main(int argc, char **argv)
         std::cout<<"####### ERROR ########\n\t"<<"Number of physic gantes needs to be >= number of logic gates.\n";
         return EXIT_FAILURE;
     }
-
-
 
 
     if(cutoff_depth > nb_logic ||  cutoff_depth < 1){
