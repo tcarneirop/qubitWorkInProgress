@@ -39,12 +39,10 @@ int main(int argc, char **argv)
 {
 
 
-    if (argc < 5)
-    {
-        std::cerr << "Usage: " << argv[0] << " <qasm_file> <n physic gates of the desired machine> <cutoff depth> <percent of the pool> <number_of_sabre_runs> \n";
-        return EXIT_FAILURE;
-    }
-
+    int *PHYSIC_MACHINE; 
+    int best_depth = 0;
+    int best_num_gates = 0;
+    int best_mapping[MAX_BOARDSIZE];
 
     int nb_logic = 0;
     int flat_circuit_size = 0;
@@ -54,61 +52,84 @@ int main(int argc, char **argv)
     ParsedCircuit circuit_flat = parse_qasm(qasm_file);
 
 
-    int nb_physic = atoi(argv[2]);
-    float percent_permutation = atof(argv[3]);
-    float PERCENT = atof(argv[4]);
+    int nb_physic;
+    float percent_permutation;
+    float PERCENT;
     int number_of_sabre_runs = 1;
     int num_random_sols = 10;
     unsigned long long num_sols_to_check = 0ULL;
     unsigned long long shared_sols_counter = 0ULL;
+    char search = 'j';
+
+    int cutoff_depth ;
+    std::vector<int> solutions;
 
     std::cout<<"argc: "<<argc<<std::endl;
-    
-    if(argc >= 7){
 
+    nb_logic = circuit_flat.n;
+
+    if(argc == 9){
+    
+        search  = argv[2][0];
+        nb_physic = atoi(argv[3]);
+
+        std::cout<<"search: "<<search<<std::endl;
+
+        if(search == 'd'){
+            percent_permutation = atof(argv[4]);
+            cutoff_depth = percent_permutation * nb_logic;
+            std::cout<<"Depth-first search: "<<cutoff_depth<<std::endl;
+        }   
+        else{
+            if(search =='j')
+                cutoff_depth = atoi(argv[4]);
+            else{
+                std::cout<<"########### Wrong search parameter: "<<search<<std::endl;
+                return EXIT_FAILURE;  
+            }
+        }
+
+       
         number_of_sabre_runs = atoi(argv[5]);
-        num_sols_to_check = atoi(argv[6]);
+        PERCENT = atof(argv[6]);
+        num_sols_to_check = atoi(argv[7]);
 
         if(number_of_sabre_runs < 1){
             std::cout<<"####### ERROR ########\n\t"<<"Number of SABRE runs < 1.\n";
-            exit(1);
+            return EXIT_FAILURE;
         }
 
         if(num_sols_to_check < 0){
             std::cout<<"####### ERROR ########\n\t"<<"Number of Sols to check in each subproblem > 0.\n";
-            exit(1);
+            return EXIT_FAILURE;
         }
 
-        if(argc == 8){
-            num_random_sols = atoi(argv[7]);
+       
+        num_random_sols = atoi(argv[8]);
 
-            if(num_random_sols < 1){
-                std::cout<<"####### ERROR ########\n\t"<<"Number of Random sols runs < 1.\n";
-                exit(1);
-            }
+        if(num_random_sols < 1){
+            std::cerr<<"####### ERROR ########\n\t"<<"Number of Random sols runs < 1.\n";
+            return EXIT_FAILURE;
         }
+    }
+    else{
+        std::cerr << "Usage: " << argv[0] << "<qasm_file> <d or j> <n physic gates of the desired machine> <cutoff depth for jurema/perfenct of the depth for dfs> <number_of_sabre_runs> <percent of the pool> <sols to skip> <num of random sols> \n";
+        return EXIT_FAILURE;
 
     }
-
-    int *PHYSIC_MACHINE; 
-    int best_depth = 0;
-    int best_num_gates = 0;
-    int best_mapping[MAX_BOARDSIZE];
 
 
     if(nb_physic<nb_logic){
         std::cout<<"####### ERROR ########\n\t"<<"Number of physic gantes needs to be >= number of logic gates.\n";
-        exit(1);
+        return EXIT_FAILURE;
     }
 
 
-    nb_logic = circuit_flat.n;
 
-    int cutoff_depth = percent_permutation * nb_logic;
 
     if(cutoff_depth > nb_logic ||  cutoff_depth < 1){
         std::cout<<"####### ERROR ########\n\t"<<"cutoff depth ( "<<cutoff_depth<< " ) needs to be <= nb_logic and >=1."<<std::endl;
-        exit(1);
+        return EXIT_FAILURE;
     }
 
 
@@ -116,10 +137,13 @@ int main(int argc, char **argv)
     std::cout<<"circuit_flat.num_gates:"<<circuit_flat.num_gates<<std::endl;
     std::cout<<"Number of SABRE runs: "<<number_of_sabre_runs<<std::endl;
     std::cout<<"Physic QUBITS: "<< (long long)(nb_physic)<<" Logic QUBITS: "<< (long long)(nb_logic)<<std::endl;
+    std::cout<<"Number of random sols: "<< num_random_sols << std::endl;
+    std::cout<<"Search: "<< search << std::endl;
     std::cout<<"Cutoff depth: "<< cutoff_depth<<std::endl;
     std::cout<<"\tPercentage of the permutation: "<< percent_permutation*100<<"%"<<std::endl;
     std::cout<<"Number of random sols: "<< num_random_sols<<std::endl;
     
+
 
     std::cout<<"########### SANITY TEST ################# "<<"\n";
     
@@ -138,8 +162,6 @@ int main(int argc, char **argv)
     std::cout<<"################# END OF SANITY TEST ##########################"<<std::endl;
 
 
-
-
     if(num_random_sols>0){
     
         std::cout<<"################# STARTING THE RANDOM SEARCH ##########################"<<std::endl;
@@ -148,7 +170,7 @@ int main(int argc, char **argv)
         best_num_gates = results[0].num_gates;
         memcpy(best_mapping, mapping.data(), nb_logic * sizeof(int));
             
-            std::vector<int> solutions = random_heuristic(
+            solutions = random_heuristic(
             PHYSIC_MACHINE, 
             circuit_flat.gates_flat.data(), 
             circuit_flat.num_gates,
@@ -164,8 +186,8 @@ int main(int argc, char **argv)
     }
 
 
-    if(search == 'j'){
-        std::cout<<"############ STARTING THE DFS SEARCH ################";
+    if(search == 'd'){
+        std::cout<<"############ STARTING THE DFS SEARCH ################"<<std::endl;
         call_RANDOM_mcore_search(PHYSIC_MACHINE, 
             circuit_flat.gates_flat.data(), 
             circuit_flat.num_gates, 
@@ -178,8 +200,8 @@ int main(int argc, char **argv)
             num_sols_to_check );
     }
     else{
-        if(search == 'd' && num_random_sols>0){ //we can only do jurema having complete solutions
-            std::cout<<"############ STARTING THE JUREMA SEARCH ################";
+        if(search == 'j' && num_random_sols>0){ //we can only do jurema having complete solutions
+            std::cout<<"############ STARTING THE JUREMA SEARCH ################"<<std::endl;
             call_jurema(
                 PHYSIC_MACHINE,
                 circuit_flat.gates_flat.data(), 
