@@ -11,6 +11,8 @@
 #include <omp.h>
 #include <limits>
 
+
+
 struct VectorHash {
     std::size_t operator()(const std::vector<int>& v) const {
         std::size_t h = 0;
@@ -22,7 +24,7 @@ struct VectorHash {
     }
 };
 
-void random_heuristic(
+std::vector<int> random_heuristic(
     int *PHYSIC_MACHINE, 
     int *circuit,  
     const int num_gates,
@@ -122,7 +124,9 @@ void random_heuristic(
         }/// if, new sol found that improves the current solution...
         
     }
+    return solutions;
           
 }
+
 
 #endif
