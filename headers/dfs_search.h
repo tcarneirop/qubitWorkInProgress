@@ -94,10 +94,11 @@ unsigned long long  mcore_final_search_64(int *PHYSIC_MACHINE, int *circuit,  co
         }
 
         bitfield &= ~lsb;
-        mapping[numrows] = (int)(63 - __builtin_clzll(lsb));
+        
 
         if (numrows < logic)
         {
+            mapping[numrows] = (int)(63 - __builtin_clzll(lsb));
             long long n = numrows++;
             aQueenBitCol[numrows] = aQueenBitCol[n] | lsb;
 

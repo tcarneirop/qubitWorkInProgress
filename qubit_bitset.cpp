@@ -58,7 +58,7 @@ int main(int argc, char **argv)
     unsigned long long shared_sols_counter = 0ULL;
     char search = 'j';
 
-    int cutoff_depth ;
+    int cutoff_depth = 1 ;
     std::vector<int> solutions;
 
     std::cout<<"argc: "<<argc<<std::endl;
@@ -73,10 +73,17 @@ int main(int argc, char **argv)
         std::cout<<"search: "<<search<<std::endl;
 
        
-        percent_permutation = atof(argv[4]);
-        cutoff_depth = percent_permutation * nb_logic;
-        
+
+        if(search == 'd'){
+            percent_permutation = atof(argv[4]);
+            cutoff_depth = percent_permutation * nb_logic;            
+        }
+        else{
+            cutoff_depth = atoi(argv[4]);
+        }
+
         number_of_sabre_runs = atoi(argv[5]);
+        
         PERCENT = atof(argv[6]);
         num_sols_to_check = atoi(argv[7]);
 
@@ -110,7 +117,6 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;
     }
 
-
     if(cutoff_depth > nb_logic){
         std::cout<<"####### ERROR ########\n\t"<<"cutoff depth ( "<<cutoff_depth<< " ) needs to be <= nb_logic."<<std::endl;
         return EXIT_FAILURE;
@@ -122,7 +128,6 @@ int main(int argc, char **argv)
     }
     
 
-    
 
     std::cout<<"circuit_flat.n: "<<circuit_flat.n<<std::endl;
     std::cout<<"circuit_flat.num_gates:"<<circuit_flat.num_gates<<std::endl;
