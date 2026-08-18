@@ -126,7 +126,7 @@ int main(int argc, char **argv)
     std::cout<<"Cutoff depth: "<< cutoff_depth<<std::endl;
     std::cout<<"\tPercentage of the permutation: "<< percent_permutation*100<<"%"<<std::endl;
     std::cout<<"Number of random sols: "<< num_random_sols<<std::endl;
-    
+    std::cout<<"Percentage of the pool to explore: "<< PERCENT<<std::endl;
 
 
     std::cout<<"########### SANITY TEST ################# "<<"\n";
@@ -139,12 +139,11 @@ int main(int argc, char **argv)
     std::cout<<"\n";
     std::vector<RoutingResult> results = SABRE_routing_many(circuit_flat.gates_flat.data(), circuit_flat.num_gates, PHYSIC_MACHINE , nb_physic,circuit_flat.n, 1, mapping.data(), 1,1, 1);
 
-    std::cout<<"results[0].depth: "<< results[0].depth<<"\n";
-    std::cout<<"results[0].num_gates: "<< results[0].num_gates<<"\n";
-
+    std::cout<<"depth: "<< results[0].depth<<"\n";
+    std::cout<<"num_gates: "<< results[0].num_gates<<"\n";
     
     std::cout<<"################# END OF SANITY TEST ##########################"<<std::endl;
-
+    
 
     if(num_random_sols>0){
     
