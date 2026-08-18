@@ -46,39 +46,39 @@ unsigned long long jurema_search_64(int *PHYSIC_MACHINE, int *circuit, const int
 	////////////////////////////////////////////////////////
 	// Initializing the search
 	///////////////////////////////////////////////////////
-
 	aStack[0] = -1LL;
 
 	pnStack = aStack + 1;
 	pnStackPos = 1;
 
-	numrows = 0;
+	numrows = logic;
 
 	aQueenBitCol[0] = 0;
 
-	bitfield = mask;
-
-	for (int depth = 0; depth < logic; ++depth)
+	for (int d = 0; d < logic; ++d)
 	{
-		unsigned long long lsb = 1ULL << mapping[depth];
+		unsigned long long lsb = 1ULL << mapping[d];
 
+		// Candidates available at this depth
+		bitfield = mask & ~aQueenBitCol[d];
+
+		// Consume the selected value
 		bitfield &= ~lsb;
 
-		numrows++;
-
-		aQueenBitCol[numrows] =
-		    aQueenBitCol[numrows - 1] | lsb;
-
+		// This is exactly what the normal search pushes
 		++pnStackPos;
 		*pnStack++ = bitfield;
 
-		bitfield = mask & ~aQueenBitCol[numrows];
+		// Update occupied columns
+		aQueenBitCol[d + 1] =
+			aQueenBitCol[d] | lsb;
 	}
 
+		// We have already processed the supplied solution.
+	// Backtrack once, exactly as the normal search does
 	bitfield = *--pnStack;
 	pnStackPos--;
 	--numrows;
-
 	////////////////////////////////////////////////////////
 	//  End of initialization
 	///////////////////////////////////////////////////////
