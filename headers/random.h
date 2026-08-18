@@ -88,6 +88,7 @@ std::vector<int> random_heuristic(
         int* mapping= solutions.data() + i * logic;
 
 
+
         results = SABRE_routing_many(circuit, num_gates, PHYSIC_MACHINE, physic,logic, 1, mapping, 1 , NUMBER_OF_SABRE_RUNS, 1);
 
         #pragma omp atomic read
@@ -111,7 +112,8 @@ std::vector<int> random_heuristic(
                 #pragma omp critical(printsol)
                 {
 
-                std::cout<<"\nNew solution: \n\tFrom "<<local_best_depth<<" to "<<results[0].depth<<"\n\tDepth: "<<results[0].depth<<"\n\tNum gates: "<<results[0].num_gates<<"\n\tMapping: ";
+                std::cout<<"\nThread id: "<<omp_get_thread_num()<<std::endl;
+                std::cout<<"New solution: \n\tFrom "<<local_best_depth<<" to "<<results[0].depth<<"\n\tDepth: "<<results[0].depth<<"\n\tNum gates: "<<results[0].num_gates<<"\n\tMapping: ";
                 std::cout<<"[";
                 for(int m = 0;m<logic-1;++m)
                     std::cout<<mapping[m]<<", ";

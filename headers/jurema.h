@@ -31,6 +31,7 @@ unsigned long long jurema_search_64(int *PHYSIC_MACHINE, int *circuit, const int
 
 	long long mask = (1LL << physic) - 1LL;
 
+
 	//////////////////////////////////////////////////
 	// Sols for sabre
 	//////////////////////////////////////////////////
@@ -46,39 +47,39 @@ unsigned long long jurema_search_64(int *PHYSIC_MACHINE, int *circuit, const int
 	////////////////////////////////////////////////////////
 	// Initializing the search
 	///////////////////////////////////////////////////////
-	aStack[0] = -1LL;
+    aStack[0] = -1LL;
 
 	pnStack = aStack + 1;
 	pnStackPos = 1;
-
-	numrows = logic;
 
 	aQueenBitCol[0] = 0;
 
 	for (int d = 0; d < logic; ++d)
 	{
-		unsigned long long lsb = 1ULL << mapping[d];
+		unsigned long long col = mapping[d];
+		unsigned long long lsb = 1ULL << col;
 
-		// Candidates available at this depth
+		// All candidates available at this depth
 		bitfield = mask & ~aQueenBitCol[d];
 
-		// Consume the selected value
-		bitfield &= ~lsb;
+		// The current solution and every smaller candidate
+		// have already been explored.
+		bitfield &= ~((1ULL << (col + 1)) - 1ULL);
 
-		// This is exactly what the normal search pushes
 		++pnStackPos;
 		*pnStack++ = bitfield;
 
-		// Update occupied columns
 		aQueenBitCol[d + 1] =
 			aQueenBitCol[d] | lsb;
 	}
 
-		// We have already processed the supplied solution.
-	// Backtrack once, exactly as the normal search does
+	numrows = logic;
+
+	// Backtrack the supplied solution once.
 	bitfield = *--pnStack;
-	pnStackPos--;
+	--pnStackPos;
 	--numrows;
+
 	////////////////////////////////////////////////////////
 	//  End of initialization
 	///////////////////////////////////////////////////////
@@ -86,14 +87,9 @@ unsigned long long jurema_search_64(int *PHYSIC_MACHINE, int *circuit, const int
 	for (;;)
 	{
 
-		if (numrows == 1)
+		if (numrows == cutoff_depth)
 			break;
 		
-		if(cutoff_depth>0 && numrows == cutoff_depth){
-			//std::cout<<"Cutoff depth reached: "<<cutoff_depth << " -- Numrows: "<<numrows<<std::endl;
-			break;
-		}
-
 		lsb = -((signed long long)bitfield) & bitfield;
 		if (0ULL == bitfield)
 		{
@@ -111,10 +107,13 @@ unsigned long long jurema_search_64(int *PHYSIC_MACHINE, int *circuit, const int
 		}
 
 		bitfield &= ~lsb;
-		mapping[numrows] = (int)(63 - __builtin_clzll(lsb));
+		
+		
+
 
 		if (numrows < logic)
 		{
+			mapping[numrows] = (int)(63 - __builtin_clzll(lsb));
 			long long n = numrows++;
 			aQueenBitCol[numrows] = aQueenBitCol[n] | lsb;
 
@@ -127,7 +126,14 @@ unsigned long long jurema_search_64(int *PHYSIC_MACHINE, int *circuit, const int
 			if (numrows == logic)
 			{
 
+				
 				++numSolutions;
+
+				//for (int m = 0; m < logic - 1; ++m)
+				//	std::cout << mapping[m] << ", ";
+				//std::cout << mapping[logic - 1] << "]" << std::endl;
+
+
 
 				#ifdef SABRE
 				results = SABRE_routing_many(circuit, num_gates, PHYSIC_MACHINE, physic, logic, 1, mapping, 1, NUMBER_OF_SABRE_RUNS, 1);
@@ -161,8 +167,7 @@ unsigned long long jurema_search_64(int *PHYSIC_MACHINE, int *circuit, const int
 						{
 
 							(*shared_sols_counter)++;
-
-							std::cout << "\nNew solution found at: " << std::chrono::duration<double>(Clock::now() - start).count() << "\n\tSolution: " << *shared_sols_counter << ", From " << local_best_depth << " to " << results[0].depth << "\n\tDepth: " << results[0].depth << "\n\tNum gates: " << results[0].num_gates << "\n\tMapping: ";
+							std::cout << "New solution found at: " << std::chrono::duration<double>(Clock::now() - start).count() << "\n\tSolution: " << *shared_sols_counter << ", From " << local_best_depth << " to " << results[0].depth << "\n\tDepth: " << results[0].depth << "\n\tNum gates: " << results[0].num_gates << "\n\tMapping: ";
 							std::cout << "[";
 							for (int m = 0; m < logic - 1; ++m)
 								std::cout << mapping[m] << ", ";
