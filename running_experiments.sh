@@ -15,6 +15,9 @@ TIME_LIMITS=()
 NUMTHREADS=($(nproc))
 CONTINUE=false
 LIKWID=false
+SKIPSOLS=(0)
+NUMRANDS=(10)
+SEARCHES=(d)
 
 ###############################################################################
 # Parse arguments
@@ -42,17 +45,29 @@ while [[ $# -gt 0 ]]; do
             IFS=',' read -ra TIME_LIMITS <<< "$2"
             shift 2
             ;;
-        --csv)
-            CSV="$2"
+        --skipsols)
+            IFS=',' read -ra SKIPSOLS <<< "$2"
             shift 2
             ;;
         --numthreads)
             IFS=',' read -ra NUMTHREADS <<< "$2"
             shift 2
             ;;
+        --numrands)
+            IFS=',' read -ra NUMRANDS <<< "$2"
+            shift 2
+            ;;
+        --search)
+            IFS=',' read -ra SEARCHES <<< "$2"
+            shift 2
+            ;;
         --likwid)
             LIKWID=true
             shift
+            ;;
+        --csv)
+            CSV="$2"
+            shift 2
             ;;
         --continue)
             CONTINUE=true
@@ -75,7 +90,11 @@ Options:
                            Example: 1,5,10
   --timelimits <list>      Time limits, comma-separated
                            Example: 10s,60s,1200s
-  --numthreads <n>         Number of OpenMP threads.
+  --numrands <list>        Number of random sols to be evaluated to produce a upper bound. Default is 1.
+                           Example: --numrands 1,10,10000.
+  --skilsols <list>        Number of sols that do not improve the current solutions before skipping the whole subsolution space.
+                           Example: 1,10,100,150
+  --numthreads <list>         Number of OpenMP threads.
                            Example:  --numthreads 1,2,4,8,16 overrides the default and runs one experiment per parameter.
   --likwid                 Run using LIKWID to pin threads
   --csv <file>             CSV output file
@@ -88,6 +107,7 @@ Example:
      --pool 1 \\
      --sabre 1,10 \\
      --timelimits 5s,10s,60S \\
+     --numsols 1,10,100 \\
      --csv 10sresults.csv \\
      --numthreads 256 \\
      --continue
@@ -122,7 +142,7 @@ mkdir -p "$OUTDIR"
 ###############################################################################
 
 if [[ ! -f "$CSV" ]]; then
-   echo "executable,timeout,instance,number_of_sabre,pool_percent,initial_depth,num_threads,execution_time,depth,gates,mapping,solutions,status" > "$CSV"
+    echo "executable,timeout,instance,search,number_of_sabre,pool_percent,initial_depth,num_threads,skip_sols,num_random_sols,execution_time,depth,gates,mapping,solutions,status" > "$CSV"
 fi
 
 ###############################################################################
@@ -143,49 +163,28 @@ fi
 declare -A DONE
 
 if $CONTINUE; then
+{
+    read    # header
 
-    # pula o cabeçalho
-    tail -n +2 "$CSV" | while IFS= read -r line
+    while IFS= read -r line
     do
-        # pega somente as seis primeiras colunas
-        first6=$(echo "$line" | cut -d',' -f1-6)
+        first10=$(echo "$line" | cut -d',' -f1-10)
 
-        IFS=',' read -r executable timeout instance sabre pool depth <<< "$first6"
+        IFS=',' read -r executable timeout instance search sabre pool depth numthreads skipsols numrands <<< "$first10"
 
-        # remove aspas
         executable=${executable//\"/}
         timeout=${timeout//\"/}
         instance=${instance//\"/}
+        search=${search//\"/}
+        numthreads=${numthreads//\"/}
+        skipsols=${skipsols//\"/}
+        numrands=${numrands//\"/}
 
-        key="$instance|$timeout|$depth|$pool|$sabre"
+        key="$instance|$timeout|$depth|$pool|$sabre|$numthreads|$skipsols|$numrands|$search"
 
         DONE["$key"]=1
     done
-
-    # como o while acima roda em um subshell por causa do pipe,
-    # fazemos a leitura novamente usando redirecionamento.
-
-    unset DONE
-    declare -A DONE
-
-    {
-        read    # cabeçalho
-
-        while IFS= read -r line
-        do
-            first6=$(echo "$line" | cut -d',' -f1-6)
-
-            IFS=',' read -r executable timeout instance sabre pool depth <<< "$first6"
-
-            executable=${executable//\"/}
-            timeout=${timeout//\"/}
-            instance=${instance//\"/}
-
-            key="$instance|$timeout|$depth|$pool|$sabre"
-
-            DONE["$key"]=1
-        done
-    } < "$CSV"
+} < "$CSV"
 
 fi
 ###############################################################################
@@ -196,91 +195,107 @@ for file in NEW_Bechmark/*.qasm
 do
     instance=$(basename "$file" .qasm)
 
-    for TIME_LIMIT in "${TIME_LIMITS[@]}"
+    for SEARCH in "${SEARCHES[@]}"
     do
-        for DEPTH in "${DEPTHS[@]}"
+
+        for TIME_LIMIT in "${TIME_LIMITS[@]}"
         do
-            for POOL in "${POOLS[@]}"
+            for DEPTH in "${DEPTHS[@]}"
             do
-                for NUM_SABRE in "${SABRE_RUNS[@]}"
+                for POOL in "${POOLS[@]}"
                 do
-                    for NUM_THREADS in "${NUMTHREADS[@]}"
+                    for NUM_SABRE in "${SABRE_RUNS[@]}"
                     do
+                    for SKIPSOL in "${SKIPSOLS[@]}"
+                        do
+                            for NUM_THREADS in "${NUMTHREADS[@]}"
+                            do
+                                for NUM_RANDS in "${NUMRANDS[@]}"
+                                do
+                                    
+                                    key="$instance|$TIME_LIMIT|$DEPTH|$POOL|$NUM_SABRE|$NUM_THREADS|$SKIPSOL|$NUM_RANDS|$SEARCH"
 
-                        key="$instance|$TIME_LIMIT|$DEPTH|$POOL|$NUM_SABRE|$NUM_THREADS"
+                                    if $CONTINUE && [[ -n "${DONE[$key]}" ]]; then
+                                        echo "Skipping $key"
+                                        continue
+                                    fi
 
-                        if $CONTINUE && [[ -n "${DONE[$key]}" ]]; then
-                            echo "Skipping $key"
-                            continue
-                        fi
+                                    #outfile="${OUTDIR}/${instance}_d${DEPTH}_p${POOL}_s${NUM_SABRE}_t${TIME_LIMIT}.out"
 
-                        #outfile="${OUTDIR}/${instance}_d${DEPTH}_p${POOL}_s${NUM_SABRE}_t${TIME_LIMIT}.out"
+                                    DATE=$(date +%Y%m%d)
 
-                        DATE=$(date +%Y%m%d)
+                                    RESULT_DIR="results/${DATE}_d${DEPTH}_p${POOL}_s${NUM_SABRE}_t${TIME_LIMIT}_nt${NUM_THREADS}_ss${SKIPSOL}_nr${NUM_RANDS}_search${SEARCH}/${instance}"
+                                    mkdir -p "$RESULT_DIR"
 
-                        RESULT_DIR="results/${DATE}_d${DEPTH}_p${POOL}_s${NUM_SABRE}_t${TIME_LIMIT}_nt${NUM_THREADS}/${instance}"
-                        mkdir -p "$RESULT_DIR"
+                                    outfile="${RESULT_DIR}/${instance}.out"
 
-                        outfile="${RESULT_DIR}/${instance}.out"
+                                    echo "=================================================="
+                                    echo "Search   : $SEARCH "
+                                    echo "Instance : $instance"
+                                    echo "Depth    : $DEPTH"
+                                    echo "Pool     : $POOL"
+                                    echo "Sabre    : $NUM_SABRE"
+                                    echo "Timeout  : $TIME_LIMIT"
+                                    echo "Skipsols : $SKIPSOL"
+                                    echo "Threads  : $NUM_THREADS"
+                                    echo "Num rand : $NUM_RANDS"
+                                    echo "Likwid   : $LIKWID"
+                                    echo "Started  : $(date)"
 
-                        echo "=================================================="
-                        echo "Instance : $instance"
-                        echo "Depth    : $DEPTH"
-                        echo "Pool     : $POOL"
-                        echo "Sabre    : $NUM_SABRE"
-                        echo "Timeout  : $TIME_LIMIT"
-                        echo "Threads  : $NUM_THREADS"
-                        echo "Likwid   : $LIKWID"
-                        echo "Started  : $(date)"
+                                    start=$(date +%s)
+                                    export OMP_NUM_THREADS="$NUM_THREADS"
 
-                        start=$(date +%s)
-                       export OMP_NUM_THREADS="$NUM_THREADS"
+                                    if $LIKWID; then
+                                        LIKWID_CMD=(likwid-pin -c "0-$((NUM_THREADS - 1))")
+                                    else
+                                        LIKWID_CMD=()
+                                    fi
 
-                        if $LIKWID; then
-                            LIKWID_CMD=(likwid-pin -c "0-$((NUM_THREADS - 1))")
-                        else
-                            LIKWID_CMD=()
-                        fi
+                                    stdbuf -o0 -e0 \
+                                        timeout "$TIME_LIMIT" \
+                                        "${LIKWID_CMD[@]}" "$BINARY" \
+                                        "$file" \
+                                        "$SEARCH" \
+                                        16 \
+                                        "$DEPTH" \
+                                        "$NUM_SABRE" \
+                                        "$POOL" \
+                                        "$SKIPSOL" \
+                                        "$NUM_RANDS" \
+                                        > "$outfile" 2>&1
 
-                        stdbuf -o0 -e0 \
-                            timeout "$TIME_LIMIT" \
-                            "${LIKWID_CMD[@]}" "$BINARY" \
-                            "$file" \
-                            16 \
-                            "$DEPTH" \
-                            "$POOL" \
-                            "$NUM_SABRE" \
-                            > "$outfile" 2>&1
 
-                            exitcode=$?
+                                        exitcode=$?
 
-                            end=$(date +%s)
-                            elapsed=$((end-start))
+                                        end=$(date +%s)
+                                        elapsed=$((end-start))
 
-                            case $exitcode in
-                                0)
-                                    status="SUCCESS"
-                                    ;;
-                                124)
-                                    status="TIMEOUT"
-                                    ;;
-                                *)
-                                    status="ERROR($exitcode)"
-                                    ;;
-                            esac
+                                        case $exitcode in
+                                            0)
+                                                status="SUCCESS"
+                                                ;;
+                                            124)
+                                                status="TIMEOUT"
+                                                ;;
+                                            *)
+                                                status="ERROR($exitcode)"
+                                                ;;
+                                        esac
 
-                            best_depth=$(grep "Depth:" "$outfile" | tail -n1 | sed 's/.*Depth:[[:space:]]*//')
-                            best_gates=$(grep "Num gates:" "$outfile" | tail -n1 | sed 's/.*Num gates:[[:space:]]*//')
-                            best_mapping=$(grep "Mapping:" "$outfile" | tail -n1 | sed 's/.*Mapping:[[:space:]]*//')
-                            #solutions=$(grep "Solution:" "$outfile" | tail -n1 | sed 's/.*Solution:[[:space:]]*//')
-                            solutions=$(grep "Solution:" "$outfile" | tail -n1 | sed 's/.*Solution:[[:space:]]*//' | sed 's/,.*//')
-
-                           echo "\"$BINARY\",\"$TIME_LIMIT\",\"$instance\",$NUM_SABRE,$POOL,$DEPTH,$NUM_THREADS,$elapsed,\"$best_depth\",\"$best_gates\",\"$best_mapping\",\"$solutions\",$status" >> "$CSV"
-                    done   # NUM_THREADS
-                done       # NUM_SABRE
-            done           # POOL
-        done               # DEPTH
-    done                   # TIME_LIMIT
+                                        best_depth=$(grep "Depth:" "$outfile" | tail -n1 | sed 's/.*Depth:[[:space:]]*//')
+                                        best_gates=$(grep "Num gates:" "$outfile" | tail -n1 | sed 's/.*Num gates:[[:space:]]*//')
+                                        best_mapping=$(grep "Mapping:" "$outfile" | tail -n1 | sed 's/.*Mapping:[[:space:]]*//')
+                                        solutions=$(grep "Solution:" "$outfile" | tail -n1 | sed 's/.*Solution:[[:space:]]*//' | sed 's/,.*//')
+                                    echo "\"$BINARY\",\"$TIME_LIMIT\",\"$instance\",\"$SEARCH\",$NUM_SABRE,$POOL,$DEPTH,$NUM_THREADS,$SKIPSOL,$NUM_RANDS,$elapsed,\"$best_depth\",\"$best_gates\",\"$best_mapping\",\"$solutions\",$status" >> "$CSV"
+                                  
+                                done # NUM_RANDS
+                            done   # NUM_THREADS
+                        done       # NUM_SABRE
+                     done 
+                done           # POOL
+            done               # DEPTH
+        done                   # TIME_LIMIT
+    done
 done                       # file
 
 echo
