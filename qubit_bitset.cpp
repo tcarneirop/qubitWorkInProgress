@@ -111,11 +111,18 @@ int main(int argc, char **argv)
     }
 
 
-    if(cutoff_depth > nb_logic ||  cutoff_depth < 1){
-        std::cout<<"####### ERROR ########\n\t"<<"cutoff depth ( "<<cutoff_depth<< " ) needs to be <= nb_logic and >=1."<<std::endl;
+    if(cutoff_depth > nb_logic){
+        std::cout<<"####### ERROR ########\n\t"<<"cutoff depth ( "<<cutoff_depth<< " ) needs to be <= nb_logic."<<std::endl;
         return EXIT_FAILURE;
     }
 
+    if(search == 'd' && cutoff_depth<1){
+        std::cout<<"####### ERROR ########\n\t"<<"Resulting cutoff depth ( "<<cutoff_depth<< " ) needs to be > 0 "<<std::endl;
+        return EXIT_FAILURE;
+    }
+    
+
+    
 
     std::cout<<"circuit_flat.n: "<<circuit_flat.n<<std::endl;
     std::cout<<"circuit_flat.num_gates:"<<circuit_flat.num_gates<<std::endl;
