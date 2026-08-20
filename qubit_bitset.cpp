@@ -74,13 +74,13 @@ int main(int argc, char **argv)
 
        
 
-        if(search == 'd'){
-            percent_permutation = atof(argv[4]);
-            cutoff_depth = percent_permutation * nb_logic;            
-        }
-        else{
-            cutoff_depth = atoi(argv[4]);
-        }
+       // if(search == 'd'){
+        percent_permutation = atof(argv[4]);
+        cutoff_depth = percent_permutation * nb_logic;            
+        //}
+        //else{
+        //    cutoff_depth = atoi(argv[4]);
+        //}
 
         number_of_sabre_runs = atoi(argv[5]);
         
@@ -138,7 +138,7 @@ int main(int argc, char **argv)
     std::cout<<"Cutoff depth: "<< cutoff_depth<<std::endl;
     std::cout<<"\tPercentage of the permutation: "<< percent_permutation*100<<"%"<<std::endl;
     std::cout<<"Number of random sols: "<< num_random_sols<<std::endl;
-    std::cout<<"Percentage of the pool to explore: "<< PERCENT<<std::endl;
+    std::cout<<"Percentage of the pool to explore: "<< PERCENT*100<<"\%"<<std::endl;
 
 
     std::cout<<"########### SANITY TEST ################# "<<"\n";
