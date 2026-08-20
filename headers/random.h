@@ -112,7 +112,7 @@ std::vector<int> random_heuristic(
                 #pragma omp critical(printsol)
                 {
 
-                std::cout<<"\nThread id: "<<omp_get_thread_num()<<std::endl;
+                //std::cout<<"\nThread id: "<<omp_get_thread_num()<<std::endl;
                 std::cout<<"New solution: \n\tFrom "<<local_best_depth<<" to "<<results[0].depth<<"\n\tDepth: "<<results[0].depth<<"\n\tNum gates: "<<results[0].num_gates<<"\n\tMapping: ";
                 std::cout<<"[";
                 for(int m = 0;m<logic-1;++m)
