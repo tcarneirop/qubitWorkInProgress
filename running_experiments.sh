@@ -220,8 +220,6 @@ do
                                         continue
                                     fi
 
-                                    #outfile="${OUTDIR}/${instance}_d${DEPTH}_p${POOL}_s${NUM_SABRE}_t${TIME_LIMIT}.out"
-
                                     DATE=$(date +%Y%m%d)
 
                                     RESULT_DIR="results/${DATE}_d${DEPTH}_p${POOL}_s${NUM_SABRE}_t${TIME_LIMIT}_nt${NUM_THREADS}_ss${SKIPSOL}_nr${NUM_RANDS}_search${SEARCH}/${instance}"
