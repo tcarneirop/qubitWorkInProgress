@@ -4,16 +4,16 @@
 using Clock = std::chrono::steady_clock;
 
 unsigned long long jurema_search_64(int *PHYSIC_MACHINE, int *circuit, const int num_gates,
-				    const long long physic, const long long logic,
-				    int *mapping,
-				    const long long cutoff_depth,
-				    int *shared_best_depth,
-				    int *shared_best_num_gates,
-				    int *shared_best_mapping,
-				    unsigned long long *shared_sols_counter,
-				    const int NUMBER_OF_SABRE_RUNS, Clock::time_point start,
-				    std::vector<unsigned long long> &number_of_sols,
-				    const unsigned long long num_sols_to_check)
+									const long long physic, const long long logic,
+									int *mapping,
+									const long long cutoff_depth,
+									int *shared_best_depth,
+									int *shared_best_num_gates,
+									int *shared_best_mapping,
+									unsigned long long *shared_sols_counter,
+									const int NUMBER_OF_SABRE_RUNS, Clock::time_point start,
+									std::vector<unsigned long long> &number_of_sols,
+									const unsigned long long num_sols_to_check)
 {
 
 	unsigned int depth = 0U;
@@ -31,7 +31,6 @@ unsigned long long jurema_search_64(int *PHYSIC_MACHINE, int *circuit, const int
 
 	long long mask = (1LL << physic) - 1LL;
 
-
 	//////////////////////////////////////////////////
 	// Sols for sabre
 	//////////////////////////////////////////////////
@@ -47,7 +46,7 @@ unsigned long long jurema_search_64(int *PHYSIC_MACHINE, int *circuit, const int
 	////////////////////////////////////////////////////////
 	// Initializing the search
 	///////////////////////////////////////////////////////
-    aStack[0] = -1LL;
+	aStack[0] = -1LL;
 
 	pnStack = aStack + 1;
 	pnStackPos = 1;
@@ -89,7 +88,7 @@ unsigned long long jurema_search_64(int *PHYSIC_MACHINE, int *circuit, const int
 
 		if (numrows == cutoff_depth)
 			break;
-		
+
 		lsb = -((signed long long)bitfield) & bitfield;
 		if (0ULL == bitfield)
 		{
@@ -107,9 +106,6 @@ unsigned long long jurema_search_64(int *PHYSIC_MACHINE, int *circuit, const int
 		}
 
 		bitfield &= ~lsb;
-		
-		
-
 
 		if (numrows < logic)
 		{
@@ -126,14 +122,7 @@ unsigned long long jurema_search_64(int *PHYSIC_MACHINE, int *circuit, const int
 			if (numrows == logic)
 			{
 
-				
 				++numSolutions;
-
-				//for (int m = 0; m < logic - 1; ++m)
-				//	std::cout << mapping[m] << ", ";
-				//std::cout << mapping[logic - 1] << "]" << std::endl;
-
-
 
 				#ifdef SABRE
 				results = SABRE_routing_many(circuit, num_gates, PHYSIC_MACHINE, physic, logic, 1, mapping, 1, NUMBER_OF_SABRE_RUNS, 1);
@@ -208,17 +197,17 @@ unsigned long long jurema_search_64(int *PHYSIC_MACHINE, int *circuit, const int
 }
 
 void call_jurema(
-    int *PHYSIC_MACHINE, int *circuit, const int num_gates,
-    int physic, int logic,
-    int *solutions,
-    const long long cutoff_depth,
-    int *shared_best_depth,
-    int *shared_best_num_gates,
-    int *shared_best_mapping,
-    unsigned long long *shared_sols_counter,
-    const unsigned long long num_sols_to_check,
-    const int NUMBER_OF_SABRE_RUNS,
-    const int num_random_sols
+	int *PHYSIC_MACHINE, int *circuit, const int num_gates,
+	int physic, int logic,
+	int *solutions,
+	const long long cutoff_depth,
+	int *shared_best_depth,
+	int *shared_best_num_gates,
+	int *shared_best_mapping,
+	unsigned long long *shared_sols_counter,
+	const unsigned long long num_sols_to_check,
+	const int NUMBER_OF_SABRE_RUNS,
+	const int num_random_sols
 
 )
 {
@@ -228,28 +217,28 @@ void call_jurema(
 	const Clock::time_point start = Clock::now();
 	std::vector<unsigned long long> number_of_sols_value(100000, 0ULL);
 
-	#pragma omp parallel for schedule(runtime) reduction(+ : num_sols)
+#pragma omp parallel for schedule(runtime) reduction(+ : num_sols)
 	for (int i = 0; i < num_random_sols; ++i)
 	{
 
 		int *mapping = solutions + i * logic;
 
 		num_sols += jurema_search_64(
-		    PHYSIC_MACHINE,
-		    circuit,
-		    num_gates,
-		    (long long)physic,
-		    (long long)logic,
-		    mapping,
-		    (long long)cutoff_depth,
-		    shared_best_depth,
-		    shared_best_num_gates,
-		    shared_best_mapping,
-		    shared_sols_counter,
-		    NUMBER_OF_SABRE_RUNS,
-		    start,
-		    number_of_sols_value,
-		    num_sols_to_check);
+			PHYSIC_MACHINE,
+			circuit,
+			num_gates,
+			(long long)physic,
+			(long long)logic,
+			mapping,
+			(long long)cutoff_depth,
+			shared_best_depth,
+			shared_best_num_gates,
+			shared_best_mapping,
+			shared_sols_counter,
+			NUMBER_OF_SABRE_RUNS,
+			start,
+			number_of_sols_value,
+			num_sols_to_check);
 	}
 
 	std::cout << "\n######################################################################\n";
