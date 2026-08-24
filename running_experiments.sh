@@ -287,7 +287,6 @@ do
                                         best_mapping=$(grep "Mapping:" "$outfile" | tail -n1 | sed 's/.*Mapping:[[:space:]]*//')
                                         solutions=$(grep "Solution:" "$outfile" | tail -n1 | sed 's/.*Solution:[[:space:]]*//' | sed 's/,.*//')
                                     echo "\"$BINARY\",\"$TIME_LIMIT\",\"$instance\",\"$SEARCH\",$NUM_SABRE,$POOL,$DEPTH,$NUM_THREADS,$SKIPSOL,$NUM_RANDS,$elapsed,\"$best_depth\",\"$best_gates\",\"$best_mapping\",\"$solutions\",$status" >> "$CSV"
-                                  
                                 done # NUM_RANDS
                             done   # NUM_THREADS
                         done       # NUM_SABRE
