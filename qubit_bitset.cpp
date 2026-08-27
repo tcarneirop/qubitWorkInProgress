@@ -32,7 +32,7 @@ struct Parameters {
 	int num_random_sols = 100;
 	unsigned long long num_sols_to_skip = 0ULL;
 	std::string topology = "albatroz";
-	char search = 'j';
+	char search = ' ';
 	int *PHYSIC_MACHINE;
 	int nb_logic = 0;
 	int nb_physic = 0;
@@ -44,6 +44,10 @@ struct Parameters {
 };
 
 /*
+	######################
+		IMPORTANT
+	#######################
+	
 	Obs: im adding code to the headers.
 	I know it is not ideal, but this is mainly for organizing code that is related.
 	-- This is very sloppy.
@@ -80,7 +84,7 @@ int main(int argc, char **argv)
 	ParsedCircuit circuit_flat = parse_qasm(my_params.qasm_file);
 	start_parameters_circuit(&my_params, circuit_flat.n, circuit_flat.num_gates, circuit_flat.gates_flat.data());
 	sanity_test(&my_params);	
-
+	call_searches(&my_params);
 
 	return 0;
 }

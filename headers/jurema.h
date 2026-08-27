@@ -214,9 +214,9 @@ void call_jurema(
 
 	unsigned long long num_sols = 0ULL;
 
-	const Clock::time_point start = Clock::now();
+	
 	std::vector<unsigned long long> number_of_sols_value(100000, 0ULL);
-
+	const Clock::time_point start = Clock::now();
 #pragma omp parallel for schedule(runtime) reduction(+ : num_sols)
 	for (int i = 0; i < num_random_sols; ++i)
 	{

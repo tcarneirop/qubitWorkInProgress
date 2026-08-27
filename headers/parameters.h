@@ -44,8 +44,13 @@ int cli_parameters_parser(Parameters *my_params, int argc, char *argv[])
 		   "Search: DFS - d, Jurema - j, K-changes - k, tests - t")
 		->check(CLI::IsMember({"d", "j", "k", "t"}));
 
-	my_params->search = search[0];
 
+	std::vector<int> permutation;
+	app.add_option("--permutation", my_params->permutation, "Permutation");
+
+	CLI11_PARSE(app, argc, argv);
+
+	
 	if ((my_params->search == 'd' || my_params->search == 'j') &&
 		app.get_option("--depth-percent")->count() == 0)
 	{
@@ -53,12 +58,9 @@ int cli_parameters_parser(Parameters *my_params, int argc, char *argv[])
 			"--depth-percent is required when --search is 'd' or 'j'");
 	}
 
-	std::vector<int> permutation;
-	app.add_option("--permutation", my_params->permutation, "Permutation");
 
-	CLI11_PARSE(app, argc, argv);
-	
-	
+	my_params->search = (char)search[0];
+
 	return ret;
 }
 
@@ -100,6 +102,7 @@ void start_parameters_circuit(Parameters *my_params, const int circuit_flat_n, c
 	std::cout << "Number of SABRE runs: " << my_params->number_of_sabre_runs << std::endl;
 	std::cout << "Physic QUBITS: " << (long long)(my_params->nb_physic) << " Logic QUBITS: " << (long long)(my_params->nb_logic) << std::endl;
 	std::cout << "Number of random sols: " << my_params->num_random_sols << std::endl;
+	std::cout << "Number of sols to skip: " << my_params->num_sols_to_skip << std::endl;
 	std::cout << "Search: " << my_params->search << std::endl;
 	std::cout << "Cutoff depth: " << my_params->cutoff_depth << std::endl;
 	std::cout << "\tPercentage of the permutation: " << my_params->percent_of_the_permutation * 100 << "%" << std::endl;
