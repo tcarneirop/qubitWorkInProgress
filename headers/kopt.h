@@ -11,184 +11,169 @@ void kchange_SABRE(
 	int *shared_best_depth,
 	int *shared_best_num_gates,
 	int *shared_best_mapping,
- 	unsigned long long *shared_sols_counter,
-	const int NUMBER_OF_SABRE_RUNS, Clock::time_point start
-)
+	unsigned long long *shared_sols_counter,
+	const int NUMBER_OF_SABRE_RUNS, Clock::time_point start)
 {
 
-	int *new_mapping = (int*)malloc(sizeof(int)*logic);
-	memcpy(new_mapping, mapping, sizeof(int)*logic);
+	int *new_mapping = (int *)malloc(sizeof(int) * logic);
+	memcpy(new_mapping, mapping, sizeof(int) * logic);
 	bool improves = false;
 
 	int local_best_depth = INT_MAX;
 	std::vector<RoutingResult> results;
 	int num_sols = 0;
 
-	for(int index = 0; index<logic;++index){
-		for(int kchange_index = 0; kchange_index<logic; ++kchange_index){
+	for (int index = 0; index < logic; ++index)
+	{
+		for (int kchange_index = 0; kchange_index < logic; ++kchange_index)
+		{
 			++num_sols;
-			std::swap(new_mapping[index],new_mapping[kchange_index]);
+			std::swap(new_mapping[index], new_mapping[kchange_index]);
 
-			#ifdef SABRE
-				results = SABRE_routing_many(circuit, num_gates, PHYSIC_MACHINE, physic, logic, 1, new_mapping, 1, NUMBER_OF_SABRE_RUNS, 1);
+#ifdef SABRE
+			results = SABRE_routing_many(circuit, num_gates, PHYSIC_MACHINE, physic, logic, 1, new_mapping, 1, NUMBER_OF_SABRE_RUNS, 1);
 
-				#pragma omp atomic read
-				local_best_depth = *shared_best_depth;
+#pragma omp atomic read
+			local_best_depth = *shared_best_depth;
 
-				if (results[0].depth < local_best_depth)
-				{ // improves the solution
+			if (results[0].depth < local_best_depth)
+			{ // improves the solution
 
-					bool improved = false;
-					#pragma omp critical(check_sol)
+				bool improved = false;
+#pragma omp critical(check_sol)
+				{
+					local_best_depth = *shared_best_depth;
+					if (*shared_best_depth > results[0].depth)
 					{
-						local_best_depth = *shared_best_depth;
-						if (*shared_best_depth > results[0].depth)
-						{
-							*shared_best_depth = results[0].depth;
-							*shared_best_num_gates = results[0].num_gates;
-							memcpy(shared_best_mapping, new_mapping, logic * sizeof(int));
-							improved = true;
-						}
-					} // omp critical
-
-					if (improved)
-					{
-						#pragma omp critical(printsol)
-						{
-
-							(*shared_sols_counter)++;
-							std::cout << "New solution found at: " << std::chrono::duration<double>(Clock::now() - start).count() << "\n\tSolution: " << *shared_sols_counter << ", From " << local_best_depth << " to " << results[0].depth << "\n\tDepth: " << results[0].depth << "\n\tNum gates: " << results[0].num_gates << "\n\tMapping: ";
-							std::cout << "[";
-							for (int m = 0; m < logic - 1; ++m)
-								std::cout << new_mapping[m] << ", ";
-							std::cout << new_mapping[logic - 1] << "]" << std::endl;
-
-						} // critical
+						*shared_best_depth = results[0].depth;
+						*shared_best_num_gates = results[0].num_gates;
+						memcpy(shared_best_mapping, new_mapping, logic * sizeof(int));
+						improved = true;
 					}
+				} // omp critical
 
-				} /// if, new sol found that improves the current solution...
+				if (improved)
+				{
+#pragma omp critical(printsol)
+					{
 
-			#endif
-			std::swap(new_mapping[index],new_mapping[kchange_index]);
-		}//kchange
+						(*shared_sols_counter)++;
+						std::cout << "New solution found at: " << std::chrono::duration<double>(Clock::now() - start).count() << "\n\tSolution: " << *shared_sols_counter << ", From " << local_best_depth << " to " << results[0].depth << "\n\tDepth: " << results[0].depth << "\n\tNum gates: " << results[0].num_gates << "\n\tMapping: ";
+						std::cout << "[";
+						for (int m = 0; m < logic - 1; ++m)
+							std::cout << new_mapping[m] << ", ";
+						std::cout << new_mapping[logic - 1] << "]" << std::endl;
 
-	}//index
+					} // critical
+				}
 
+			} /// if, new sol found that improves the current solution...
 
+#endif
+			std::swap(new_mapping[index], new_mapping[kchange_index]);
+		} // kchange
+
+	} // index
 }
-
 
 void call_kchange(
 	int *PHYSIC_MACHINE, int *circuit, const int num_gates,
 	const long long physic, const long long logic,
-	const int NUMBER_OF_SABRE_RUNS, const int NUM_RAND_SOLS
-){
-	
-	
+	const int NUMBER_OF_SABRE_RUNS, const int NUM_RAND_SOLS)
+{
+
 	int shared_best_depth = INT_MAX;
 	int shared_best_num_gates = INT_MAX;
 	unsigned long long shared_sols_counter = 0ULL;
 
+	int *shared_best_mapping = (int *)malloc(sizeof(int) * logic);
+	int *mapping = (int *)malloc(sizeof(int) * logic);
 
-	int *shared_best_mapping = (int*)malloc(sizeof(int)*logic);
-	int *mapping = (int*)malloc(sizeof(int)*logic);
-	 
 	std::vector<int> solutions;
-	
-	std::cout<<"########################## STARTING THE K-Change test ######################"<<std::endl;
 
-	
-	std::cout<<"########################## GENERATING RAND SOL(S) ##########################"<<std::endl;
+	std::cout << "########################## STARTING THE K-Change test ######################" << std::endl;
+
+	std::cout << "########################## GENERATING RAND SOL(S) ##########################" << std::endl;
 
 	solutions = random_heuristic(
-            PHYSIC_MACHINE, 
-           	circuit, 
-            num_gates,
-    		physic,  logic,   
-         	&shared_best_depth,
-			&shared_best_num_gates,
-			shared_best_mapping,
-            NUMBER_OF_SABRE_RUNS,  NUM_RAND_SOLS
-        );
-        
-    std::cout<<"########################## SOLUTION(S) GENERATED ##########################"<<std::endl;
-	
+		PHYSIC_MACHINE,
+		circuit,
+		num_gates,
+		physic, logic,
+		&shared_best_depth,
+		&shared_best_num_gates,
+		shared_best_mapping,
+		NUMBER_OF_SABRE_RUNS, NUM_RAND_SOLS);
 
-	memcpy(mapping, shared_best_mapping, sizeof(int)*logic);
-	
+	std::cout << "########################## SOLUTION(S) GENERATED ##########################" << std::endl;
+
+	memcpy(mapping, shared_best_mapping, sizeof(int) * logic);
+
 	const Clock::time_point start = Clock::now();
 
-	kchange_SABRE( PHYSIC_MACHINE, circuit,  num_gates, physic,  logic, mapping, &shared_best_depth, &shared_best_num_gates,
-		shared_best_mapping, &shared_sols_counter, NUMBER_OF_SABRE_RUNS, start);
-
-
+	std::cout << "########################## STARTING THE K-Changes ##########################" << std::endl;
+	kchange_SABRE(PHYSIC_MACHINE, circuit, num_gates, physic, logic, mapping, &shared_best_depth, &shared_best_num_gates,
+				  shared_best_mapping, &shared_sols_counter, NUMBER_OF_SABRE_RUNS, start);
 }
-
-
-
 
 void call_kchange_vs_jurema(
 	int *PHYSIC_MACHINE, int *circuit, const int num_gates,
 	const long long physic, const long long logic,
-	const int NUMBER_OF_SABRE_RUNS, const int NUM_RAND_SOLS, const int cutoff_jurema
-){
-	
-	
+	const int NUMBER_OF_SABRE_RUNS, const int NUM_RAND_SOLS, const int cutoff_jurema)
+{
+
 	int shared_best_depth = INT_MAX;
 	int shared_best_num_gates = INT_MAX;
-	
+
 	unsigned long long shared_sols_counter = 0, jurema_sols_counter = 0ULL, kchange_sols_counter = 0ULL;
 	unsigned long long jurema_total_nums_sols = 0ULL;
 
-	int *shared_best_mapping = (int*)malloc(sizeof(int)*logic);
-	int *mapping = (int*)malloc(sizeof(int)*logic);
+	int *shared_best_mapping = (int *)malloc(sizeof(int) * logic);
+	int *mapping = (int *)malloc(sizeof(int) * logic);
 
-	int random_depth, kchange_depth, jurema_depth, 
+	int random_depth, kchange_depth, jurema_depth,
 		random_gates, kchange_gates, jurema_gates;
 
 	double elapsed_kchange = 0.f, elapsed_jurema = 0.f;
 
-
 	std::vector<int> solutions;
-	
-	std::cout<<"########################## STARTING THE K-Change test ######################"<<std::endl;
-	
-	std::cout<<"########################## GENERATING RAND SOL(S) ##########################"<<std::endl;
+
+	std::cout << "########################## STARTING THE K-Change test ######################" << std::endl;
+
+	std::cout << "########################## GENERATING RAND SOL(S) ##########################" << std::endl;
 
 	solutions = random_heuristic(
-            PHYSIC_MACHINE, 
-           	circuit, 
-            num_gates,
-    		physic,  logic,   
-         	&shared_best_depth,
-			&shared_best_num_gates,
-			shared_best_mapping,
-            NUMBER_OF_SABRE_RUNS,  NUM_RAND_SOLS
-        );
+		PHYSIC_MACHINE,
+		circuit,
+		num_gates,
+		physic, logic,
+		&shared_best_depth,
+		&shared_best_num_gates,
+		shared_best_mapping,
+		NUMBER_OF_SABRE_RUNS, NUM_RAND_SOLS);
 	random_depth = shared_best_depth;
 	random_gates = shared_best_num_gates;
 
-	std::cout<<"Baseline "<< NUMBER_OF_SABRE_RUNS <<" sabre run value: \n\tDepth: "<<random_depth<<"\n\tGates: "<<random_gates<<std::endl;
+	std::cout << "Baseline " << NUMBER_OF_SABRE_RUNS << " sabre run value: \n\tDepth: " << random_depth << "\n\tGates: " << random_gates << std::endl;
 
-        
-    std::cout<<"########################## SOLUTION(S) GENERATED ##########################"<<std::endl;
+	std::cout << "########################## SOLUTION(S) GENERATED ##########################" << std::endl;
 
-	std::cout<<"\n\n########################## Starting 2-changes ##########################"<<std::endl;
+	std::cout << "\n\n########################## Starting 2-changes ##########################" << std::endl;
 
-	memcpy(mapping, shared_best_mapping, sizeof(int)*logic);
-	
+	memcpy(mapping, shared_best_mapping, sizeof(int) * logic);
+
 	Clock::time_point start = Clock::now();
 
-	kchange_SABRE( PHYSIC_MACHINE, circuit,  num_gates, physic,  logic, mapping, &shared_best_depth, &shared_best_num_gates,
-		shared_best_mapping, &shared_sols_counter, NUMBER_OF_SABRE_RUNS, start);
+	kchange_SABRE(PHYSIC_MACHINE, circuit, num_gates, physic, logic, mapping, &shared_best_depth, &shared_best_num_gates,
+				  shared_best_mapping, &shared_sols_counter, NUMBER_OF_SABRE_RUNS, start);
 
 	kchange_depth = shared_best_depth;
 	kchange_gates = shared_best_num_gates;
 	kchange_sols_counter = shared_sols_counter;
 	elapsed_kchange = std::chrono::duration<double>(Clock::now() - start).count();
 
-	std::cout<<"\n\n########################## Start of Jurema ##########################"<<std::endl;
-	
+	std::cout << "\n\n########################## Start of Jurema ##########################" << std::endl;
+
 	shared_best_depth = random_depth;
 	shared_best_num_gates = random_gates;
 	shared_sols_counter = 0;
@@ -197,64 +182,54 @@ void call_kchange_vs_jurema(
 	start = Clock::now();
 
 	jurema_total_nums_sols = jurema_search_64(PHYSIC_MACHINE, circuit, num_gates,
-				    physic, logic,
-				    mapping,
-				    cutoff_jurema,
-				    &shared_best_depth,
-				    &shared_best_num_gates,
-				    shared_best_mapping,
-				    &shared_sols_counter,
-				    NUMBER_OF_SABRE_RUNS, start,
-				    number_of_sols,
-				    0);
+		physic, logic,
+		mapping,
+		cutoff_jurema,
+		&shared_best_depth,
+		&shared_best_num_gates,
+		shared_best_mapping,
+		&shared_sols_counter,
+		NUMBER_OF_SABRE_RUNS, start,
+		number_of_sols,
+		0);
 
 	jurema_depth = shared_best_depth;
 	jurema_gates = shared_best_num_gates;
 	jurema_sols_counter = shared_sols_counter;
-	elapsed_jurema =  std::chrono::duration<double>(Clock::now() - start).count();
-		
-	std::cout<<"\n\n########################## End of Jurema ##########################"<<std::endl;
+	elapsed_jurema = std::chrono::duration<double>(Clock::now() - start).count();
 
-	std::cout<<"########################## REPORT ##########################"<<std::endl;
+	std::cout << "\n\n########################## End of Jurema ##########################" << std::endl;
 
-	std::cout << "\nInitial SABRE " << NUMBER_OF_SABRE_RUNS<<" solution:  \n\t";
+	std::cout << "########################## REPORT ##########################" << std::endl;
+
+	std::cout << "\nInitial SABRE " << NUMBER_OF_SABRE_RUNS << " solution:  \n\t";
 	std::cout << "Depth: " << random_depth << "\n\t";
 	std::cout << "Num gates: " << random_gates << "\n";
 	std::cout << "\n------------------------------------------------------------------\n";
-	std::cout << "                              K-CHANGES                             " ;
+	std::cout << "                              K-CHANGES                             ";
 	std::cout << "\n------------------------------------------------------------------\n";
 
 	std::cout << "\nK-changes best sol: \n\t";
 	std::cout << "Depth: " << kchange_depth << "\n\t";
 	std::cout << "Num gates: " << kchange_gates << "\n\t";
 	std::cout << "\nNumber of solutions that improved the incumbent: " << kchange_sols_counter << "\n";
-	std::cout << "\nNumber of complete solutions found: " << logic*(logic-1) << "\n";
-	std::cout << "\tNumber of SABRE runs: " << logic*(logic-1) * NUMBER_OF_SABRE_RUNS << "\n";
+	std::cout << "\nNumber of complete solutions found: " << logic * (logic - 1) << "\n";
+	std::cout << "\tNumber of SABRE runs: " << logic * (logic - 1) * NUMBER_OF_SABRE_RUNS << "\n";
 	std::cout << "Elapsed k-changes: " << elapsed_kchange << "\n\t";
 
 	std::cout << "\n------------------------------------------------------------------\n";
-    std::cout << "                              JUREMA                                " ;
+	std::cout << "                              JUREMA                                ";
 	std::cout << "\n------------------------------------------------------------------\n";
-	
 
 	std::cout << "\nJurema best sol: \n\t";
 	std::cout << "Depth: " << jurema_depth << "\n\t";
 	std::cout << "Num gates: " << jurema_gates << "\n\t";
 	std::cout << "\nNumber of solutions that improved the incumbent: " << jurema_sols_counter << "\n";
-	std::cout << "\nNumber of complete solutions found: " <<  jurema_total_nums_sols << "\n";
-	std::cout << "\tNumber of SABRE runs: " <<  jurema_total_nums_sols  * NUMBER_OF_SABRE_RUNS << "\n";
+	std::cout << "\nNumber of complete solutions found: " << jurema_total_nums_sols << "\n";
+	std::cout << "\tNumber of SABRE runs: " << jurema_total_nums_sols * NUMBER_OF_SABRE_RUNS << "\n";
 	std::cout << "Jurema elapsed time: " << elapsed_jurema << "\n\t";
-	
 
-
-	
 	std::cout << "\n######################################################################\n";
-
-
-
 }
-
-
-
 
 #endif
