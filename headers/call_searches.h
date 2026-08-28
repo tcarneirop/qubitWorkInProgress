@@ -47,7 +47,6 @@ void call_dfs(const Parameters *my_params){
 		best_mapping,
 		my_params->number_of_sabre_runs, my_params->num_random_sols);
 
-	
 	std::cout << "############ STARTING THE DFS SEARCH ################" << std::endl;
 	call_RANDOM_mcore_search(my_params->PHYSIC_MACHINE,
 		my_params->circuit_flat_gates_data,
@@ -84,8 +83,11 @@ void call_jurema_search(const Parameters *my_params){
 		my_params->number_of_sabre_runs, my_params->num_random_sols);
 
 	std::cout << "################# END OF THE RANDOM SEARCH ##########################" << std::endl;
-	std::cout << "############ STARTING THE JUREMA SEARCH ################" << std::endl;
-	call_jurema(
+	
+	std::cout << "\n############ STARTING THE JUREMA SEARCH ################" << std::endl;
+	
+	const Clock::time_point start = Clock::now();
+	unsigned long long num_sols = call_jurema(
 		my_params->PHYSIC_MACHINE,
 		my_params->circuit_flat_gates_data,
 		my_params->circuit_flat_num_gates,
@@ -99,7 +101,19 @@ void call_jurema_search(const Parameters *my_params){
 		&shared_sols_counter,
 		my_params->num_sols_to_skip,
 		my_params->number_of_sabre_runs,
-		my_params->num_random_sols);
+		my_params->num_random_sols,
+		start);
+	
+	std::cout << "\n############ END OF THE JUREMA SEARCH ################" << std::endl;
+	std::cout << "\nBest solution found: \n\t";
+	std::cout << "Depth: " << best_depth << "\n\t";
+	std::cout << "Num gates: " << best_num_gates << "\n";
+	std::cout << "Number of complete solutions found: " << num_sols << "\n";
+	std::cout << "Number of solutions that improved the incumbent: " << shared_sols_counter << "\n\t";
+	std::cout << "Number of SABRE runs (rand+jurema): " << (num_sols+my_params->num_random_sols) * my_params->number_of_sabre_runs << "\n";
+	std::cout << "Elapsed time: " << std::chrono::duration<double>(Clock::now() - start).count() << std::endl;
+	std::cout << "\n######################################################################\n";
+
 
 }
 

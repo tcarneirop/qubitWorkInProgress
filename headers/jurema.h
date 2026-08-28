@@ -196,7 +196,7 @@ unsigned long long jurema_search_64(int *PHYSIC_MACHINE, int *circuit, const int
 	return numSolutions;
 }
 
-void call_jurema(
+unsigned long long call_jurema(
 	int *PHYSIC_MACHINE, int *circuit, const int num_gates,
 	int physic, int logic,
 	int *solutions,
@@ -207,7 +207,7 @@ void call_jurema(
 	unsigned long long *shared_sols_counter,
 	const unsigned long long num_sols_to_check,
 	const int NUMBER_OF_SABRE_RUNS,
-	const int num_random_sols
+	const int num_random_sols,Clock::time_point start
 
 )
 {
@@ -216,7 +216,7 @@ void call_jurema(
 
 	
 	std::vector<unsigned long long> number_of_sols_value(100000, 0ULL);
-	const Clock::time_point start = Clock::now();
+
 #pragma omp parallel for schedule(runtime) reduction(+ : num_sols)
 	for (int i = 0; i < num_random_sols; ++i)
 	{
@@ -240,17 +240,7 @@ void call_jurema(
 			number_of_sols_value,
 			num_sols_to_check);
 	}
-
-	std::cout << "\n######################################################################\n";
-	std::cout << "\nBest solution found: \n\t";
-	std::cout << "\nDepth: " << *shared_best_depth << "\n";
-	std::cout << "\nNum gates: " << *shared_best_num_gates << "\n";
-	std::cout << "\nNumber of solutions that improved the incumbent: " << *shared_sols_counter << "\n";
-	std::cout << "\nNumber of complete solutions found: " << num_sols << "\n";
-	std::cout << "\tNumber of SABRE runs: " << num_sols * NUMBER_OF_SABRE_RUNS << "\n";
-	std::cout << "Elapsed time: " << std::chrono::duration<double>(Clock::now() - start).count() << std::endl;
-	std::cout << "\n######################################################################\n";
-
+	return num_sols;
 } // end of call jurema
 
 #endif
