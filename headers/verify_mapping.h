@@ -10,7 +10,8 @@ void verify_mapping(const Parameters *my_params){
 		std::cerr<<"########## ERROR: The mapping size is different of the #logic qubits."<<std::endl;
 		exit(1);
 	}
-
+	
+	std::cout << "circuit_flat.filename: " << my_params->qasm_file << std::endl;
 	std::cout<<"\nMapping: \n";
 	for(auto m: my_params->permutation){
 		std::cout<<m<<" ";

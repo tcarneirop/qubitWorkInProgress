@@ -72,10 +72,6 @@ int main(int argc, char **argv)
 
 
 	Parameters my_params;
-	int best_depth = 0;
-	int best_num_gates = 0;
-	int best_mapping[MAX_BOARDSIZE];
-
 	////////////////////////////
 	// STARTING PARAMETERS
 	//////////////////////////
