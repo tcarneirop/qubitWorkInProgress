@@ -96,6 +96,7 @@ void start_parameters_circuit(Parameters *my_params, const int circuit_flat_n, c
 
     std::cout<<"################# PRINTING PARAMETERS: ################# "<<"\n";
 
+    	std::cout << "circuit_flat.filename: " << my_params->qasm_file << std::endl;
 	std::cout << "circuit_flat.n (logic): " << my_params->nb_logic << std::endl;
 	std::cout << "circuit_flat.num_gates:" << my_params->circuit_flat_num_gates << std::endl;
 	std::cout << "Number of SABRE runs: " << my_params->number_of_sabre_runs << std::endl;
