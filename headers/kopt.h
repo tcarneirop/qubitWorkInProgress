@@ -4,7 +4,7 @@
 #include <utility>
 #include <limits.h>
 
-void kchange_SABRE(
+unsigned long long kchange_SABRE(
 	int *PHYSIC_MACHINE, int *circuit, const int num_gates,
 	const long long physic, const long long logic,
 	int *mapping,
@@ -21,7 +21,7 @@ void kchange_SABRE(
 
 	int local_best_depth = INT_MAX;
 	std::vector<RoutingResult> results;
-	int num_sols = 0;
+	unsigned long long num_sols = 0ULL;
 
 	for (int index = 0; index < logic; ++index)
 	{
@@ -74,6 +74,7 @@ void kchange_SABRE(
 		} // kchange
 
 	} // index
+	return num_sols;
 }
 
 void call_kchange(
@@ -88,12 +89,11 @@ void call_kchange(
 
 	int *shared_best_mapping = (int *)malloc(sizeof(int) * logic);
 	int *mapping = (int *)malloc(sizeof(int) * logic);
+	unsigned long long num_sols = 0ULL;
 
 	std::vector<int> solutions;
 
-	std::cout << "########################## STARTING THE K-Change test ######################" << std::endl;
-
-	std::cout << "########################## GENERATING RAND SOL(S) ##########################" << std::endl;
+	std::cout << "\n\n########################## GENERATING RAND SOL(S) ##########################" << std::endl;
 
 	solutions = random_heuristic(
 		PHYSIC_MACHINE,
@@ -105,15 +105,34 @@ void call_kchange(
 		shared_best_mapping,
 		NUMBER_OF_SABRE_RUNS, NUM_RAND_SOLS);
 
-	std::cout << "########################## SOLUTION(S) GENERATED ##########################" << std::endl;
+	std::cout << "\n\n########################## "<< NUM_RAND_SOLS<<" SOLUTION(S) GENERATED ##########################" << std::endl;
 
 	memcpy(mapping, shared_best_mapping, sizeof(int) * logic);
 
 	const Clock::time_point start = Clock::now();
 
 	std::cout << "########################## STARTING THE K-Changes ##########################" << std::endl;
-	kchange_SABRE(PHYSIC_MACHINE, circuit, num_gates, physic, logic, mapping, &shared_best_depth, &shared_best_num_gates,
+
+	#pragma omp parallel for schedule(runtime) reduction(+:num_sols)
+	for (int i = 0; i < NUM_RAND_SOLS; ++i)
+	{
+		int *mapping = solutions.data() + i * logic;
+		num_sols+=kchange_SABRE(PHYSIC_MACHINE, circuit, num_gates, physic, logic, mapping, &shared_best_depth, &shared_best_num_gates,
 				  shared_best_mapping, &shared_sols_counter, NUMBER_OF_SABRE_RUNS, start);
+	
+	}
+
+	std::cout << "\n########################## ENF OF THE K-Changes ##########################" << std::endl;
+	std::cout << "Best solution found: \n\t";
+	std::cout << "Depth: " << shared_best_depth << "\n\t";
+	std::cout << "Num gates: " << shared_best_num_gates << "\n";
+	std::cout << "Number of complete solutions found: " << num_sols << "\n";
+	std::cout << "\tNumber of solutions that improved the incumbent: " << shared_sols_counter << "\n";
+	std::cout << "Number of SABRE runs (rand+kchange): " << (num_sols+NUM_RAND_SOLS) * NUMBER_OF_SABRE_RUNS  << "\n";
+	std::cout << "Elapsed time: " << std::chrono::duration<double>(Clock::now() - start).count() << std::endl;
+	std::cout << "\n######################################################################\n";
+
+
 }
 
 void call_kchange_vs_jurema(
@@ -127,6 +146,7 @@ void call_kchange_vs_jurema(
 
 	unsigned long long shared_sols_counter = 0, jurema_sols_counter = 0ULL, kchange_sols_counter = 0ULL;
 	unsigned long long jurema_total_nums_sols = 0ULL;
+	
 
 	int *shared_best_mapping = (int *)malloc(sizeof(int) * logic);
 	int *mapping = (int *)malloc(sizeof(int) * logic);
@@ -134,7 +154,10 @@ void call_kchange_vs_jurema(
 	int random_depth, kchange_depth, jurema_depth,
 		random_gates, kchange_gates, jurema_gates;
 
+	unsigned long long num_sols = 0ULL, kchange_num_sols = 0ULL, jurema_num_sols = 0ULL;
+
 	double elapsed_kchange = 0.f, elapsed_jurema = 0.f;
+
 
 	std::vector<int> solutions;
 
@@ -164,9 +187,15 @@ void call_kchange_vs_jurema(
 
 	Clock::time_point start = Clock::now();
 
-	kchange_SABRE(PHYSIC_MACHINE, circuit, num_gates, physic, logic, mapping, &shared_best_depth, &shared_best_num_gates,
+	#pragma omp parallel for schedule(runtime) reduction(+:num_sols)
+	for (int i = 0; i < NUM_RAND_SOLS; ++i)
+	{
+		int *mapping = solutions.data() + i * logic;
+		num_sols+=kchange_SABRE(PHYSIC_MACHINE, circuit, num_gates, physic, logic, mapping, &shared_best_depth, &shared_best_num_gates,
 				  shared_best_mapping, &shared_sols_counter, NUMBER_OF_SABRE_RUNS, start);
+	}
 
+	kchange_num_sols = num_sols;
 	kchange_depth = shared_best_depth;
 	kchange_gates = shared_best_num_gates;
 	kchange_sols_counter = shared_sols_counter;
@@ -181,18 +210,24 @@ void call_kchange_vs_jurema(
 
 	start = Clock::now();
 
-	jurema_total_nums_sols = jurema_search_64(PHYSIC_MACHINE, circuit, num_gates,
-		physic, logic,
-		mapping,
-		cutoff_jurema,
-		&shared_best_depth,
-		&shared_best_num_gates,
-		shared_best_mapping,
-		&shared_sols_counter,
-		NUMBER_OF_SABRE_RUNS, start,
-		number_of_sols,
-		0);
-
+	#pragma omp parallel for schedule(runtime) reduction(+:num_sols)
+	for (int i = 0; i < NUM_RAND_SOLS; ++i)
+	{
+		int *mapping = solutions.data() + i * logic;
+		num_sols+=jurema_total_nums_sols = jurema_search_64(PHYSIC_MACHINE, circuit, num_gates,
+			physic, logic,
+			mapping,
+			cutoff_jurema,
+			&shared_best_depth,
+			&shared_best_num_gates,
+			shared_best_mapping,
+			&shared_sols_counter,
+			NUMBER_OF_SABRE_RUNS, start,
+			number_of_sols,
+			0);
+	}
+	
+	jurema_num_sols = num_sols;
 	jurema_depth = shared_best_depth;
 	jurema_gates = shared_best_num_gates;
 	jurema_sols_counter = shared_sols_counter;
