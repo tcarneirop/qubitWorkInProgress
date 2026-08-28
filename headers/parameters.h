@@ -45,7 +45,6 @@ int cli_parameters_parser(Parameters *my_params, int argc, char *argv[])
 		->check(CLI::IsMember({"d", "j", "k", "t"}));
 
 
-	std::vector<int> permutation;
 	app.add_option("--permutation", my_params->permutation, "Permutation");
 
 	CLI11_PARSE(app, argc, argv);

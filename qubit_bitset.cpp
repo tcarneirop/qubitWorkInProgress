@@ -64,6 +64,7 @@ struct Parameters {
 #include "headers/parameters.h"
 #include "headers/sanity_test.h"
 #include "headers/call_searches.h"
+#include "headers/verify_mapping.h"
 
 /* main routine for N Queens program.*/
 int main(int argc, char **argv)
@@ -83,8 +84,14 @@ int main(int argc, char **argv)
 	cli_parameters_parser(&my_params,argc, argv);
 	ParsedCircuit circuit_flat = parse_qasm(my_params.qasm_file);
 	start_parameters_circuit(&my_params, circuit_flat.n, circuit_flat.num_gates, circuit_flat.gates_flat.data());
-	sanity_test(&my_params);	
-	call_searches(&my_params);
+	sanity_test(&my_params);
+	if(my_params.permutation.size()>0){
+	
+		verify_mapping(&my_params);
+
+	}
+	else	
+		call_searches(&my_params);
 
 	return 0;
 }
