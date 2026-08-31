@@ -47,15 +47,17 @@ int cli_parameters_parser(Parameters *my_params, int argc, char *argv[])
 
 	app.add_option("--permutation", my_params->permutation, "Permutation");
 
-	CLI11_PARSE(app, argc, argv);
-
-	
 	if ((my_params->search == 'd' || my_params->search == 'j') &&
 		app.get_option("--depth-percent")->count() == 0)
 	{
 		throw CLI::ValidationError(
 			"--depth-percent is required when --search is 'd' or 'j'");
 	}
+	
+
+	CLI11_PARSE(app, argc, argv);
+
+	
 
 
 	my_params->search = (char)search[0];

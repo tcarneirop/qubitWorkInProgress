@@ -126,6 +126,11 @@ void call_kchange(
 	std::cout << "Best solution found: \n\t";
 	std::cout << "Depth: " << shared_best_depth << "\n\t";
 	std::cout << "Num gates: " << shared_best_num_gates << "\n";
+	std::cout << "[";
+						for (int m = 0; m < logic - 1; ++m)
+							std::cout << mapping[m] << ", ";
+						std::cout << mapping[logic - 1] << "]" << std::endl;
+
 	std::cout << "Number of complete solutions found: " << num_sols << "\n";
 	std::cout << "\tNumber of solutions that improved the incumbent: " << shared_sols_counter << "\n";
 	std::cout << "Number of SABRE runs (rand+kchange): " << (num_sols+NUM_RAND_SOLS) * NUMBER_OF_SABRE_RUNS  << "\n";
