@@ -40,6 +40,8 @@ struct Parameters {
 	int *circuit_flat_gates_data;
 	int circuit_flat_num_gates;
 	std::vector<int> permutation;
+	int perm_depth;
+	int perm_num_gates;
 
 };
 
