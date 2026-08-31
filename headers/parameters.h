@@ -34,7 +34,7 @@ int cli_parameters_parser(Parameters *my_params, int argc, char *argv[])
 	app.add_option("--sabre-runs", my_params->number_of_sabre_runs, "Number of SABRE runs - default: 20 runs")->check(CLI::PositiveNumber);
 	app.add_option("--num-rand-sols", my_params->num_random_sols, "Number of random sols to get a solution and also serve as guide for jurema - default: 100 sols")->check(CLI::PositiveNumber);
 
-	app.add_option("--sols-skip", my_params->num_sols_to_skip, "Number of complete sols found that do not improve the current incumbent - default: 0, do not check this condition. ")->check(CLI::PositiveNumber);
+	app.add_option("--sols-skip", my_params->num_sols_to_skip, "Number of complete sols found that do not improve the current incumbent - default: 0, do not check this condition. ");
 
 	std::string search;
 
