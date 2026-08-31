@@ -249,19 +249,30 @@ do
                                         LIKWID_CMD=()
                                     fi
 
+                                    echo "COMMAND:"
+printf '%q ' "$BINARY" \
+    --topology albatroz \
+    --qasmfile "$file" \
+    --search "$SEARCH" \
+    --depth-percent "$DEPTH" \
+    --sabre-runs "$NUM_SABRE" \
+    --pool-percent "$POOL" \
+    --sols-skip "$SKIPSOL" \
+    --num-rand-sols "$NUM_RANDS"
+echo
+
                                     stdbuf -o0 -e0 \
                                         timeout "$TIME_LIMIT" \
                                         "${LIKWID_CMD[@]}" "$BINARY" \
-                                        "$file" \
-                                        "$SEARCH" \
-                                        16 \
-                                        "$DEPTH" \
-                                        "$NUM_SABRE" \
-                                        "$POOL" \
-                                        "$SKIPSOL" \
-                                        "$NUM_RANDS" \
+                                        --topology albatroz \
+                                        --qasmfile "$file" \
+                                        --search "$SEARCH" \
+                                        --depth-percent "$DEPTH" \
+                                        --sabre-runs "$NUM_SABRE" \
+                                        --pool-percent "$POOL" \
+                                        --sols-skip "$SKIPSOL" \
+                                        --num-rand-sols "$NUM_RANDS" \
                                         > "$outfile" 2>&1
-
 
                                         exitcode=$?
 
