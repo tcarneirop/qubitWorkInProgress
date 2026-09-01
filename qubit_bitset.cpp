@@ -84,7 +84,7 @@ int main(int argc, char **argv)
 	start_parameters_circuit(&my_params, circuit_flat.n, circuit_flat.num_gates, circuit_flat.gates_flat.data());
 	sanity_test(&my_params);
 	if(my_params.permutation.size()>0){
-	
+		std::cout<<"JEIJFOIDJSOIFJIOSDAJFIOJASDIOJFJFSD";
 		verify_mapping(&my_params);
 
 	}

@@ -3,26 +3,34 @@
 
 void call_heuristics(const Parameters *my_params){
 
-	if (my_params->search == 'k')
+	bool recursive = false;
+
+	if (my_params->search == 'k'|| my_params->search == 'r' )
 	{
+		
+
+		if(my_params->search == 'r' )
+			recursive = true;
+
 		std::cout << "################# STARTING K-CHANGES SEARCH ##########################" << std::endl;
 		call_kchange(
 			my_params->PHYSIC_MACHINE, my_params->circuit_flat_gates_data,
 			my_params->circuit_flat_num_gates,
 			(long long)my_params->nb_physic,
 			(long long)my_params->nb_logic,
-			my_params->number_of_sabre_runs, my_params->num_random_sols);
+			my_params->number_of_sabre_runs, my_params->num_random_sols, recursive);
 	}
 	else
 	{
 		if (my_params->search == 't')
 		{
+
 			call_kchange_vs_jurema(
 				my_params->PHYSIC_MACHINE, my_params->circuit_flat_gates_data,
 				my_params->circuit_flat_num_gates,
 				(long long) my_params->nb_physic,
 				(long long) my_params->nb_logic,
-				my_params->number_of_sabre_runs, my_params->num_random_sols, my_params->cutoff_depth);
+				my_params->number_of_sabre_runs, my_params->num_random_sols, my_params->cutoff_depth,recursive);
 		}
 	}
 }
