@@ -42,7 +42,7 @@ int cli_parameters_parser(Parameters *my_params, int argc, char *argv[])
 		   "--search",
 		   search,
 		   "Search: DFS - d, Jurema - j, K-changes - k, tests - t")
-		->check(CLI::IsMember({"d", "j", "k", "t"}));
+		->check(CLI::IsMember({"d", "j", "k", "t", "r"}));
 
 
 	app.add_option("--permutation", my_params->permutation, "Permutation");
