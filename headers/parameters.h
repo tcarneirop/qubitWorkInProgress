@@ -9,7 +9,7 @@ int cli_parameters_parser(Parameters *my_params, int argc, char *argv[])
 
 	CLI::App app{"Qubit mapper"};
 
-	app.add_option("--topology", my_params->topology, "Topology: albatroz (16), boeblingen (20), cairo (27)")->required()->check(CLI::IsMember({"albatroz", "cairo", "boeblingen"}));
+	app.add_option("--topology", my_params->topology, "Topology: albatroz (16), boeblingen (20), cairo (27), melbourne(15)")->required()->check(CLI::IsMember({"albatroz", "cairo", "boeblingen", "melbourne"}));
 
 	app.add_option("--qasmfile", my_params->qasm_file, "QASM input file")
 		->required();
@@ -73,20 +73,26 @@ void start_parameters_circuit(Parameters *my_params, const int circuit_flat_n, c
 		my_params->PHYSIC_MACHINE = ALBATROZ;
 		my_params->nb_physic = 16;
 	}
-	else if (my_params->topology == "cairo")
-	{
-		my_params->PHYSIC_MACHINE = CAIRO;
-		my_params->nb_physic = 27;
-	}
-	else
-	{
-		if (my_params->topology == "boeblingen")
+	else 
+		if (my_params->topology == "cairo")
 		{
-			my_params->PHYSIC_MACHINE = BOEBLINGEN;
-			my_params->nb_physic = 20;
+			my_params->PHYSIC_MACHINE = CAIRO;
+			my_params->nb_physic = 27;
 		}
 		else
-			throw std::runtime_error("Unknown topology: " + my_params->topology);
+		{
+			if (my_params->topology == "boeblingen")
+			{
+				my_params->PHYSIC_MACHINE = BOEBLINGEN;
+				my_params->nb_physic = 20;
+			}
+			else
+				if(my_params->topology == "melbourne"){
+					my_params->PHYSIC_MACHINE = MELBOURNE_15;
+					my_params->nb_physic = 15;
+				}
+				else
+					throw std::runtime_error("Unknown topology: " + my_params->topology);
 	}
 
 
