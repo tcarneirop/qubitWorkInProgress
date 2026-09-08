@@ -5,7 +5,7 @@ void verify_mapping(const Parameters *my_params){
 
 	std::cout<<"\n\n############## MAPPING VERIFICATION ##############"<<std::endl;
 
-	std::vector<RoutingResult> results;
+	std::vector<RoutingResult> results(1);
     if(my_params->permutation.size() != my_params->nb_logic){
 		std::cerr<<"########## ERROR: The mapping size is different of the #logic qubits."<<std::endl;
 		exit(1);
@@ -13,10 +13,9 @@ void verify_mapping(const Parameters *my_params){
 	
 	std::cout << "circuit_flat.filename: " << my_params->qasm_file << std::endl;
 	std::cout<<"\nMapping: \n";
-	for(auto m: my_params->permutation){
-		std::cout<<m<<" ";
-	}
-	
+	for(int x : my_params->permutation)
+		std::cout << x << " ";	
+	std::cout<<std::endl;
 	
 	results = SABRE_routing_many(my_params->circuit_flat_gates_data, my_params->circuit_flat_num_gates, my_params->PHYSIC_MACHINE,my_params->nb_physic,
 		 my_params->nb_logic, 1, my_params->permutation.data(), 1, my_params->number_of_sabre_runs, 1);

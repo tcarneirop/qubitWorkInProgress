@@ -905,6 +905,7 @@ void sabre_route_one(const SharedCtx &ctx,
 }
 
 
+
                   
 std::vector<RoutingResult> SABRE_routing_many(
     const int *gates_flat, int num_gates_in,
@@ -912,6 +913,10 @@ std::vector<RoutingResult> SABRE_routing_many(
     int n, int P, const int *mappings_data, uint32_t base_seed,
     int num_trials, int num_threads)
 {
+
+    std::random_device rd;
+    std::mt19937 rng(rd());
+    base_seed = rng();
 
     SharedCtx ctx;
     ctx.dist = dist;
@@ -1005,7 +1010,7 @@ std::vector<RoutingResult> SABRE_routing_many(
                         sc.mapping_buf.begin());
 
             const uint32_t rng_seed =
-                base_seed + (uint32_t)p * (uint32_t)num_trials + (uint32_t)t + 1u;
+                base_seed + (uint32_t)p * (uint32_t)num_trials + (uint32_t)t + 1u; 
 
             int num_gates = 0, depth = 0;
             sabre_route_one(ctx, sc.mapping_buf.data(), rng_seed, sc,
