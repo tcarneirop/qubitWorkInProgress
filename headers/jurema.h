@@ -124,31 +124,63 @@ unsigned long long jurema_search_64(int *PHYSIC_MACHINE, int *circuit, const int
 
 				++numSolutions;
 
-				#ifdef SABRE
+				
 				results = SABRE_routing_many(circuit, num_gates, PHYSIC_MACHINE, physic, logic, 1, mapping, 1, NUMBER_OF_SABRE_RUNS, 1);
 
 				#ifdef SOLREPORT
 				number_of_sols[results[0].depth]++;
 				#endif
 
+
+				#pragma omp atomic read
+				local_best_num_gates = *shared_best_num_gates;
 				#pragma omp atomic read
 				local_best_depth = *shared_best_depth;
+				
+				bool improved = false;
 
-				if (results[0].depth < local_best_depth)
-				{ // improves the solution
-
-					bool improved = false;
+				#ifdef ODEPTH
+				if (results[0].depth < local_best_depth || (results[0].depth == local_best_depth && results[0].num_gates < local_best_num_gates))
+				{
+					
 					#pragma omp critical(check_sol)
 					{
+						// Read the current pair again
+						local_best_num_gates = *shared_best_num_gates;
 						local_best_depth = *shared_best_depth;
-						if (*shared_best_depth > results[0].depth)
+
+						if(results[0].depth < local_best_depth || (results[0].depth == local_best_depth && results[0].num_gates < local_best_num_gates))
 						{
-							*shared_best_depth = results[0].depth;
-							*shared_best_num_gates = results[0].num_gates;
-							memcpy(shared_best_mapping, mapping, logic * sizeof(int));
 							improved = true;
+
+							*shared_best_num_gates = results[0].num_gates;
+							*shared_best_depth = results[0].depth;
+
+							memcpy(shared_best_mapping,mapping, logic * sizeof(int) );
 						}
-					} // omp critical
+					}
+
+				#elif defined(OGATES)
+					
+				if (results[0].num_gates < local_best_num_gates || (results[0].num_gates == local_best_num_gates && results[0].depth < local_best_depth))
+				{
+
+					#pragma omp critical(check_sol)
+					{
+						// Read the current pair again
+						local_best_num_gates = *shared_best_num_gates;
+						local_best_depth = *shared_best_depth;
+
+						if(results[0].num_gates < local_best_num_gates || (results[0].num_gates == local_best_num_gates && results[0].depth < local_best_depth))
+						{
+							improved = true;
+							*shared_best_num_gates = results[0].num_gates;
+							*shared_best_depth = results[0].depth;
+							memcpy(shared_best_mapping,mapping, logic * sizeof(int) );
+						}
+					}
+
+				#endif
 
 					if (improved)
 					{
@@ -156,7 +188,11 @@ unsigned long long jurema_search_64(int *PHYSIC_MACHINE, int *circuit, const int
 						{
 
 							(*shared_sols_counter)++;
-							std::cout << "New solution found at: " << std::chrono::duration<double>(Clock::now() - start).count() << "\n\tSolution: " << *shared_sols_counter << ", From " << local_best_depth << " to " << results[0].depth << "\n\tDepth: " << results[0].depth << "\n\tNum gates: " << results[0].num_gates << "\n\tMapping: ";
+							#ifdef ODEPTH
+							std::cout << "New solution found at: " << std::chrono::duration<double>(Clock::now() - start).count() << "\n\tSolution: " << *shared_sols_counter << ", From (depth) " << local_best_depth << " to " << results[0].depth << "\n\tDepth: " << results[0].depth << "\n\tNum gates: " << results[0].num_gates << "\n\tMapping: ";
+							#elif defined(OGATES)
+							std::cout << "New solution found at: " << std::chrono::duration<double>(Clock::now() - start).count() << "\n\tSolution: " << *shared_sols_counter << ", From (gates) " << local_best_num_gates << " to " << results[0].num_gates << "\n\tNum gates: " << results[0].num_gates << "\n\tDepth: " << results[0].depth << "\n\tMapping: ";
+							#endif
 							std::cout << "[";
 							for (int m = 0; m < logic - 1; ++m)
 								std::cout << mapping[m] << ", ";
@@ -168,11 +204,10 @@ unsigned long long jurema_search_64(int *PHYSIC_MACHINE, int *circuit, const int
 				} /// if, new sol found that improves the current solution...
 				else
 				{
-
 					++not_improving; // no... not improving
 				}
 
-				#endif // end sabre
+
 
 				if (num_sols_to_check > 0ULL && not_improving > num_sols_to_check)
 				{
