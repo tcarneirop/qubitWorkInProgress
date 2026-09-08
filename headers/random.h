@@ -84,44 +84,83 @@ std::vector<int> random_heuristic(
         
         std::vector<RoutingResult> results;
         int local_best_depth = INT_MAX;
+        int local_best_num_gates = INT_MAX;
 
         int* mapping= solutions.data() + i * logic;
 
-
-
         results = SABRE_routing_many(circuit, num_gates, PHYSIC_MACHINE, physic,logic, 1, mapping, 1 , NUMBER_OF_SABRE_RUNS, 1);
 
+        // Fast path
+        #pragma omp atomic read
+        local_best_num_gates = *shared_best_num_gates;
         #pragma omp atomic read
         local_best_depth = *shared_best_depth;
+        
+        bool improved = false;
 
-        if(results[0].depth<local_best_depth){ //improves the solution
+        #ifdef ODEPTH
+        if (results[0].depth < local_best_depth || (results[0].depth == local_best_depth && results[0].num_gates < local_best_num_gates))
+        {
+          
 
-            bool improved = false;
             #pragma omp critical(check_sol)
             {
+                // Read the current pair again
+                local_best_num_gates = *shared_best_num_gates;
                 local_best_depth = *shared_best_depth;
-                if (*shared_best_depth > results[0].depth){
-                    *shared_best_depth = results[0].depth;
-                    *shared_best_num_gates = results[0].num_gates;
-                    memcpy(shared_best_mapping, mapping, logic * sizeof(int));
-                    improved = true;
-                }  
-            }//omp critical
 
-            if(improved){
+                if(results[0].depth < local_best_depth || (results[0].depth == local_best_depth && results[0].num_gates < local_best_num_gates))
+                {
+                    improved = true;
+
+                    *shared_best_num_gates = results[0].num_gates;
+                    *shared_best_depth = results[0].depth;
+
+                    memcpy(shared_best_mapping,mapping, logic * sizeof(int) );
+                }
+            }
+        
+        #elif defined(OGATES)
+        
+        if (results[0].num_gates < local_best_num_gates || (results[0].num_gates == local_best_num_gates && results[0].depth < local_best_depth))
+        {
+
+            #pragma omp critical(check_sol)
+            {
+                // Read the current pair again
+                local_best_num_gates = *shared_best_num_gates;
+                local_best_depth = *shared_best_depth;
+
+                if(results[0].num_gates < local_best_num_gates || (results[0].num_gates == local_best_num_gates && results[0].depth < local_best_depth))
+                {
+                    improved = true;
+
+                    *shared_best_num_gates = results[0].num_gates;
+                    *shared_best_depth = results[0].depth;
+
+                    memcpy(shared_best_mapping,mapping, logic * sizeof(int) );
+                }
+            }
+
+
+        #endif
+
+            if (improved)
+            {
                 #pragma omp critical(printsol)
                 {
-
-                //std::cout<<"\nThread id: "<<omp_get_thread_num()<<std::endl;
-                std::cout<<"New solution: \n\tFrom "<<local_best_depth<<" to "<<results[0].depth<<"\n\tDepth: "<<results[0].depth<<"\n\tNum gates: "<<results[0].num_gates<<"\n\tMapping: ";
-                std::cout<<"[";
-                for(int m = 0;m<logic-1;++m)
-                    std::cout<<mapping[m]<<", ";
-                std::cout<<mapping[logic-1]<<"]"<<std::endl;
-
+                    std::cout<< "New solution: \n" << "\tFrom depth " << local_best_depth << " to " << results[0].depth << "\n\tFrom gates " 
+                    << local_best_num_gates
+                    << " to " << results[0].num_gates
+                    << "\n\tDepth: " << results[0].depth
+                    << "\n\tNum gates: " << results[0].num_gates
+                    << "\n\tMapping: [";
+                    for (int m = 0; m < logic - 1; ++m)
+                        std::cout << mapping[m] << ", ";
+                        std::cout << mapping[logic - 1] << "]"<< std::endl;
                 }//critical
-                
-            }
+            } //if improved
+        
 
         }/// if, new sol found that improves the current solution...
         

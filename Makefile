@@ -1,13 +1,19 @@
 CXX = g++
+
 CXXFLAGS = -fopenmp -DSABRE -std=c++17 -O3
 
-TARGET = qubit.exe
+TARGETD = depth_qubit.exe
+TARGETG = gates_qubit.exe
 SOURCE = qubit_bitset.cpp
 
-all: $(TARGET)
+.PHONY: all gates depth clean
 
-$(TARGET): $(SOURCE)
-	$(CXX) $(CXXFLAGS) $(SOURCE) -o $(TARGET)
+all: gates depth
+gates:
+	$(CXX) $(CXXFLAGS) -DOGATES $(SOURCE) -o $(TARGETG)
+
+depth:
+	$(CXX) $(CXXFLAGS) -DODEPTH $(SOURCE) -o $(TARGETD)
 
 clean:
-	rm -f $(TARGET)
+	rm -f *.o *.exe
