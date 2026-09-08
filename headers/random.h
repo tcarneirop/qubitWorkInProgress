@@ -87,8 +87,9 @@ std::vector<int> random_heuristic(
         int local_best_num_gates = INT_MAX;
 
         int* mapping= solutions.data() + i * logic;
+       
 
-        results = SABRE_routing_many(circuit, num_gates, PHYSIC_MACHINE, physic,logic, 1, mapping, 1 , NUMBER_OF_SABRE_RUNS, 1);
+        results = SABRE_routing_many(circuit, num_gates, PHYSIC_MACHINE, physic,logic, 1, mapping, 1, NUMBER_OF_SABRE_RUNS, 1);
 
         // Fast path
         #pragma omp atomic read
@@ -101,7 +102,6 @@ std::vector<int> random_heuristic(
         #ifdef ODEPTH
         if (results[0].depth < local_best_depth || (results[0].depth == local_best_depth && results[0].num_gates < local_best_num_gates))
         {
-          
 
             #pragma omp critical(check_sol)
             {
@@ -134,10 +134,8 @@ std::vector<int> random_heuristic(
                 if(results[0].num_gates < local_best_num_gates || (results[0].num_gates == local_best_num_gates && results[0].depth < local_best_depth))
                 {
                     improved = true;
-
                     *shared_best_num_gates = results[0].num_gates;
                     *shared_best_depth = results[0].depth;
-
                     memcpy(shared_best_mapping,mapping, logic * sizeof(int) );
                 }
             }
