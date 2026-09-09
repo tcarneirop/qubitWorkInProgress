@@ -11,6 +11,7 @@ unsigned long long kchange_SABRE(
 	int *mapping,
 	int *shared_best_depth,
 	int *shared_best_num_gates,
+	int *shared_best_num_swaps,
 	int *shared_best_mapping,
 	unsigned long long *shared_sols_counter,
 	const int NUMBER_OF_SABRE_RUNS, Clock::time_point start, const bool recursive)
@@ -23,6 +24,8 @@ unsigned long long kchange_SABRE(
 
 	int local_best_depth = *shared_best_depth;
 	int local_best_num_gates = *shared_best_num_gates;
+	int local_best_num_swaps = *shared_best_num_swaps;
+
 	std::vector<RoutingResult> results;
 	unsigned long long num_sols = 0ULL;
 
@@ -53,6 +56,7 @@ unsigned long long kchange_SABRE(
 					// Read the current pair again
 					local_best_num_gates = *shared_best_num_gates;
 					local_best_depth = *shared_best_depth;
+					local_best_num_swaps = *shared_best_num_swaps;
 
 					if(results[0].depth < local_best_depth || (results[0].depth == local_best_depth && results[0].num_gates < local_best_num_gates))
 					{
@@ -60,6 +64,7 @@ unsigned long long kchange_SABRE(
 
 						*shared_best_num_gates = results[0].num_gates;
 						*shared_best_depth = results[0].depth;
+						*shared_best_num_swaps = results[0].swaps;
 
 						memcpy(shared_best_mapping,mapping, logic * sizeof(int) );
 					}
@@ -75,12 +80,14 @@ unsigned long long kchange_SABRE(
 						// Read the current pair again
 						local_best_num_gates = *shared_best_num_gates;
 						local_best_depth = *shared_best_depth;
+						local_best_num_swaps = *shared_best_num_swaps;
 
 						if(results[0].num_gates < local_best_num_gates || (results[0].num_gates == local_best_num_gates && results[0].depth < local_best_depth))
 						{
 							improved = true;
 							*shared_best_num_gates = results[0].num_gates;
 							*shared_best_depth = results[0].depth;
+							*shared_best_num_swaps = results[0].swaps;
 							memcpy(shared_best_mapping,mapping, logic * sizeof(int) );
 						}
 					}
@@ -93,9 +100,9 @@ unsigned long long kchange_SABRE(
 						(*shared_sols_counter)++;
 						
 						#ifdef ODEPTH
-						std::cout << "New solution found at: " << std::chrono::duration<double>(Clock::now() - start).count() << "\n\tSolution (depth): " << *shared_sols_counter << ", From " << local_best_depth << " to " << results[0].depth << "\n\tDepth: " << results[0].depth << "\n\tNum gates: " << results[0].num_gates << "\n\tMapping: ";
+						std::cout << "New solution found at: " << std::chrono::duration<double>(Clock::now() - start).count() << "\n\tSolution (depth): " << *shared_sols_counter << ", From " << local_best_depth << " to " << results[0].depth << "\n\tDepth: " << results[0].depth << "\n\tNum gates: " << results[0].num_gates << "\n\tSwaps: " << results[0].swaps << "\n\tMapping: ";
 						#elif defined(OGATES)
-						std::cout << "New solution found at: " << std::chrono::duration<double>(Clock::now() - start).count() << "\n\tSolution (gates): " << *shared_sols_counter << ", From " << local_best_num_gates << " to " << results[0].num_gates << "\n\tDepth: " << results[0].depth << "\n\tNum gates: " << results[0].num_gates << "\n\tMapping: ";
+						std::cout << "New solution found at: " << std::chrono::duration<double>(Clock::now() - start).count() << "\n\tSolution (gates): " << *shared_sols_counter << ", From " << local_best_num_gates << " to " << results[0].num_gates << "\n\tDepth: " << results[0].depth << "\n\tNum gates: " << results[0].num_gates << "\n\tSwaps: " << results[0].swaps << "\n\tMapping: ";
 						#endif
 						std::cout << "[";
 						for (int m = 0; m < logic - 1; ++m)
@@ -110,9 +117,10 @@ unsigned long long kchange_SABRE(
 						num_sols+=kchange_SABRE(
 							PHYSIC_MACHINE, circuit, num_gates,
 							physic, logic,
-							shared_best_mapping,
+							new_mapping,
 							shared_best_depth,
 							shared_best_num_gates,
+							shared_best_num_swaps,
 							shared_best_mapping,
 							shared_sols_counter,
 							NUMBER_OF_SABRE_RUNS, start, recursive
@@ -140,6 +148,7 @@ void call_kchange(
 
 	int shared_best_depth = INT_MAX;
 	int shared_best_num_gates = INT_MAX;
+	int shared_best_num_swaps = INT_MAX;
 	unsigned long long shared_sols_counter = 0ULL;
 
 	int *shared_best_mapping = (int *)malloc(sizeof(int) * logic);
@@ -175,7 +184,7 @@ void call_kchange(
 	for (int i = 0; i < NUM_RAND_SOLS; ++i)
 	{
 		int *mapping = solutions.data() + i * logic;
-		num_sols+=kchange_SABRE(PHYSIC_MACHINE, circuit, num_gates, physic, logic, mapping, &shared_best_depth, &shared_best_num_gates,
+		num_sols+=kchange_SABRE(PHYSIC_MACHINE, circuit, num_gates, physic, logic, mapping, &shared_best_depth, &shared_best_num_gates, &shared_best_num_swaps,
 				  shared_best_mapping, &shared_sols_counter, NUMBER_OF_SABRE_RUNS, start, recursive);
 	
 	}
@@ -187,6 +196,7 @@ void call_kchange(
 	std::cout << "Best solution found: \n\t";
 	std::cout << "Depth: " << shared_best_depth << "\n\t";
 	std::cout << "Num gates: " << shared_best_num_gates << "\n\t";
+	std::cout << "Num swaps: " << shared_best_num_swaps << "\n\t";
 	std::cout << "Mapping: ";
 	std::cout << "[";
 						for (int m = 0; m < logic - 1; ++m)
@@ -210,6 +220,7 @@ void call_kchange_vs_jurema(
 
 	int shared_best_depth = INT_MAX;
 	int shared_best_num_gates = INT_MAX;
+	int shared_best_num_swaps = INT_MAX;
 
 	unsigned long long shared_sols_counter = 0, jurema_sols_counter = 0ULL, kchange_sols_counter = 0ULL, rec_sols_counter = 0ULL;
 	unsigned long long jurema_total_nums_sols = 0ULL;
@@ -260,7 +271,7 @@ void call_kchange_vs_jurema(
 	for (int i = 0; i < NUM_RAND_SOLS; ++i)
 	{
 		int *mapping = solutions.data() + i * logic;
-		num_sols+=kchange_SABRE(PHYSIC_MACHINE, circuit, num_gates, physic, logic, mapping, &shared_best_depth, &shared_best_num_gates,
+		num_sols+=kchange_SABRE(PHYSIC_MACHINE, circuit, num_gates, physic, logic, mapping, &shared_best_depth, &shared_best_num_gates, &shared_best_num_swaps,
 				  shared_best_mapping, &shared_sols_counter, NUMBER_OF_SABRE_RUNS, start, false);
 	}
 
@@ -285,7 +296,7 @@ void call_kchange_vs_jurema(
 	for (int i = 0; i < NUM_RAND_SOLS; ++i)
 	{
 		int *mapping = solutions.data() + i * logic;
-		num_sols+=kchange_SABRE(PHYSIC_MACHINE, circuit, num_gates, physic, logic, mapping, &shared_best_depth, &shared_best_num_gates,
+		num_sols+=kchange_SABRE(PHYSIC_MACHINE, circuit, num_gates, physic, logic, mapping, &shared_best_depth, &shared_best_num_gates, &shared_best_num_swaps,
 				  shared_best_mapping, &shared_sols_counter, NUMBER_OF_SABRE_RUNS, start, true);
 	}
 
