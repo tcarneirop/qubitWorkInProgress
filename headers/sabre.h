@@ -1,7 +1,7 @@
 #ifndef SABRE_H
 #define SABRE_H
 
-//this  is melbourne
+//Melbourne ibm QX5.
 int ALBATROZ[256] = {
     0, 1, 2, 3, 4, 5, 6, 7, 8, 7, 6, 5, 4, 3, 2, 1,
     1, 0, 1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2, 1, 2,
@@ -19,6 +19,41 @@ int ALBATROZ[256] = {
     3, 2, 1, 2, 3, 4, 5, 6, 5, 4, 3, 2, 1, 0, 1, 2,
     2, 1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2, 1, 0, 1,
     1, 2, 3, 4, 5, 6, 7, 8, 7, 6, 5, 4, 3, 2, 1, 0};
+
+    int QX3[256] = {
+
+    0, 1, 2, 3, 4, 5, 6, 7, 8, 7, 6, 5, 4, 3, 2, 1,
+
+    1, 0, 1, 2, 3, 4, 7, 8, 9, 8, 7, 6, 5, 4, 3, 2,
+
+    2, 1, 0, 1, 2, 3, 6, 7, 8, 7, 6, 5, 4, 3, 2, 3,
+
+    3, 2, 1, 0, 1, 2, 5, 6, 7, 6, 5, 4, 3, 2, 1, 2,
+
+    4, 3, 2, 1, 0, 1, 4, 5, 6, 5, 4, 3, 2, 1, 2, 3,
+
+    5, 4, 3, 2, 1, 0, 3, 4, 5, 4, 3, 2, 1, 2, 3, 4,
+
+    6, 7, 6, 5, 4, 3, 0, 1, 2, 3, 2, 1, 2, 3, 4, 5,
+
+    7, 8, 7, 6, 5, 4, 1, 0, 1, 2, 1, 2, 3, 4, 5, 6,
+
+    8, 9, 8, 7, 6, 5, 2, 1, 0, 1, 2, 3, 4, 5, 6, 7,
+
+    7, 8, 7, 6, 5, 4, 3, 2, 1, 0, 1, 2, 3, 4, 5, 6,
+
+    6, 7, 6, 5, 4, 3, 2, 1, 2, 1, 0, 1, 2, 3, 4, 5,
+
+    5, 6, 5, 4, 3, 2, 1, 2, 3, 2, 1, 0, 1, 2, 3, 4,
+
+    4, 5, 4, 3, 2, 1, 2, 3, 4, 3, 2, 1, 0, 1, 2, 3,
+
+    3, 4, 3, 2, 1, 2, 3, 4, 5, 4, 3, 2, 1, 0, 1, 2,
+
+    2, 3, 2, 1, 2, 3, 4, 5, 6, 5, 4, 3, 2, 1, 0, 1,
+
+    1, 2, 3, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2, 1, 0
+};
 
 int MELBOURNE_15[225] = {
 
@@ -141,8 +176,9 @@ int dist[DIST_SIZE * DIST_SIZE] = {
 #define H_TOL 1e-5f
 struct RoutingResult
 {
-    int num_gates;
-    int depth;
+    int num_gates =0;
+    int depth = 0;
+    int swaps = 0;
 };
 
 
@@ -496,7 +532,7 @@ int build_extended_front(const int *gates_q1, const int *gates_q2,
 void sabre_route_one(const SharedCtx &ctx,
                      int *mapping, uint32_t rng_seed,
                      Scratch &sc,
-                     int *out_num_gates, int *out_depth)
+                     int *out_num_gates, int *out_depth, int *out_swap)
 {
     // --- Unpack ctx as raw pointer / scalar locals for terse body code. ---
     const int *gates_q1 = ctx.gates_q1.data();
@@ -533,6 +569,7 @@ void sabre_route_one(const SharedCtx &ctx,
     auto &phys_in_F = sc.phys_in_F;
     auto &phys_in_F_list = sc.phys_in_F_list;
 
+    int swaps = 0;
     int num_gates = 0;
     const float increment = 1e-3f;
     constexpr int DECAY_RESET_PERIOD = 5; // Matches Qiskit LightSABRE: decay
@@ -604,6 +641,8 @@ void sabre_route_one(const SharedCtx &ctx,
                     last_layer[pa] = li;
                     last_layer[pb] = li;
                     num_gates += 3;
+                    swaps++;
+            
                 }
                 pending_count = 0;
                 pending_committed = true;
@@ -613,6 +652,7 @@ void sabre_route_one(const SharedCtx &ctx,
             {
                 last_layer[phys_qubit_1] += 1;
                 ++num_gates;
+               
             }
             else
             {
@@ -620,6 +660,7 @@ void sabre_route_one(const SharedCtx &ctx,
                 last_layer[phys_qubit_1] = li;
                 last_layer[phys_qubit_2] = li;
                 ++num_gates;
+                
             }
 
             gate_to_remove_gid[gate_to_remove_count++] = g_id;
@@ -747,6 +788,7 @@ void sabre_route_one(const SharedCtx &ctx,
                 last_layer[pa] = li;
                 last_layer[pb] = li;
                 num_gates += 3;
+                swaps++;
             }
             for (int j = 0; j < d - 1 - k; ++j)
             {
@@ -758,6 +800,7 @@ void sabre_route_one(const SharedCtx &ctx,
                 last_layer[pa] = li;
                 last_layer[pb] = li;
                 num_gates += 3;
+                swaps++;
             }
 
             // target_gate is now at distance 1; next outer iteration will route it.
@@ -902,6 +945,8 @@ void sabre_route_one(const SharedCtx &ctx,
 
     *out_num_gates = num_gates;
     *out_depth = depth;
+    *out_swap = swaps;
+
 }
 
 
@@ -1012,14 +1057,15 @@ std::vector<RoutingResult> SABRE_routing_many(
             const uint32_t rng_seed =
                 base_seed + (uint32_t)p * (uint32_t)num_trials + (uint32_t)t + 1u; 
 
-            int num_gates = 0, depth = 0;
+            int num_gates = 0, depth = 0, swaps = 0;
             sabre_route_one(ctx, sc.mapping_buf.data(), rng_seed, sc,
-                            &num_gates, &depth);
+                            &num_gates, &depth, &swaps);
 
             // Write to this (p, t)'s own slot — no contention, no atomic.
             const size_t base = ((size_t)p * (size_t)num_trials + (size_t)t) * 2;
             trial_results[base + 0] = num_gates;
             trial_results[base + 1] = depth;
+            trial_results[base + 2] = swaps;
         }
     }
 
@@ -1028,6 +1074,8 @@ std::vector<RoutingResult> SABRE_routing_many(
     {
         int best_num_gates = std::numeric_limits<int>::max();
         int best_depth = std::numeric_limits<int>::max();
+        int best_swaps = std::numeric_limits<int>::max();
+
         for (int t = 0; t < num_trials; ++t)
         {
             const size_t base = ((size_t)p * (size_t)num_trials + (size_t)t) * 2;
@@ -1036,9 +1084,10 @@ std::vector<RoutingResult> SABRE_routing_many(
             {
                 best_num_gates = ng;
                 best_depth = trial_results[base + 1];
+                best_swaps = trial_results[base + 2];
             }
         }
-        results[p] = {best_num_gates, best_depth};
+        results[p] = {best_num_gates, best_depth, best_swaps};
     }
 
     return results;
