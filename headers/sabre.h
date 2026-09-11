@@ -1043,7 +1043,8 @@ std::vector<RoutingResult> SABRE_routing_many(
     if (nt < 1)
         nt = 1;
 
-    std::vector<int> trial_results((size_t)P * (size_t)num_trials * 2);
+    //@todo: x3???
+    std::vector<int> trial_results((size_t)P * (size_t)num_trials * 3);
 
     Scratch sc(ctx);
     for (int p = 0; p < P; ++p)
@@ -1061,15 +1062,17 @@ std::vector<RoutingResult> SABRE_routing_many(
             sabre_route_one(ctx, sc.mapping_buf.data(), rng_seed, sc,
                             &num_gates, &depth, &swaps);
 
+            //@tODO -- X3??? 3 elements of the result?
             // Write to this (p, t)'s own slot — no contention, no atomic.
-            const size_t base = ((size_t)p * (size_t)num_trials + (size_t)t) * 2;
+            const size_t base = ((size_t)p * (size_t)num_trials + (size_t)t) * 3;
             trial_results[base + 0] = num_gates;
             trial_results[base + 1] = depth;
             trial_results[base + 2] = swaps;
         }
     }
 
-
+////@TODO -- WHY IT RESTARTS ALL OTHER BUT GATES??
+//// *3????
     for (int p = 0; p < P; ++p)
     {
         int best_num_gates = std::numeric_limits<int>::max();
@@ -1078,7 +1081,8 @@ std::vector<RoutingResult> SABRE_routing_many(
 
         for (int t = 0; t < num_trials; ++t)
         {
-            const size_t base = ((size_t)p * (size_t)num_trials + (size_t)t) * 2;
+            //
+            const size_t base = ((size_t)p * (size_t)num_trials + (size_t)t) * 3;
             const int ng = trial_results[base + 0];
             if (ng < best_num_gates)
             {

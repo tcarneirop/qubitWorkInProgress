@@ -117,10 +117,11 @@ unsigned long long  mcore_final_search_64(int *PHYSIC_MACHINE, int *circuit,  co
 				
 				results = SABRE_routing_many(circuit, num_gates, PHYSIC_MACHINE, physic, logic, 1, mapping, 1, NUMBER_OF_SABRE_RUNS, 1);
 
-				#ifdef SOLREPORT
+				#ifdef SOLREPORTDEPTH
 				number_of_sols[results[0].depth]++;
+				#elif defined(SOLREPORTGATES)
+				number_of_sols[results[0].swaps]++;
 				#endif
-
 
 				#pragma omp atomic read
 				local_best_num_gates = *shared_best_num_gates;

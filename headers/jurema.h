@@ -9,10 +9,12 @@ unsigned long long jurema_search_64(int *PHYSIC_MACHINE, int *circuit, const int
 									const long long cutoff_depth,
 									int *shared_best_depth,
 									int *shared_best_num_gates,
+									int *shared_best_num_swaps,
 									int *shared_best_mapping,
 									unsigned long long *shared_sols_counter,
 									const int NUMBER_OF_SABRE_RUNS, Clock::time_point start,
-									std::vector<unsigned long long> &number_of_sols,
+									std::vector<unsigned long long> &number_depth_values,
+									std::vector<unsigned long long> &number_swaps_values,
 									const unsigned long long num_sols_to_check)
 {
 
@@ -36,7 +38,7 @@ unsigned long long jurema_search_64(int *PHYSIC_MACHINE, int *circuit, const int
 	//////////////////////////////////////////////////
 	int local_best_depth;
 	int local_best_num_gates;
-
+	int local_best_num_swaps;
 	std::vector<RoutingResult> results;
 	std::vector<int> best_mapping;
 
@@ -124,13 +126,13 @@ unsigned long long jurema_search_64(int *PHYSIC_MACHINE, int *circuit, const int
 
 				++numSolutions;
 
-				
+
 				results = SABRE_routing_many(circuit, num_gates, PHYSIC_MACHINE, physic, logic, 1, mapping, 1, NUMBER_OF_SABRE_RUNS, 1);
 
-				#ifdef SOLREPORT
-				number_of_sols[results[0].depth]++;
+				#if defined(SOLREPORTDEPTH) || defined(SOLREPORTGATES)
+				number_depth_values[results[0].depth]++;
+				number_swaps_values[results[0].swaps]++;
 				#endif
-
 
 				#pragma omp atomic read
 				local_best_num_gates = *shared_best_num_gates;
@@ -148,6 +150,7 @@ unsigned long long jurema_search_64(int *PHYSIC_MACHINE, int *circuit, const int
 						// Read the current pair again
 						local_best_num_gates = *shared_best_num_gates;
 						local_best_depth = *shared_best_depth;
+						local_best_num_swaps = *shared_best_num_swaps;
 
 						if(results[0].depth < local_best_depth || (results[0].depth == local_best_depth && results[0].num_gates < local_best_num_gates))
 						{
@@ -155,6 +158,7 @@ unsigned long long jurema_search_64(int *PHYSIC_MACHINE, int *circuit, const int
 
 							*shared_best_num_gates = results[0].num_gates;
 							*shared_best_depth = results[0].depth;
+							*shared_best_num_swaps = results[0].swaps;
 
 							memcpy(shared_best_mapping,mapping, logic * sizeof(int) );
 						}
@@ -170,12 +174,16 @@ unsigned long long jurema_search_64(int *PHYSIC_MACHINE, int *circuit, const int
 						// Read the current pair again
 						local_best_num_gates = *shared_best_num_gates;
 						local_best_depth = *shared_best_depth;
+						local_best_num_swaps = *shared_best_num_swaps;
 
 						if(results[0].num_gates < local_best_num_gates || (results[0].num_gates == local_best_num_gates && results[0].depth < local_best_depth))
 						{
 							improved = true;
+							
 							*shared_best_num_gates = results[0].num_gates;
 							*shared_best_depth = results[0].depth;
+							*shared_best_num_swaps = results[0].swaps;
+
 							memcpy(shared_best_mapping,mapping, logic * sizeof(int) );
 						}
 					}
@@ -189,9 +197,9 @@ unsigned long long jurema_search_64(int *PHYSIC_MACHINE, int *circuit, const int
 
 							(*shared_sols_counter)++;
 							#ifdef ODEPTH
-							std::cout << "New solution found at: " << std::chrono::duration<double>(Clock::now() - start).count() << "\n\tSolution: " << *shared_sols_counter << ", From (depth) " << local_best_depth << " to " << results[0].depth << "\n\tDepth: " << results[0].depth << "\n\tNum gates: " << results[0].num_gates << "\n\tMapping: ";
+							std::cout << "New solution found at: " << std::chrono::duration<double>(Clock::now() - start).count() << "\n\tSolution (depth): " << *shared_sols_counter << ", From " << local_best_depth << " to " << results[0].depth << "\n\tDepth: " << results[0].depth << "\n\tNum gates: " << results[0].num_gates << "\n\tSwaps: " << results[0].swaps << "\n\tMapping: ";
 							#elif defined(OGATES)
-							std::cout << "New solution found at: " << std::chrono::duration<double>(Clock::now() - start).count() << "\n\tSolution: " << *shared_sols_counter << ", From (gates) " << local_best_num_gates << " to " << results[0].num_gates << "\n\tNum gates: " << results[0].num_gates << "\n\tDepth: " << results[0].depth << "\n\tMapping: ";
+							std::cout << "New solution found at: " << std::chrono::duration<double>(Clock::now() - start).count() << "\n\tSolution (gates): " << *shared_sols_counter << ", From " << local_best_num_gates << " to " << results[0].num_gates << "\n\tDepth: " << results[0].depth << "\n\tNum gates: " << results[0].num_gates << "\n\tSwaps: " << results[0].swaps << "\n\tMapping: ";
 							#endif
 							std::cout << "[";
 							for (int m = 0; m < logic - 1; ++m)
@@ -206,7 +214,6 @@ unsigned long long jurema_search_64(int *PHYSIC_MACHINE, int *circuit, const int
 				{
 					++not_improving; // no... not improving
 				}
-
 
 
 				if (num_sols_to_check > 0ULL && not_improving > num_sols_to_check)
@@ -238,6 +245,7 @@ unsigned long long call_jurema(
 	const long long cutoff_depth,
 	int *shared_best_depth,
 	int *shared_best_num_gates,
+	int *shared_best_num_swaps,
 	int *shared_best_mapping,
 	unsigned long long *shared_sols_counter,
 	const unsigned long long num_sols_to_check,
@@ -250,9 +258,11 @@ unsigned long long call_jurema(
 	unsigned long long num_sols = 0ULL;
 
 	
-	std::vector<unsigned long long> number_of_sols_value(100000, 0ULL);
+	std::vector<unsigned long long> number_of_sols_depth(1000000, 0ULL);
+	std::vector<unsigned long long> number_of_sols_swaps(1000000, 0ULL);
+	
 
-#pragma omp parallel for schedule(runtime) reduction(+ : num_sols)
+	#pragma omp parallel for schedule(runtime) reduction(+ : num_sols)
 	for (int i = 0; i < num_random_sols; ++i)
 	{
 
@@ -268,14 +278,43 @@ unsigned long long call_jurema(
 			(long long)cutoff_depth,
 			shared_best_depth,
 			shared_best_num_gates,
+			shared_best_num_swaps,
 			shared_best_mapping,
 			shared_sols_counter,
 			NUMBER_OF_SABRE_RUNS,
 			start,
-			number_of_sols_value,
+			number_of_sols_depth,
+			number_of_sols_swaps,
 			num_sols_to_check);
 	}
+
+	
+	
+	#if defined(SOLREPORTDEPTH) || defined(SOLREPORTGATES)
+	std::cout<<"############################################"<<std::endl;
+	std::cout<<"Number of complete sols: "<< num_sols <<std::endl;
+	std::cout<<"############################################"<<std::endl;
+	std::cout<<"Depths: " <<std::endl;
+	std::cout<<"############################################"<<std::endl;
+	for(int i = 0; i<  number_of_sols_depth.size(); ++i){
+		std::cout<<i<<" "<< number_of_sols_depth[i]<<std::endl;
+	}
+	std::cout<<"############################################"<<std::endl;
+	std::cout<<"Swaps: " << std::endl;
+	std::cout<<"############################################"<<std::endl;
+	for(int i = 0; i<  number_of_sols_swaps.size(); ++i){
+		std::cout<<i<<" "<< number_of_sols_swaps[i]<<std::endl;
+	}
+	std::cout<<"############################################"<<std::endl;
+
+
+
+
+	#endif
+
+
 	return num_sols;
+
 } // end of call jurema
 
 #endif
