@@ -123,7 +123,8 @@ unsigned long long kchange_SABRE(
 							shared_best_num_swaps,
 							shared_best_mapping,
 							shared_sols_counter,
-							NUMBER_OF_SABRE_RUNS, start, recursive
+							NUMBER_OF_SABRE_RUNS,
+							start, recursive
 						);
 					}
 						
@@ -229,8 +230,8 @@ void call_kchange_vs_jurema(
 	int *shared_best_mapping = (int *)malloc(sizeof(int) * logic);
 	int *mapping = (int *)malloc(sizeof(int) * logic);
 
-	int random_depth, kchange_depth, jurema_depth, rec_depth, 
-		random_gates, kchange_gates, jurema_gates,rec_gates;
+	int random_depth, kchange_depth, jurema_depth, rec_depth, jurema_swaps,kchange_swaps, rec_swaps,
+		random_gates, kchange_gates, jurema_gates, rec_gates;
 
 	unsigned long long num_sols = 0ULL, kchange_num_sols = 0ULL, jurema_num_sols = 0ULL, rec_num_sols = 0ULL;
 
@@ -278,6 +279,7 @@ void call_kchange_vs_jurema(
 	kchange_num_sols = num_sols;
 	kchange_depth = shared_best_depth;
 	kchange_gates = shared_best_num_gates;
+	kchange_swaps = shared_best_num_swaps;
 	kchange_sols_counter = shared_sols_counter;
 	elapsed_kchange = std::chrono::duration<double>(Clock::now() - start).count();
 
@@ -285,6 +287,7 @@ void call_kchange_vs_jurema(
 	
 	shared_best_depth = random_depth;
 	shared_best_num_gates = random_gates;
+	shared_best_num_swaps = 0;
 	shared_sols_counter = 0;
 
 
@@ -303,6 +306,7 @@ void call_kchange_vs_jurema(
 	rec_num_sols = num_sols;
 	rec_depth = shared_best_depth;
 	rec_gates = shared_best_num_gates;
+	rec_swaps = shared_best_num_swaps;
 	rec_sols_counter = shared_sols_counter;
 	elapsed_rec = std::chrono::duration<double>(Clock::now() - start).count();
 
@@ -310,8 +314,11 @@ void call_kchange_vs_jurema(
 
 	shared_best_depth = random_depth;
 	shared_best_num_gates = random_gates;
+	shared_best_num_swaps = 0;
 	shared_sols_counter = 0;
-	std::vector<unsigned long long> number_of_sols;
+	std::vector<unsigned long long> number_of_sols_depth(1500, 0ULL);
+	std::vector<unsigned long long> number_of_sols_swaps(1500, 0ULL);
+	
 
 	start = Clock::now();
 
@@ -325,10 +332,13 @@ void call_kchange_vs_jurema(
 			cutoff_jurema,
 			&shared_best_depth,
 			&shared_best_num_gates,
+			&shared_best_num_swaps,
 			shared_best_mapping,
 			&shared_sols_counter,
-			NUMBER_OF_SABRE_RUNS, start,
-			number_of_sols,
+			NUMBER_OF_SABRE_RUNS, 
+			start,
+			number_of_sols_depth,
+			number_of_sols_swaps,
 			0);
 	}
 	
@@ -336,22 +346,32 @@ void call_kchange_vs_jurema(
 	jurema_depth = shared_best_depth;
 	jurema_gates = shared_best_num_gates;
 	jurema_sols_counter = shared_sols_counter;
+	jurema_swaps = shared_best_num_swaps;
+
 	elapsed_jurema = std::chrono::duration<double>(Clock::now() - start).count();
 
 	std::cout << "\n\n########################## End of Jurema ##########################" << std::endl;
 
 	std::cout << "########################## REPORT ##########################" << std::endl;
 
+	#ifdef ODEPTH
+	std::cout << "### Optimizing DEPTH" << std::endl;
+	#elif defined(OGATES)
+	std::cout << "### Optimizing GATES" << std::endl;
+	#endif
+
 	std::cout << "\nInitial SABRE " << NUMBER_OF_SABRE_RUNS << " solution:  \n\t";
 	std::cout << "Depth: " << random_depth << "\n\t";
 	std::cout << "Num gates: " << random_gates << "\n";
+
 	std::cout << "\n------------------------------------------------------------------\n";
 	std::cout << "                              K-CHANGES                             ";
 	std::cout << "\n------------------------------------------------------------------\n";
 
 	std::cout << "\nK-changes best sol: \n\t";
 	std::cout << "Depth: " << kchange_depth << "\n\t";
-	std::cout << "Num gates: " << kchange_gates << "\n\t";
+	std::cout << "Gates: " << kchange_gates << "\n\t";
+	std::cout << "Swaps: " << kchange_swaps << "\n\t";
 	std::cout << "\nNumber of solutions that improved the incumbent: " << kchange_sols_counter << "\n";
 	std::cout << "\nNumber of complete solutions found: " << logic * (logic - 1) << "\n";
 	std::cout << "\tNumber of SABRE runs: " << logic * (logic - 1) * NUMBER_OF_SABRE_RUNS << "\n";
@@ -363,7 +383,8 @@ void call_kchange_vs_jurema(
 
 	std::cout << "\nRecursive K-changes best sol: \n\t";
 	std::cout << "Depth: " << rec_depth << "\n\t";
-	std::cout << "Num gates: " << rec_gates << "\n\t";
+	std::cout << "Gates: " << rec_gates << "\n\t";
+	std::cout << "Swaps: " << rec_swaps << "\n\t";
 	std::cout << "\nNumber of solutions that improved the incumbent: " << rec_sols_counter << "\n";
 	std::cout << "\nNumber of complete solutions found: " << rec_num_sols << "\n";
 	std::cout << "\tNumber of SABRE runs: " << rec_num_sols * NUMBER_OF_SABRE_RUNS << "\n";
@@ -375,7 +396,8 @@ void call_kchange_vs_jurema(
 
 	std::cout << "\nJurema best sol: \n\t";
 	std::cout << "Depth: " << jurema_depth << "\n\t";
-	std::cout << "Num gates: " << jurema_gates << "\n\t";
+	std::cout << "Gates: " << jurema_gates << "\n\t";
+	std::cout << "Swaps: " << jurema_swaps << "\n\t";
 	std::cout << "\nNumber of solutions that improved the incumbent: " << jurema_sols_counter << "\n";
 	std::cout << "\nNumber of complete solutions found: " << jurema_total_nums_sols << "\n";
 	std::cout << "\tNumber of SABRE runs: " << jurema_total_nums_sols * NUMBER_OF_SABRE_RUNS << "\n";

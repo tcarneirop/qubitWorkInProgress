@@ -74,6 +74,7 @@ void call_jurema_search(const Parameters *my_params){
 		
 	int best_depth = INT_MAX;
     int best_num_gates = INT_MAX;
+	int best_num_swaps = INT_MAX;
 	unsigned long long shared_sols_counter = 0ULL;
     int best_mapping[MAX_BOARDSIZE];
 	std::vector<int> solutions;
@@ -105,17 +106,21 @@ void call_jurema_search(const Parameters *my_params){
 		my_params->cutoff_depth,
 		&best_depth,
 		&best_num_gates,
+		&best_num_swaps,
 		best_mapping,
 		&shared_sols_counter,
 		my_params->num_sols_to_skip,
 		my_params->number_of_sabre_runs,
 		my_params->num_random_sols,
 		start);
+
+		
 	
 	std::cout << "\n############ END OF THE JUREMA SEARCH ################" << std::endl;
 	std::cout << "\nBest solution found: \n\t";
 	std::cout << "Depth: " << best_depth << "\n\t";
-	std::cout << "Num gates: " << best_num_gates << "\n";
+	std::cout << "Num Gates: " << best_num_gates << "\n\t";
+	std::cout << "Num Swaps: " << best_num_swaps << "\n";
 	std::cout << "Number of complete solutions found: " << num_sols << "\n";
 	std::cout << "Number of solutions that improved the incumbent: " << shared_sols_counter << "\n\t";
 	std::cout << "Number of SABRE runs (rand+jurema): " << (num_sols+my_params->num_random_sols) * my_params->number_of_sabre_runs << "\n";
