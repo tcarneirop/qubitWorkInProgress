@@ -14,11 +14,11 @@ unsigned long long kchange_SABRE(
 	int *shared_best_num_swaps,
 	int *shared_best_mapping,
 	unsigned long long *shared_sols_counter,
-	const int NUMBER_OF_SABRE_RUNS, Clock::time_point start, const bool recursive)
+	const int NUMBER_OF_SABRE_RUNS, Clock::time_point start, const bool recursive, const bool prunning)
 {
 
 
-	int *new_mapping = (int *)malloc(sizeof(int) * logic);
+	int *new_mapping = new int[logic];
 	memcpy(new_mapping, mapping, sizeof(int) * logic);
 
 
@@ -31,13 +31,17 @@ unsigned long long kchange_SABRE(
 
 	for (int index = 0; index < logic; ++index)
 	{
-		for (int kchange_index = 0; kchange_index < logic; ++kchange_index)
+		for (int kchange_index = index + 1; kchange_index < logic; ++kchange_index)
 		{
 			++num_sols;
 			std::swap(new_mapping[index], new_mapping[kchange_index]);
 
 		
-			results = SABRE_routing_many(circuit, num_gates, PHYSIC_MACHINE, physic, logic, 1, new_mapping, 1, NUMBER_OF_SABRE_RUNS, 1);
+			if(prunning)
+				results = prunning_SABRE_routing_many(circuit, num_gates, PHYSIC_MACHINE, physic, logic, 1, new_mapping, 1, NUMBER_OF_SABRE_RUNS, 1, shared_best_depth);
+			else
+				results = SABRE_routing_many(circuit, num_gates, PHYSIC_MACHINE, physic, logic, 1, new_mapping, 1, NUMBER_OF_SABRE_RUNS, 1);
+			
 			
 
 			#pragma omp atomic read
@@ -66,7 +70,7 @@ unsigned long long kchange_SABRE(
 						*shared_best_depth = results[0].depth;
 						*shared_best_num_swaps = results[0].swaps;
 
-						memcpy(shared_best_mapping,mapping, logic * sizeof(int) );
+						memcpy(shared_best_mapping,new_mapping, logic * sizeof(int) );
 					}
 				}
 
@@ -124,7 +128,7 @@ unsigned long long kchange_SABRE(
 							shared_best_mapping,
 							shared_sols_counter,
 							NUMBER_OF_SABRE_RUNS,
-							start, recursive
+							start, recursive,prunning
 						);
 					}
 						
@@ -137,7 +141,7 @@ unsigned long long kchange_SABRE(
 	} // index
 
 
-	delete new_mapping;
+	delete[] new_mapping;
 	return num_sols;
 }
 
@@ -186,7 +190,7 @@ void call_kchange(
 	{
 		int *mapping = solutions.data() + i * logic;
 		num_sols+=kchange_SABRE(PHYSIC_MACHINE, circuit, num_gates, physic, logic, mapping, &shared_best_depth, &shared_best_num_gates, &shared_best_num_swaps,
-				  shared_best_mapping, &shared_sols_counter, NUMBER_OF_SABRE_RUNS, start, recursive);
+				  shared_best_mapping, &shared_sols_counter, NUMBER_OF_SABRE_RUNS, start, recursive, false);
 	
 	}
 
@@ -209,6 +213,7 @@ void call_kchange(
 	std::cout << "Number of SABRE runs (rand+kchange): " << (num_sols+NUM_RAND_SOLS) * NUMBER_OF_SABRE_RUNS  << "\n";
 	std::cout << "Elapsed time: " << std::chrono::duration<double>(Clock::now() - start).count() << std::endl;
 	std::cout << "\n######################################################################\n";
+
 
 
 }
@@ -273,7 +278,7 @@ void call_kchange_vs_jurema(
 	{
 		int *mapping = solutions.data() + i * logic;
 		num_sols+=kchange_SABRE(PHYSIC_MACHINE, circuit, num_gates, physic, logic, mapping, &shared_best_depth, &shared_best_num_gates, &shared_best_num_swaps,
-				  shared_best_mapping, &shared_sols_counter, NUMBER_OF_SABRE_RUNS, start, false);
+				  shared_best_mapping, &shared_sols_counter, NUMBER_OF_SABRE_RUNS, start, false,false);
 	}
 
 	kchange_num_sols = num_sols;
@@ -283,12 +288,13 @@ void call_kchange_vs_jurema(
 	kchange_sols_counter = shared_sols_counter;
 	elapsed_kchange = std::chrono::duration<double>(Clock::now() - start).count();
 
-	std::cout << "\n\n########################## Starting RECURSIVE 2-changes ##########################" << std::endl;
+	std::cout << "\n\n########################## Starting PRUNING 2-changes ##########################" << std::endl;
 	
 	shared_best_depth = random_depth;
 	shared_best_num_gates = random_gates;
 	shared_best_num_swaps = 0;
 	shared_sols_counter = 0;
+	num_sols = 0;
 
 
 	memcpy(mapping, shared_best_mapping, sizeof(int) * logic);
@@ -300,7 +306,7 @@ void call_kchange_vs_jurema(
 	{
 		int *mapping = solutions.data() + i * logic;
 		num_sols+=kchange_SABRE(PHYSIC_MACHINE, circuit, num_gates, physic, logic, mapping, &shared_best_depth, &shared_best_num_gates, &shared_best_num_swaps,
-				  shared_best_mapping, &shared_sols_counter, NUMBER_OF_SABRE_RUNS, start, true);
+				  shared_best_mapping, &shared_sols_counter, NUMBER_OF_SABRE_RUNS, start, false, true);
 	}
 
 	rec_num_sols = num_sols;
@@ -316,6 +322,7 @@ void call_kchange_vs_jurema(
 	shared_best_num_gates = random_gates;
 	shared_best_num_swaps = 0;
 	shared_sols_counter = 0;
+	num_sols = 0;
 	std::vector<unsigned long long> number_of_sols_depth(1500, 0ULL);
 	std::vector<unsigned long long> number_of_sols_swaps(1500, 0ULL);
 	
@@ -326,20 +333,22 @@ void call_kchange_vs_jurema(
 	for (int i = 0; i < NUM_RAND_SOLS; ++i)
 	{
 		int *mapping = solutions.data() + i * logic;
-		num_sols+=jurema_total_nums_sols = jurema_search_64(PHYSIC_MACHINE, circuit, num_gates,
-			physic, logic,
-			mapping,
-			cutoff_jurema,
-			&shared_best_depth,
-			&shared_best_num_gates,
-			&shared_best_num_swaps,
-			shared_best_mapping,
-			&shared_sols_counter,
-			NUMBER_OF_SABRE_RUNS, 
-			start,
-			number_of_sols_depth,
-			number_of_sols_swaps,
-			0);
+		num_sols+=jurema_total_nums_sols = 0;
+		
+		//jurema_search_64(PHYSIC_MACHINE, circuit, num_gates,
+		//	physic, logic,
+		//	mapping,
+		//	cutoff_jurema,
+		//	&shared_best_depth,
+		//	&shared_best_num_gates,
+		//	&shared_best_num_swaps,
+		//	shared_best_mapping,
+		//	&shared_sols_counter,
+		//	NUMBER_OF_SABRE_RUNS, 
+		//	start,
+		//	number_of_sols_depth,
+		//	number_of_sols_swaps,
+		//	0);
 	}
 	
 	jurema_num_sols = num_sols;
@@ -373,15 +382,15 @@ void call_kchange_vs_jurema(
 	std::cout << "Gates: " << kchange_gates << "\n\t";
 	std::cout << "Swaps: " << kchange_swaps << "\n\t";
 	std::cout << "\nNumber of solutions that improved the incumbent: " << kchange_sols_counter << "\n";
-	std::cout << "\nNumber of complete solutions found: " << logic * (logic - 1) << "\n";
-	std::cout << "\tNumber of SABRE runs: " << logic * (logic - 1) * NUMBER_OF_SABRE_RUNS << "\n";
+	std::cout << "\nNumber of complete solutions found: " << kchange_num_sols << "\n";
+	std::cout << "\tNumber of SABRE runs: " << kchange_num_sols  * NUMBER_OF_SABRE_RUNS << "\n";
 	std::cout << "Elapsed k-changes: " << elapsed_kchange << "\n\t";
 
 	std::cout << "\n------------------------------------------------------------------\n";
-	std::cout << "                              RECURSIVE-CHANGES                             ";
+	std::cout << "                              PRUNING-CHANGES                             ";
 	std::cout << "\n------------------------------------------------------------------\n";
 
-	std::cout << "\nRecursive K-changes best sol: \n\t";
+	std::cout << "\nPruning K-changes best sol: \n\t";
 	std::cout << "Depth: " << rec_depth << "\n\t";
 	std::cout << "Gates: " << rec_gates << "\n\t";
 	std::cout << "Swaps: " << rec_swaps << "\n\t";
