@@ -1434,9 +1434,9 @@ std::vector<RoutingResult> SABRE_routing_many(
     int num_trials, int num_threads)
 {
 
-    std::random_device rd;
-    std::mt19937 rng(rd());
-    base_seed = rng();
+    //std::random_device rd;
+    //std::mt19937 rng(rd());
+    //base_seed = rng();
 
     SharedCtx ctx;
     ctx.dist = dist;
