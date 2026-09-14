@@ -306,13 +306,9 @@ unsigned long long call_jurema(
 		std::cout<<i<<" "<< number_of_sols_swaps[i]<<std::endl;
 	}
 	std::cout<<"############################################"<<std::endl;
-
-
-
-
 	#endif
 
-
+	
 	return num_sols;
 
 } // end of call jurema
