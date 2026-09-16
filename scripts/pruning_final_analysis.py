@@ -103,7 +103,7 @@ BASE_DIR = os.path.dirname(
 
 EXPERIMENT_DIR = os.path.join(
     BASE_DIR,
-    "prining_exec",
+    "printing_exec_log",
     EXPERIMENT_NAME
 )
 
