@@ -37,22 +37,40 @@ unsigned long long kchange_SABRE(
 			std::swap(new_mapping[index], new_mapping[kchange_index]);
 
 		
-			if(prunning)
+			//std::cout << "mapping = ";
+			//for (int j = 0; j < logic; ++j)
+			//	std::cout << new_mapping[j] << " ";
+			//std::cout << "\n";
+
+			//std::cout << "NUMBER_OF_SABRE_RUNS = "
+			//		<< NUMBER_OF_SABRE_RUNS << "\n";
+					
+			if(prunning){
+				#ifdef ODEPTH
 				results = prunning_SABRE_routing_many(circuit, num_gates, PHYSIC_MACHINE, physic, logic, 1, new_mapping, 1, NUMBER_OF_SABRE_RUNS, 1, shared_best_depth);
-			else
+				#elif defined(OGATES)
+				results = prunning_SABRE_routing_many(circuit, num_gates, PHYSIC_MACHINE, physic, logic, 1, new_mapping, 1, NUMBER_OF_SABRE_RUNS, 1, shared_best_num_swaps);
+				#endif
+			}
+			else{
 				results = SABRE_routing_many(circuit, num_gates, PHYSIC_MACHINE, physic, logic, 1, new_mapping, 1, NUMBER_OF_SABRE_RUNS, 1);
+			}
 			
-			
+		//	std::cout << "result = "
+        //  << results[0].depth << " "
+        //  << results[0].num_gates << " "
+        //  << results[0].swaps << "\n";
+
 
 			#pragma omp atomic read
-			local_best_num_gates = *shared_best_num_gates;
+			local_best_num_swaps = *shared_best_num_swaps;
 			#pragma omp atomic read
 			local_best_depth = *shared_best_depth;
 			
 			bool improved = false;
 
 			#ifdef ODEPTH
-			if (results[0].depth < local_best_depth || (results[0].depth == local_best_depth && results[0].num_gates < local_best_num_gates))
+			if (results[0].depth < local_best_depth || (results[0].depth == local_best_depth && results[0].swaps < local_best_num_swaps))
 			{
 				
 				#pragma omp critical(check_sol)
@@ -62,21 +80,20 @@ unsigned long long kchange_SABRE(
 					local_best_depth = *shared_best_depth;
 					local_best_num_swaps = *shared_best_num_swaps;
 
-					if(results[0].depth < local_best_depth || (results[0].depth == local_best_depth && results[0].num_gates < local_best_num_gates))
+					if(results[0].depth < local_best_depth || (results[0].depth == local_best_depth && results[0].swaps < local_best_num_swaps))
 					{
 						improved = true;
 
 						*shared_best_num_gates = results[0].num_gates;
 						*shared_best_depth = results[0].depth;
 						*shared_best_num_swaps = results[0].swaps;
-
 						memcpy(shared_best_mapping,new_mapping, logic * sizeof(int) );
 					}
 				}
 
 			#elif defined(OGATES)
 				
-				if (results[0].num_gates < local_best_num_gates || (results[0].num_gates == local_best_num_gates && results[0].depth < local_best_depth))
+				if (results[0].swaps < local_best_num_swaps || (results[0].swaps == local_best_num_swaps && results[0].depth < local_best_depth))
 				{
 
 					#pragma omp critical(check_sol)
@@ -86,13 +103,13 @@ unsigned long long kchange_SABRE(
 						local_best_depth = *shared_best_depth;
 						local_best_num_swaps = *shared_best_num_swaps;
 
-						if(results[0].num_gates < local_best_num_gates || (results[0].num_gates == local_best_num_gates && results[0].depth < local_best_depth))
+						if(results[0].swaps < local_best_num_swaps || (results[0].swaps == local_best_num_swaps && results[0].depth < local_best_depth))
 						{
 							improved = true;
 							*shared_best_num_gates = results[0].num_gates;
 							*shared_best_depth = results[0].depth;
 							*shared_best_num_swaps = results[0].swaps;
-							memcpy(shared_best_mapping,mapping, logic * sizeof(int) );
+							memcpy(shared_best_mapping,new_mapping, logic * sizeof(int) );
 						}
 					}
 
@@ -171,6 +188,7 @@ void call_kchange(
 		physic, logic,
 		&shared_best_depth,
 		&shared_best_num_gates,
+		&shared_best_num_swaps,
 		shared_best_mapping,
 		NUMBER_OF_SABRE_RUNS, NUM_RAND_SOLS);
 
@@ -233,9 +251,10 @@ void call_kchange_vs_jurema(
 	
 
 	int *shared_best_mapping = (int *)malloc(sizeof(int) * logic);
-	int *mapping = (int *)malloc(sizeof(int) * logic);
+	int *mapping =             (int *)malloc(sizeof(int) * logic);
+	int *rand_best_mapping =   (int *)malloc(sizeof(int) * logic);
 
-	int random_depth, kchange_depth, jurema_depth, rec_depth, jurema_swaps,kchange_swaps, rec_swaps,
+	int random_depth, kchange_depth, jurema_depth, rec_depth, random_swaps, jurema_swaps, kchange_swaps, rec_swaps,
 		random_gates, kchange_gates, jurema_gates, rec_gates;
 
 	unsigned long long num_sols = 0ULL, kchange_num_sols = 0ULL, jurema_num_sols = 0ULL, rec_num_sols = 0ULL;
@@ -256,10 +275,15 @@ void call_kchange_vs_jurema(
 		physic, logic,
 		&shared_best_depth,
 		&shared_best_num_gates,
+		&shared_best_num_swaps,
 		shared_best_mapping,
 		NUMBER_OF_SABRE_RUNS, NUM_RAND_SOLS);
+
 	random_depth = shared_best_depth;
 	random_gates = shared_best_num_gates;
+	random_swaps = shared_best_num_swaps;
+
+
 
 	std::cout << "Baseline " << NUMBER_OF_SABRE_RUNS << " sabre run value: \n\tDepth: " << random_depth << "\n\tGates: " << random_gates << std::endl;
 
@@ -267,9 +291,10 @@ void call_kchange_vs_jurema(
 
 
 
-	std::cout << "\n\n########################## Starting 2-changes ##########################" << std::endl;
+	std::cout << "\n\n########################## Starting K-changes ##########################" << std::endl;
 
-	memcpy(mapping, shared_best_mapping, sizeof(int) * logic);
+	
+	memcpy(rand_best_mapping, shared_best_mapping, sizeof(int) * logic);
 
 	Clock::time_point start = Clock::now();
 
@@ -277,6 +302,7 @@ void call_kchange_vs_jurema(
 	for (int i = 0; i < NUM_RAND_SOLS; ++i)
 	{
 		int *mapping = solutions.data() + i * logic;
+
 		num_sols+=kchange_SABRE(PHYSIC_MACHINE, circuit, num_gates, physic, logic, mapping, &shared_best_depth, &shared_best_num_gates, &shared_best_num_swaps,
 				  shared_best_mapping, &shared_sols_counter, NUMBER_OF_SABRE_RUNS, start, false,false);
 	}
@@ -288,16 +314,16 @@ void call_kchange_vs_jurema(
 	kchange_sols_counter = shared_sols_counter;
 	elapsed_kchange = std::chrono::duration<double>(Clock::now() - start).count();
 
+
 	std::cout << "\n\n########################## Starting PRUNING 2-changes ##########################" << std::endl;
 	
 	shared_best_depth = random_depth;
 	shared_best_num_gates = random_gates;
-	shared_best_num_swaps = 0;
+	shared_best_num_swaps = random_swaps;
 	shared_sols_counter = 0;
 	num_sols = 0;
 
-
-	memcpy(mapping, shared_best_mapping, sizeof(int) * logic);
+	memcpy(shared_best_mapping, rand_best_mapping, sizeof(int) * logic);
 
 	start = Clock::now();
 
@@ -305,6 +331,14 @@ void call_kchange_vs_jurema(
 	for (int i = 0; i < NUM_RAND_SOLS; ++i)
 	{
 		int *mapping = solutions.data() + i * logic;
+		
+		std::cout<<"Mapping: "<<std::endl;
+		for(int i = 0; i<logic;++i){
+			std::cout<<mapping[i]<<"  ";
+		}
+		std::cout<<std::endl;
+
+		
 		num_sols+=kchange_SABRE(PHYSIC_MACHINE, circuit, num_gates, physic, logic, mapping, &shared_best_depth, &shared_best_num_gates, &shared_best_num_swaps,
 				  shared_best_mapping, &shared_sols_counter, NUMBER_OF_SABRE_RUNS, start, false, true);
 	}
@@ -320,7 +354,7 @@ void call_kchange_vs_jurema(
 
 	shared_best_depth = random_depth;
 	shared_best_num_gates = random_gates;
-	shared_best_num_swaps = 0;
+	shared_best_num_swaps = random_swaps;
 	shared_sols_counter = 0;
 	num_sols = 0;
 	std::vector<unsigned long long> number_of_sols_depth(1500, 0ULL);

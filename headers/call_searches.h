@@ -39,6 +39,7 @@ void call_dfs(const Parameters *my_params){
 
 	int best_depth = INT_MAX;
     int best_num_gates = INT_MAX;
+	int best_num_swaps = INT_MAX;
 	unsigned long long shared_sols_counter = 0ULL;
     int best_mapping[MAX_BOARDSIZE];
 	std::vector<int> solutions;
@@ -52,6 +53,7 @@ void call_dfs(const Parameters *my_params){
 		my_params->nb_physic, my_params->nb_logic,
 		&best_depth,
 		&best_num_gates,
+		&best_num_swaps,
 		best_mapping,
 		my_params->number_of_sabre_runs, my_params->num_random_sols);
 
@@ -88,6 +90,7 @@ void call_jurema_search(const Parameters *my_params){
 		my_params->nb_physic, my_params->nb_logic,
 		&best_depth,
 		&best_num_gates,
+		&best_num_swaps,
 		best_mapping,
 		my_params->number_of_sabre_runs, my_params->num_random_sols);
 

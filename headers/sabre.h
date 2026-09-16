@@ -950,10 +950,13 @@ void sabre_route_one(const SharedCtx &ctx,
 }
 
 
-void prunning_sabre_route_one(const SharedCtx &ctx,
-                     int *mapping, uint32_t rng_seed,
-                     Scratch &sc,
-                     int *out_num_gates, int *out_depth, int *out_swap, int *shared_best_depth)
+void prunning_sabre_route_one(
+    const SharedCtx &ctx,
+        int *mapping, uint32_t rng_seed,
+        Scratch &sc,
+        int *out_num_gates, int *out_depth, 
+        int *out_swap, int *shared_best_value
+    )
 {
     // --- Unpack ctx as raw pointer / scalar locals for terse body code. ---
     const int *gates_q1 = ctx.gates_q1.data();
@@ -1065,28 +1068,36 @@ void prunning_sabre_route_one(const SharedCtx &ctx,
                     last_layer[pa] = li;
                     last_layer[pb] = li;
 
-                     //@todo: question
-                     //@todo: why?
-                    //if(li > current_depth ){
-                    current_depth = li;
-                    //}
-                    if(current_depth>*shared_best_depth){
-
-                        //int depth = 0;
-                        //for (int i = 0; i < N; ++i)
-                        //    if (last_layer[i] + 1 > depth)
-                        //        depth = last_layer[i] + 1;
-
-                        //*out_num_gates = num_gates;
-                        //*out_depth = depth;
-                        //*out_swap = swaps;
-                        //std::cout<<"PRUNNING: "<< current_depth<<" "<< *shared_best_depth<<std::endl;
-                        return;
-                    }
-                    
                     num_gates += 3;
                     swaps++;
-            
+
+                
+                    #ifdef ODEPTH
+
+                    current_depth = li;
+                    if(current_depth>*shared_best_value){
+                        *out_num_gates = INT_MAX;
+                        *out_depth = INT_MAX;
+                        *out_swap = INT_MAX;
+
+                        //std::cout<<"\nPRUNNING -1: "<< current_depth<<" "<< *shared_best_value<<std::endl;
+                        return;
+                    }
+
+                    #elif defined(OGATES)
+                    
+                    if(swaps>*shared_best_value){
+                      
+                        *out_num_gates = INT_MAX;
+                        *out_depth = INT_MAX;
+                        *out_swap = INT_MAX;
+
+                        //std::cout<<"\nPRUNNING -1: "<< swaps<<" "<< *shared_best_value<<std::endl;
+                        return;
+                    }
+
+                    #endif
+                
                 }
                 pending_count = 0;
                 pending_committed = true;
@@ -1097,12 +1108,28 @@ void prunning_sabre_route_one(const SharedCtx &ctx,
                 last_layer[phys_qubit_1] += 1;
                 ++num_gates;
                      
-                //@HERE
-                if(last_layer[phys_qubit_1] > *shared_best_depth){
-                   // std::cout<<"\nPRUNNNINNNGGGG 0";
+
+                #ifdef ODEPTH
+                if(last_layer[phys_qubit_1] > *shared_best_value){
+                    *out_num_gates = INT_MAX;
+                    *out_depth = INT_MAX;
+                    *out_swap = INT_MAX;                    
+                    //std::cout<<"\nPRUNNING 0: "<< last_layer[phys_qubit_1] <<" "<< *shared_best_value<<std::endl;
                     return;
                 }
-               
+
+                #elif defined(OGATES)
+                
+                if(swaps > *shared_best_value){
+                    *out_num_gates = INT_MAX;
+                    *out_depth = INT_MAX;
+                    *out_swap = INT_MAX;
+
+                    //std::cout<<"\nPRUNNING 0: "<< swaps <<" "<< *shared_best_value<<std::endl;
+                    return;
+                }
+                #endif
+
             }
             else
             {
@@ -1112,11 +1139,29 @@ void prunning_sabre_route_one(const SharedCtx &ctx,
                 ++num_gates;
                 
                 //@HERE
+                #ifdef ODEPTH
+
                 current_depth = li;
-                if(current_depth>*shared_best_depth){
-                   // std::cout<<"\nPRUNNNINNNGGGG";
+                if(current_depth>*shared_best_value){
+                   *out_num_gates = INT_MAX;
+                    *out_depth = INT_MAX;
+                    *out_swap = INT_MAX;
+
+                    //std::cout<<"\nPRUNNING 1: "<< current_depth<<" "<< *shared_best_value<<std::endl;
                     return;
                 }
+
+                #elif defined(OGATES)
+                if(swaps>*shared_best_value){
+                    *out_num_gates = INT_MAX;
+                    *out_depth = INT_MAX;
+                    *out_swap = INT_MAX;
+                   // std::cout<<"\nPRUNNING 1: "<< swaps<<" "<< *shared_best_value<<std::endl;
+                    return;
+                }
+
+                #endif
+
         
             }
 
@@ -1247,15 +1292,7 @@ void prunning_sabre_route_one(const SharedCtx &ctx,
                 last_layer[pb] = li;
                 num_gates += 3;
                 swaps++;
-                
-                
-                current_depth = li;
-
-                if(current_depth>*shared_best_depth){
-                    std::cout<<"\nPRUNNNINNNGGGG 1";
-                    return;
-                }
-
+                 
 
             }
             for (int j = 0; j < d - 1 - k; ++j)
@@ -1272,10 +1309,7 @@ void prunning_sabre_route_one(const SharedCtx &ctx,
 
                 current_depth = li;
                 
-                if(current_depth>*shared_best_depth){
-                    std::cout<<"\nPRUNNNINNNGGGG 2";
-                    return;
-                }
+
 
             }
 
@@ -1579,12 +1613,12 @@ std::vector<RoutingResult> prunning_SABRE_routing_many(
     const int *gates_flat, int num_gates_in,
     const int *dist, int N,
     int n, int P, const int *mappings_data, uint32_t base_seed,
-    int num_trials, int num_threads, int* shared_best_depth)
+    int num_trials, int num_threads, int* shared_best_value)
 {
 
-    std::random_device rd;
-    std::mt19937 rng(rd());
-    base_seed = rng();
+    //std::random_device rd;
+    //std::mt19937 rng(rd());
+    //base_seed = rng();
 
     SharedCtx ctx;
     ctx.dist = dist;
@@ -1684,7 +1718,7 @@ std::vector<RoutingResult> prunning_SABRE_routing_many(
             //////////@hHERE
             int num_gates = INT_MAX, depth = INT_MAX, swaps = INT_MAX;
             prunning_sabre_route_one(ctx, sc.mapping_buf.data(), rng_seed, sc,
-                            &num_gates, &depth, &swaps, shared_best_depth);
+                            &num_gates, &depth, &swaps, shared_best_value);
 
             //@tODO -- X3??? 3 elements of the result?
             // Write to this (p, t)'s own slot — no contention, no atomic.

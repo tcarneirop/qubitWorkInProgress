@@ -32,6 +32,7 @@ std::vector<int> random_heuristic(
     const long long logic,   
     int *shared_best_depth, 
     int *shared_best_num_gates,
+    int *shared_best_num_swaps,
     int *shared_best_mapping, 
     const int NUMBER_OF_SABRE_RUNS, const unsigned long long num_random_sols)
 {
@@ -85,7 +86,7 @@ std::vector<int> random_heuristic(
         std::vector<RoutingResult> results;
         int local_best_depth = INT_MAX;
         int local_best_num_gates = INT_MAX;
-
+        int local_best_num_swaps = INT_MAX;
         int* mapping= solutions.data() + i * logic;
        
 
@@ -108,6 +109,7 @@ std::vector<int> random_heuristic(
                 // Read the current pair again
                 local_best_num_gates = *shared_best_num_gates;
                 local_best_depth = *shared_best_depth;
+                local_best_num_swaps = *shared_best_num_swaps;
 
                 if(results[0].depth < local_best_depth || (results[0].depth == local_best_depth && results[0].num_gates < local_best_num_gates))
                 {
@@ -115,6 +117,7 @@ std::vector<int> random_heuristic(
 
                     *shared_best_num_gates = results[0].num_gates;
                     *shared_best_depth = results[0].depth;
+                    *shared_best_num_swaps = results[0].swaps;
 
                     memcpy(shared_best_mapping,mapping, logic * sizeof(int) );
                 }
@@ -130,12 +133,14 @@ std::vector<int> random_heuristic(
                 // Read the current pair again
                 local_best_num_gates = *shared_best_num_gates;
                 local_best_depth = *shared_best_depth;
+                local_best_num_swaps = *shared_best_num_swaps;
 
                 if(results[0].num_gates < local_best_num_gates || (results[0].num_gates == local_best_num_gates && results[0].depth < local_best_depth))
                 {
                     improved = true;
                     *shared_best_num_gates = results[0].num_gates;
                     *shared_best_depth = results[0].depth;
+                    *shared_best_num_swaps = results[0].swaps;
                     memcpy(shared_best_mapping,mapping, logic * sizeof(int) );
                 }
             }
@@ -152,6 +157,7 @@ std::vector<int> random_heuristic(
                     << " to " << results[0].num_gates
                     << "\n\tDepth: " << results[0].depth
                     << "\n\tNum gates: " << results[0].num_gates
+                    << "\n\tNum swaps: " << results[0].swaps
                     << "\n\tMapping: [";
                     for (int m = 0; m < logic - 1; ++m)
                         std::cout << mapping[m] << ", ";
