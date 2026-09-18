@@ -529,433 +529,14 @@ int build_extended_front(const int *gates_q1, const int *gates_q2,
     return ext_size;
 }
 
-void sabre_route_one(const SharedCtx &ctx,
-                     int *mapping, uint32_t rng_seed,
-                     Scratch &sc,
-                     int *out_num_gates, int *out_depth, int *out_swap)
-{
-    // --- Unpack ctx as raw pointer / scalar locals for terse body code. ---
-    const int *gates_q1 = ctx.gates_q1.data();
-    const int *gates_q2 = ctx.gates_q2.data();
-    const int *successor_idx = ctx.successor_idx.data();
-    const int *rp_init = ctx.rp_init.data();
-    const int *dist = ctx.dist;
-    const int *phys_nbr_off = ctx.phys_nbr_off.data();
-    const int *phys_nbr_list = ctx.phys_nbr_list.data();
-    const int G = ctx.G;
-    const int n = ctx.n;
-    const int N = ctx.N;
-    const int E_MAX_DEG = ctx.E_MAX_DEG;
-    const int release_threshold = ctx.release_threshold;
-
-    // --- Unpack scratch references (no copy — just aliases for readability). ---
-    auto &last_layer = sc.last_layer;
-    auto &decay = sc.decay;
-    auto &phys_to_logical = sc.phys_to_logical;
-    auto &front_partner = sc.front_partner;
-    auto &rp_live = sc.rp_live;
-    auto &rp_undo = sc.rp_undo;
-    auto &pending_pa = sc.pending_pa;
-    auto &pending_pb = sc.pending_pb;
-    auto &gate_to_remove_gid = sc.gate_to_remove_gid;
-    auto &path = sc.path;
-    auto &cand_pa = sc.cand_pa;
-    auto &cand_pb = sc.cand_pb;
-    auto &bfs_to_visit = sc.bfs_to_visit;
-    auto &bfs_visit_now = sc.bfs_visit_now;
-    auto &E_adj = sc.E_adj;
-    auto &E_adj_count = sc.E_adj_count;
-    auto &front_sorted = sc.front_sorted;
-    auto &phys_in_F = sc.phys_in_F;
-    auto &phys_in_F_list = sc.phys_in_F_list;
-
-    int swaps = 0;
-    int num_gates = 0;
-    const float increment = 1e-3f;
-    constexpr int DECAY_RESET_PERIOD = 5; // Matches Qiskit LightSABRE: decay
-                                          // is reset to 1.0 every 5 swap
-                                          // selections (sabre/route.rs).
-    int num_search_steps = 0;
-
-    // PRNG state for tie-breaking. xorshift32 requires a non-zero seed.
-    uint32_t rng_state = (rng_seed != 0u) ? rng_seed : 1u;
-
-    // Initialize per-call state.
-    std::fill(last_layer.begin(), last_layer.end(), -1);
-    std::fill(decay.begin(), decay.end(), 1.0f);
-    std::fill(phys_to_logical.begin(), phys_to_logical.end(), -1);
-
-    for (int q = 0; q < n; ++q)
-        phys_to_logical[mapping[q]] = q;
-
-    // Live predecessor counts start from the DAG's initial counts.
-    std::copy(rp_init, rp_init + G, rp_live.begin());
-
-    // Initial front layer + partner map are circuit-only state, cached in ctx.
-    // Copy into the per-call buffers rather than rebuilding with an O(G) scan.
-    int front_count = ctx.front_init_count;
-    std::copy(ctx.front_sorted_init.begin(),
-              ctx.front_sorted_init.begin() + front_count,
-              front_sorted.begin());
-    std::copy(ctx.front_partner_init.begin(),
-              ctx.front_partner_init.end(),
-              front_partner.begin());
-
-    // Release-valve state (LightSABRE, paper §II.7).
-    // Swaps selected since the last routed gate are held pending: applied to `mapping`
-    // but not yet committed to last_layer / num_gates. Committed on the next routed
-    // gate, or reverted in place if the valve trips.
-    int pending_count = 0;
-
-    while (front_count > 0)
-    {
-        int gate_to_remove_count = 0;
-        bool pending_committed = false;
-
-        for (int k = 0; k < front_count; ++k)
-        {
-            const int g_id = front_sorted[k];
-            const int qubit_1 = gates_q1[g_id];
-            const int qubit_2 = gates_q2[g_id];
-
-            int phys_qubit_1 = mapping[qubit_1];
-            int phys_qubit_2 = (qubit_2 == -1) ? -1 : mapping[qubit_2];
-
-            const bool routable = (qubit_2 == -1) || (dist[phys_qubit_1 * N + phys_qubit_2] == 1);
-            if (!routable)
-                continue;
-
-            // Commit any pending SABRE swaps before placing this gate so that the
-            // per-qubit last_layer reflects them when computing the gate's layer.
-            // Each SWAP is counted as 3 in both num_gates and depth: a SwapGate
-            // decomposes to CX(a,b)*CX(b,a)*CX(a,b) — three CX in series on the
-            // same pair, so the per-qubit last_layer advances by exactly 3 and
-            // the gate count grows by 3 per SWAP. This matches what Qiskit's
-            // BasisTranslator produces when the translation stage is run.
-            if (!pending_committed)
-            {
-                for (int i = 0; i < pending_count; ++i)
-                {
-                    const int pa = pending_pa[i], pb = pending_pb[i];
-                    int li = std::max(last_layer[pa], last_layer[pb]) + 3;
-                    last_layer[pa] = li;
-                    last_layer[pb] = li;
-                    num_gates += 3;
-                    swaps++;
-            
-                }
-                pending_count = 0;
-                pending_committed = true;
-            }
-
-            if (qubit_2 == -1)
-            {
-                last_layer[phys_qubit_1] += 1;
-                ++num_gates;
-               
-            }
-            else
-            {
-                int li = std::max(last_layer[phys_qubit_1], last_layer[phys_qubit_2]) + 1;
-                last_layer[phys_qubit_1] = li;
-                last_layer[phys_qubit_2] = li;
-                ++num_gates;
-                
-            }
-
-            gate_to_remove_gid[gate_to_remove_count++] = g_id;
-        }
-
-        if (gate_to_remove_count > 0)
-        {
-            // Reset decay on every gate-routing event, mirroring Qiskit
-            // LightSABRE (route.rs: `state.decay.fill(1.)` after each
-            // `update_route` when the decay heuristic is enabled). This is
-            // in addition to the every-DECAY_RESET_PERIOD-swaps periodic
-            // reset further down. The effect on bias is small in practice
-            // (decay is already bounded by the periodic reset), but keeping
-            // both resets matches Qiskit's algorithm exactly.
-            std::fill(decay.begin(), decay.end(), 1.0f);
-            num_search_steps = 0;
-
-            for (int i = 0; i < gate_to_remove_count; ++i)
-            {
-                const int g_id = gate_to_remove_gid[i];
-                const int gq1 = gates_q1[g_id];
-                const int gq2 = gates_q2[g_id];
-                front_erase(gates_q1, gates_q2, front_sorted.data(), front_count, g_id);
-
-                if (gq2 != -1)
-                {
-                    front_partner[gq1] = -1;
-                    front_partner[gq2] = -1;
-                }
-
-                // Process successors via the precomputed DAG. When both slots of g_id point
-                // to the same successor (the successor shares both qubits with g_id), the
-                // two per-slot decrements match the per-qubit rp init; the == 0 guard adds
-                // the gate exactly once. Sort by Gate-lex first for deterministic iteration.
-                int succs[2] = {successor_idx[g_id * 2 + 0], successor_idx[g_id * 2 + 1]};
-                if (succs[0] != -1 && succs[1] != -1 &&
-                    gate_lex_less(gates_q1, gates_q2, succs[1], succs[0]))
-                    std::swap(succs[0], succs[1]);
-
-                for (int ki = 0; ki < 2; ++ki)
-                {
-                    const int s = succs[ki];
-                    if (s == -1)
-                        continue;
-                    if (--rp_live[s] == 0)
-                    {
-                        const int nq1 = gates_q1[s];
-                        const int nq2 = gates_q2[s];
-                        front_insert(gates_q1, gates_q2, front_sorted.data(), front_count, s);
-                        if (nq2 != -1)
-                        {
-                            front_partner[nq1] = nq2;
-                            front_partner[nq2] = nq1;
-                        }
-                    }
-                }
-            }
-        }
-        else if (pending_count > release_threshold)
-        {
-            // ---------- RELEASE VALVE (LightSABRE §II.7) ----------
-            // 1. Revert pending swaps (each swap is self-inverse; reverse order cancels).
-            for (int i = pending_count - 1; i >= 0; --i)
-                apply_swap(mapping, phys_to_logical.data(), pending_pa[i], pending_pb[i]);
-            pending_count = 0;
-
-            // 2. Pick the F gate with the smallest current physical distance.
-            int target_q1 = -1, target_q2 = -1;
-            int min_d = std::numeric_limits<int>::max();
-            for (int k = 0; k < front_count; ++k)
-            {
-                const int g_id = front_sorted[k];
-                const int q1 = gates_q1[g_id];
-                const int q2 = gates_q2[g_id];
-                if (q2 == -1)
-                    continue;
-                const int d = dist[mapping[q1] * N + mapping[q2]];
-                if (d < min_d)
-                {
-                    min_d = d;
-                    target_q1 = q1;
-                    target_q2 = q2;
-                }
-            }
-
-            // 3. Reconstruct a shortest path via greedy distance-decrement.
-            // Iterate only the actual neighbours of `cur` (CSR adjacency) rather
-            // than scanning all N physical qubits per step — for heavy-hex / IBM-
-            // style topologies the degree is ~3, so this is a big constant-factor
-            // win when the release valve fires.
-            const int p_start = mapping[target_q1];
-            const int p_end = mapping[target_q2];
-            const int d = min_d;
-            int path_len = 0;
-            path[path_len++] = p_start;
-            {
-                int cur = p_start;
-                for (int step = 0; step < d; ++step)
-                {
-                    const int remaining = d - step - 1;
-                    const int nbr_lo = phys_nbr_off[cur];
-                    const int nbr_hi = phys_nbr_off[cur + 1];
-                    for (int k = nbr_lo; k < nbr_hi; ++k)
-                    {
-                        const int nxt = phys_nbr_list[k];
-                        if (dist[nxt * N + p_end] == remaining)
-                        {
-                            path[path_len++] = nxt;
-                            cur = nxt;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            // 4. Apply swaps from both ends of the path so the two operands meet in the middle.
-            //    These swaps are final (committed immediately via last_layer / num_gates).
-            const int k = (d - 1) / 2; // q1 at p_start takes k forward steps; q2 at p_end takes d-1-k
-            for (int i = 0; i < k; ++i)
-            {
-                int pa = path[i], pb = path[i + 1];
-                apply_swap(mapping, phys_to_logical.data(), pa, pb);
-                // SWAP = 3 layers / 3 gates (CX·CX·CX in series on the same pair).
-                int li = std::max(last_layer[pa], last_layer[pb]) + 3;
-                last_layer[pa] = li;
-                last_layer[pb] = li;
-                num_gates += 3;
-                swaps++;
-            }
-            for (int j = 0; j < d - 1 - k; ++j)
-            {
-                int idx = d - j;
-                int pa = path[idx], pb = path[idx - 1];
-                apply_swap(mapping, phys_to_logical.data(), pa, pb);
-                // SWAP = 3 layers / 3 gates (CX·CX·CX in series on the same pair).
-                int li = std::max(last_layer[pa], last_layer[pb]) + 3;
-                last_layer[pa] = li;
-                last_layer[pb] = li;
-                num_gates += 3;
-                swaps++;
-            }
-
-            // target_gate is now at distance 1; next outer iteration will route it.
-            std::fill(decay.begin(), decay.end(), 1.0f);
-            num_search_steps = 0;
-        }
-        else
-        {
-            // ---------- NORMAL SWAP SELECTION (LightSABRE relative scoring) ----------
-            const int ext_size = build_extended_front(
-                gates_q1, gates_q2, successor_idx, rp_live.data(), G,
-                front_sorted.data(), front_count, n, E_MAX_DEG,
-                rp_undo.data(), bfs_to_visit.data(), bfs_visit_now.data(),
-                E_adj.data(), E_adj_count.data());
-            const int front_size = front_count;
-
-            float score_F = 0.0f;
-            for (int k = 0; k < front_count; ++k)
-            {
-                const int g_id = front_sorted[k];
-                score_F += (float)dist[mapping[gates_q1[g_id]] * N + mapping[gates_q2[g_id]]];
-            }
-            // score_E: skip qubits with no extended-set partners. Hoisting
-            // mapping[q] out of the inner loop avoids the cache-miss chain on
-            // qubits that wouldn't contribute anyway.
-            float score_E = 0.0f;
-            for (int q = 0; q < n; ++q)
-            {
-                const int cnt = E_adj_count[q];
-                if (cnt == 0)
-                    continue;
-                const int mq = mapping[q];
-                const int row = q * E_MAX_DEG;
-                for (int kk = 0; kk < cnt; ++kk)
-                    score_E += (float)dist[mq * N + mapping[E_adj[row + kk]]];
-            }
-            score_E *= 0.5f; // each edge counted twice in E_adj
-
-            // Precompute normalisers (H_base + inv_front + inv_ext_weighted are
-            // constant across the entire swap-candidate loop).
-            constexpr float weight = 0.5f;
-            const float inv_front = 1.0f / (float)front_size;
-            const float inv_ext_weighted = (ext_size > 0) ? (weight / (float)ext_size) : 0.0f;
-            const float H_base = score_F * inv_front + score_E * inv_ext_weighted;
-
-            float Hmin = std::numeric_limits<float>::max();
-            int cand_count = 0;
-
-            // Build phys_in_F_list in ascending physical-qubit order in the same
-            // pass that marks phys_in_F. The ascending order preserves
-            // (seed, mapping)-reproducibility of the tie-break RNG. Iterating
-            // this compact list avoids the O(N) outer scan on large backends.
-            std::fill(phys_in_F.begin(), phys_in_F.end(), (char)0);
-            for (int k = 0; k < front_count; ++k)
-            {
-                const int g_id = front_sorted[k];
-                phys_in_F[mapping[gates_q1[g_id]]] = 1;
-                phys_in_F[mapping[gates_q2[g_id]]] = 1;
-            }
-            int phys_in_F_count = 0;
-            for (int p = 0; p < N; ++p)
-                if (phys_in_F[p])
-                    phys_in_F_list[phys_in_F_count++] = p;
-
-            for (int ia = 0; ia < phys_in_F_count; ++ia)
-            {
-                const int p_a = phys_in_F_list[ia];
-
-                // Precompute everything the inner p_b loop needs that only
-                // depends on p_a (and ext-loop invariants).
-                PaPrep pp;
-                pp.q_a = phys_to_logical[p_a];
-                pp.partner_a = front_partner[pp.q_a];
-                pp.p_partner_a = mapping[pp.partner_a];
-                pp.dist_a_partner_a = dist[p_a * N + pp.p_partner_a];
-                pp.e_cnt_a = E_adj_count[pp.q_a];
-                pp.e_row_a = pp.q_a * E_MAX_DEG;
-                pp.decay_a = decay[p_a];
-                pp.H_base = H_base;
-                pp.inv_front = inv_front;
-                pp.inv_ext_weighted = inv_ext_weighted;
-
-                const int nbr_lo = phys_nbr_off[p_a];
-                const int nbr_hi = phys_nbr_off[p_a + 1];
-                for (int k = nbr_lo; k < nbr_hi; ++k)
-                {
-                    const int p_b = phys_nbr_list[k];
-
-                    if (p_b < p_a && phys_in_F[p_b])
-                        continue;
-
-                    float H = Hdecay_relative(dist, N,
-                                              E_adj.data(), E_adj_count.data(), E_MAX_DEG,
-                                              mapping, phys_to_logical.data(), front_partner.data(),
-                                              p_a, p_b, decay.data(), pp);
-
-                    if (H < Hmin - H_TOL)
-                    {
-                        cand_pa[0] = p_a;
-                        cand_pb[0] = p_b;
-                        cand_count = 1;
-                        Hmin = H;
-                    }
-                    else if (std::fabs(H - Hmin) <= H_TOL)
-                    {
-                        cand_pa[cand_count] = p_a;
-                        cand_pb[cand_count] = p_b;
-                        ++cand_count;
-                    }
-                }
-            }
-
-            const int pick = (int)(xorshift32(rng_state) % (uint32_t)cand_count);
-            const int swap_idx_1 = cand_pa[pick];
-            const int swap_idx_2 = cand_pb[pick];
-
-            ++num_search_steps;
-            if (num_search_steps >= DECAY_RESET_PERIOD)
-            {
-                std::fill(decay.begin(), decay.end(), 1.0f);
-                num_search_steps = 0;
-            }
-            else
-            {
-                decay[swap_idx_1] += increment;
-                decay[swap_idx_2] += increment;
-            }
-
-            // Apply the swap to the current mapping and queue it; commit to last_layer
-            // and num_gates only when the next gate actually routes.
-            apply_swap(mapping, phys_to_logical.data(), swap_idx_1, swap_idx_2);
-            pending_pa[pending_count] = swap_idx_1;
-            pending_pb[pending_count] = swap_idx_2;
-            ++pending_count;
-        }
-    }
-
-    int depth = 0;
-    for (int i = 0; i < N; ++i)
-        if (last_layer[i] + 1 > depth)
-            depth = last_layer[i] + 1;
-
-    *out_num_gates = num_gates;
-    *out_depth = depth;
-    *out_swap = swaps;
-
-}
 
 
-void prunning_sabre_route_one(
+void pruning_sabre_route_one(
     const SharedCtx &ctx,
         int *mapping, uint32_t rng_seed,
         Scratch &sc,
         int *out_num_gates, int *out_depth, 
-        int *out_swap, int *shared_best_value
+        int *out_swap, int *shared_best_value, const bool pruning
     )
 {
     // --- Unpack ctx as raw pointer / scalar locals for terse body code. ---
@@ -1069,24 +650,27 @@ void prunning_sabre_route_one(
                     last_layer[pb] = li;
 
                     num_gates += 3;
-                    swaps++;
-
+                    swaps++;                    
                 
                     #ifdef ODEPTH
+                    int depth = 0;
+                    for (int i = 0; i < N; ++i)
+                    if (last_layer[i] + 1 > depth)
+                        depth = last_layer[i] + 1;
 
-                    current_depth = li;
-                    if(current_depth>*shared_best_value){
+                    
+                    if(pruning && current_depth > *shared_best_value){
                         *out_num_gates = INT_MAX;
                         *out_depth = INT_MAX;
                         *out_swap = INT_MAX;
 
-                        //std::cout<<"\nPRUNNING -1: "<< current_depth<<" "<< *shared_best_value<<std::endl;
+                        //std::cout<<"\nPRUNING -1: "<< current_depth<<" "<< *shared_best_value<<std::endl;
                         return;
                     }
 
                     #elif defined(OGATES)
                     
-                    if(swaps>*shared_best_value){
+                    if(pruning && swaps>*shared_best_value){
                       
                         *out_num_gates = INT_MAX;
                         *out_depth = INT_MAX;
@@ -1105,22 +689,22 @@ void prunning_sabre_route_one(
 
             if (qubit_2 == -1)
             {
+                
                 last_layer[phys_qubit_1] += 1;
                 ++num_gates;
-                     
-
+                   
                 #ifdef ODEPTH
-                if(last_layer[phys_qubit_1] > *shared_best_value){
+                if(pruning && current_depth > *shared_best_value){
                     *out_num_gates = INT_MAX;
                     *out_depth = INT_MAX;
                     *out_swap = INT_MAX;                    
-                    //std::cout<<"\nPRUNNING 0: "<< last_layer[phys_qubit_1] <<" "<< *shared_best_value<<std::endl;
+                    //std::cout<<"\nPRUNNING 0: "<< current_depth <<" "<< *shared_best_value<<std::endl;
                     return;
                 }
 
                 #elif defined(OGATES)
                 
-                if(swaps > *shared_best_value){
+                if(pruning && swaps > *shared_best_value){
                     *out_num_gates = INT_MAX;
                     *out_depth = INT_MAX;
                     *out_swap = INT_MAX;
@@ -1138,12 +722,14 @@ void prunning_sabre_route_one(
                 last_layer[phys_qubit_2] = li;
                 ++num_gates;
                 
+                
                 //@HERE
                 #ifdef ODEPTH
 
                 current_depth = li;
-                if(current_depth>*shared_best_value){
-                   *out_num_gates = INT_MAX;
+
+                if(pruning && current_depth > *shared_best_value){
+                    *out_num_gates = INT_MAX;
                     *out_depth = INT_MAX;
                     *out_swap = INT_MAX;
 
@@ -1152,11 +738,11 @@ void prunning_sabre_route_one(
                 }
 
                 #elif defined(OGATES)
-                if(swaps>*shared_best_value){
+                if(pruning && swaps > *shared_best_value){
                     *out_num_gates = INT_MAX;
                     *out_depth = INT_MAX;
                     *out_swap = INT_MAX;
-                   // std::cout<<"\nPRUNNING 1: "<< swaps<<" "<< *shared_best_value<<std::endl;
+                    //std::cout<<"\nPRUNNING 1: "<< swaps<<" "<< *shared_best_value<<std::endl;
                     return;
                 }
 
@@ -1460,12 +1046,14 @@ void prunning_sabre_route_one(
 }
 
 
+
+
                   
-std::vector<RoutingResult> SABRE_routing_many(
+std::vector<RoutingResult> pruning_SABRE_routing_many(
     const int *gates_flat, int num_gates_in,
     const int *dist, int N,
     int n, int P, const int *mappings_data, uint32_t base_seed,
-    int num_trials, int num_threads)
+    int num_trials, int num_threads, int* shared_best_value, const bool pruning)
 {
 
     //std::random_device rd;
@@ -1552,162 +1140,16 @@ std::vector<RoutingResult> SABRE_routing_many(
     if (nt < 1)
         nt = 1;
 
-    //@todo: x3???
+  
     std::vector<int> trial_results((size_t)P * (size_t)num_trials * 3);
 
-    Scratch sc(ctx);
+    //Scratch sc(ctx);
     for (int p = 0; p < P; ++p)
     {
         for (int t = 0; t < num_trials; ++t)
         {
-            std::copy(mappings_data + (size_t)p * n,
-                        mappings_data + (size_t)(p + 1) * n,
-                        sc.mapping_buf.begin());
-
-            const uint32_t rng_seed =
-                base_seed + (uint32_t)p * (uint32_t)num_trials + (uint32_t)t + 1u; 
-
-            int num_gates = 0, depth = 0, swaps = 0;
-            sabre_route_one(ctx, sc.mapping_buf.data(), rng_seed, sc,
-                            &num_gates, &depth, &swaps);
-
-            //@tODO -- X3??? 3 elements of the result?
-            // Write to this (p, t)'s own slot — no contention, no atomic.
-            const size_t base = ((size_t)p * (size_t)num_trials + (size_t)t) * 3;
-            trial_results[base + 0] = num_gates;
-            trial_results[base + 1] = depth;
-            trial_results[base + 2] = swaps;
-        }
-    }
-
-
-    for (int p = 0; p < P; ++p)
-    {
-        int best_num_gates = std::numeric_limits<int>::max();
-        int best_depth = std::numeric_limits<int>::max();
-        int best_swaps = std::numeric_limits<int>::max();
-
-        for (int t = 0; t < num_trials; ++t)
-        {
-            //
-            const size_t base = ((size_t)p * (size_t)num_trials + (size_t)t) * 3;
-            const int ng = trial_results[base + 0];
-            if (ng < best_num_gates)
-            {
-                best_num_gates = ng;
-                best_depth = trial_results[base + 1];
-                best_swaps = trial_results[base + 2];
-            }
-        }
-        results[p] = {best_num_gates, best_depth, best_swaps};
-    }
-
-    return results;
-}
-
-
-
-
-                  
-std::vector<RoutingResult> prunning_SABRE_routing_many(
-    const int *gates_flat, int num_gates_in,
-    const int *dist, int N,
-    int n, int P, const int *mappings_data, uint32_t base_seed,
-    int num_trials, int num_threads, int* shared_best_value)
-{
-
-    //std::random_device rd;
-    //std::mt19937 rng(rd());
-    //base_seed = rng();
-
-    SharedCtx ctx;
-    ctx.dist = dist;
-    ctx.N = N;
-    ctx.n = n;
-    ctx.E_MAX_DEG = 32; // safely exceeds ext_cap (20)
-
-    // Device adjacency in CSR form (dist[i,j]==1 iff there is an edge i—j).
-    ctx.phys_nbr_off.assign(N + 1, 0);
-    for (int i = 0; i < N; ++i)
-        for (int j = 0; j < N; ++j)
-            if (i != j && dist[i * N + j] == 1)
-                ctx.phys_nbr_off[i + 1]++;
-    for (int i = 0; i < N; ++i)
-        ctx.phys_nbr_off[i + 1] += ctx.phys_nbr_off[i];
-
-    ctx.phys_nbr_list.resize(ctx.phys_nbr_off[N]);
-    {
-        std::vector<int> cursor(ctx.phys_nbr_off.begin(), ctx.phys_nbr_off.begin() + N);
-        for (int i = 0; i < N; ++i)
-            for (int j = 0; j < N; ++j)
-                if (i != j && dist[i * N + j] == 1)
-                    ctx.phys_nbr_list[cursor[i]++] = j;
-    }
-
-    ctx.max_deg = 0;
-    for (int p = 0; p < N; ++p)
-    {
-        const int deg = ctx.phys_nbr_off[p + 1] - ctx.phys_nbr_off[p];
-        if (deg > ctx.max_deg)
-            ctx.max_deg = deg;
-    }
-
-    ctx.G = num_gates_in;
-    ctx.gates_q1.resize(num_gates_in);
-    ctx.gates_q2.resize(num_gates_in);
-    for (int i = 0; i < num_gates_in; ++i)
-    {
-        ctx.gates_q1[i] = gates_flat[2 * i];
-        ctx.gates_q2[i] = gates_flat[2 * i + 1];
-    }
-
-    precompute_dag(ctx.gates_q1, ctx.gates_q2, n, ctx.successor_idx, ctx.rp_init);
-
-    ctx.release_threshold = 10 * n;
-    ctx.pending_cap = ctx.release_threshold + 2;
-    ctx.cand_cap = n * ctx.max_deg + 1;
-
-    ctx.front_sorted_init.resize(n);
-    ctx.front_partner_init.assign(n, -1);
-    ctx.front_init_count = 0;
-    for (int g = 0; g < ctx.G; ++g)
-    {
-        if (ctx.rp_init[g] == 0)
-            front_insert(ctx.gates_q1.data(), ctx.gates_q2.data(),
-                         ctx.front_sorted_init.data(), ctx.front_init_count, g);
-    }
-    for (int k = 0; k < ctx.front_init_count; ++k)
-    {
-        const int g_id = ctx.front_sorted_init[k];
-        const int q1 = ctx.gates_q1[g_id];
-        const int q2 = ctx.gates_q2[g_id];
-        if (q2 != -1)
-        {
-            ctx.front_partner_init[q1] = q2;
-            ctx.front_partner_init[q2] = q1;
-        }
-    }
-
-    std::vector<RoutingResult> results(P);
-
-    const int max_threads = 1; // Change by Jérôme Rouzé
-    const long long total_tasks = (long long)P * (long long)num_trials;
-    int nt = (num_threads <= 0) ? max_threads : num_threads;
-    if (nt > max_threads)
-        nt = max_threads;
-    if ((long long)nt > total_tasks)
-        nt = (int)total_tasks;
-    if (nt < 1)
-        nt = 1;
-
-    //@todo: x3???
-    std::vector<int> trial_results((size_t)P * (size_t)num_trials * 3);
-
-    Scratch sc(ctx);
-    for (int p = 0; p < P; ++p)
-    {
-        for (int t = 0; t < num_trials; ++t)
-        {
+            Scratch sc(ctx);
+            ///@@@@@@@@@@@@@@@@@@@
             std::copy(mappings_data + (size_t)p * n,
                         mappings_data + (size_t)(p + 1) * n,
                         sc.mapping_buf.begin());
@@ -1717,11 +1159,10 @@ std::vector<RoutingResult> prunning_SABRE_routing_many(
 
             //////////@hHERE
             int num_gates = INT_MAX, depth = INT_MAX, swaps = INT_MAX;
-            prunning_sabre_route_one(ctx, sc.mapping_buf.data(), rng_seed, sc,
-                            &num_gates, &depth, &swaps, shared_best_value);
+            pruning_sabre_route_one(ctx, sc.mapping_buf.data(), rng_seed, sc,
+                            &num_gates, &depth, &swaps, shared_best_value, pruning);
 
-            //@tODO -- X3??? 3 elements of the result?
-            // Write to this (p, t)'s own slot — no contention, no atomic.
+
             const size_t base = ((size_t)p * (size_t)num_trials + (size_t)t) * 3;
             trial_results[base + 0] = num_gates;
             trial_results[base + 1] = depth;

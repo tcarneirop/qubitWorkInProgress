@@ -8,17 +8,19 @@ void call_heuristics(const Parameters *my_params){
 	if (my_params->search == 'k'|| my_params->search == 'r' )
 	{
 		
-
 		if(my_params->search == 'r' )
 			recursive = true;
 
 		std::cout << "################# STARTING K-CHANGES SEARCH ##########################" << std::endl;
+		if(my_params->pruning) 
+			std::cout << "##################### PRUNING #########################" << std::endl;
+		
 		call_kchange(
 			my_params->PHYSIC_MACHINE, my_params->circuit_flat_gates_data,
 			my_params->circuit_flat_num_gates,
 			(long long)my_params->nb_physic,
 			(long long)my_params->nb_logic,
-			my_params->number_of_sabre_runs, my_params->num_random_sols, recursive);
+			my_params->number_of_sabre_runs, my_params->num_random_sols, recursive, my_params->pruning);
 	}
 	else
 	{
@@ -30,7 +32,7 @@ void call_heuristics(const Parameters *my_params){
 				my_params->circuit_flat_num_gates,
 				(long long) my_params->nb_physic,
 				(long long) my_params->nb_logic,
-				my_params->number_of_sabre_runs, my_params->num_random_sols, my_params->cutoff_depth,recursive);
+				my_params->number_of_sabre_runs, my_params->num_random_sols, my_params->cutoff_depth);
 		}
 	}
 }
@@ -64,10 +66,11 @@ void call_dfs(const Parameters *my_params){
 		(long long)my_params->nb_physic,
 		(long long)my_params->nb_logic,
 		(long long)my_params->cutoff_depth,
-		&best_depth, &best_num_gates,
+		&best_depth, &best_num_gates, &best_num_swaps,
 		best_mapping, my_params->pool_percent,
 		my_params->number_of_sabre_runs,
-		my_params->num_sols_to_skip);
+		my_params->num_sols_to_skip,
+		my_params->pruning);
 
 }
 
@@ -97,6 +100,7 @@ void call_jurema_search(const Parameters *my_params){
 	std::cout << "################# END OF THE RANDOM SEARCH ##########################" << std::endl;
 	
 	std::cout << "\n############ STARTING THE JUREMA SEARCH ################" << std::endl;
+	if(my_params->pruning) std::cout<<"########## PRUNING ##########"<<std::endl;
 	
 	const Clock::time_point start = Clock::now();
 	unsigned long long num_sols = call_jurema(
@@ -115,7 +119,9 @@ void call_jurema_search(const Parameters *my_params){
 		my_params->num_sols_to_skip,
 		my_params->number_of_sabre_runs,
 		my_params->num_random_sols,
-		start);
+		my_params->pruning,
+		start
+	);
 
 		
 	

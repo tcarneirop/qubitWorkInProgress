@@ -32,7 +32,7 @@ struct Parameters {
 	int num_random_sols = 100;
 	unsigned long long num_sols_to_skip = 0ULL;
 	std::string topology = "albatroz";
-	char search = ' ';
+	char search = 'r';
 	int *PHYSIC_MACHINE;
 	int nb_logic = 0;
 	int nb_physic = 0;
@@ -42,6 +42,7 @@ struct Parameters {
 	std::vector<int> permutation;
 	int perm_depth;
 	int perm_num_gates;
+	bool pruning = false;
 
 };
 

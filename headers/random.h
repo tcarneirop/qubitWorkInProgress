@@ -90,18 +90,19 @@ std::vector<int> random_heuristic(
         int* mapping= solutions.data() + i * logic;
        
 
-        results = SABRE_routing_many(circuit, num_gates, PHYSIC_MACHINE, physic,logic, 1, mapping, 1, NUMBER_OF_SABRE_RUNS, 1);
+        results = pruning_SABRE_routing_many(circuit, num_gates, PHYSIC_MACHINE, physic,logic, 1, mapping, 1, NUMBER_OF_SABRE_RUNS, 1, shared_best_depth, false);
+
 
         // Fast path
         #pragma omp atomic read
-        local_best_num_gates = *shared_best_num_gates;
+        local_best_num_swaps = *shared_best_num_swaps;
         #pragma omp atomic read
         local_best_depth = *shared_best_depth;
         
         bool improved = false;
 
         #ifdef ODEPTH
-        if (results[0].depth < local_best_depth || (results[0].depth == local_best_depth && results[0].num_gates < local_best_num_gates))
+		if (results[0].depth < local_best_depth || (results[0].depth == local_best_depth && results[0].swaps < local_best_num_swaps))
         {
 
             #pragma omp critical(check_sol)
@@ -111,8 +112,8 @@ std::vector<int> random_heuristic(
                 local_best_depth = *shared_best_depth;
                 local_best_num_swaps = *shared_best_num_swaps;
 
-                if(results[0].depth < local_best_depth || (results[0].depth == local_best_depth && results[0].num_gates < local_best_num_gates))
-                {
+                if(results[0].depth < local_best_depth || (results[0].depth == local_best_depth && results[0].swaps < local_best_num_swaps))
+				{
                     improved = true;
 
                     *shared_best_num_gates = results[0].num_gates;
@@ -125,8 +126,9 @@ std::vector<int> random_heuristic(
         
         #elif defined(OGATES)
         
-        if (results[0].num_gates < local_best_num_gates || (results[0].num_gates == local_best_num_gates && results[0].depth < local_best_depth))
-        {
+        if (results[0].swaps < local_best_num_swaps || (results[0].swaps == local_best_num_swaps && results[0].depth < local_best_depth))
+		{
+
 
             #pragma omp critical(check_sol)
             {
@@ -135,7 +137,8 @@ std::vector<int> random_heuristic(
                 local_best_depth = *shared_best_depth;
                 local_best_num_swaps = *shared_best_num_swaps;
 
-                if(results[0].num_gates < local_best_num_gates || (results[0].num_gates == local_best_num_gates && results[0].depth < local_best_depth))
+                
+                if(results[0].swaps < local_best_num_swaps || (results[0].swaps == local_best_num_swaps && results[0].depth < local_best_depth))
                 {
                     improved = true;
                     *shared_best_num_gates = results[0].num_gates;
