@@ -33,7 +33,30 @@ void call_heuristics(const Parameters *my_params){
 				(long long) my_params->nb_physic,
 				(long long) my_params->nb_logic,
 				my_params->number_of_sabre_runs, my_params->num_random_sols, my_params->cutoff_depth);
+
+		}else if(my_params->search == 'p'){
+			
+			std::cout << "################# RANDOM HEURISTIC - PLOTTING RANDOM SOLS  ##########################" << std::endl;
+
+			int shared_best_depth = INT_MAX;
+			int shared_best_num_gates = INT_MAX;
+			int shared_best_num_swaps = INT_MAX;
+			int *shared_best_mapping = (int *)malloc(sizeof(int) * my_params->nb_logic);
+
+			random_heuristic(
+				my_params->PHYSIC_MACHINE, 
+				my_params->circuit_flat_gates_data,  
+				my_params->circuit_flat_num_gates,
+				(long long) my_params->nb_physic,
+				(long long) my_params->nb_logic,  
+				&shared_best_depth, 
+				&shared_best_num_gates,
+				&shared_best_num_swaps,
+				shared_best_mapping, 
+				my_params->number_of_sabre_runs,  my_params->num_random_sols, true);
+
 		}
+
 	}
 }
 
@@ -57,7 +80,7 @@ void call_dfs(const Parameters *my_params){
 		&best_num_gates,
 		&best_num_swaps,
 		best_mapping,
-		my_params->number_of_sabre_runs, my_params->num_random_sols);
+		my_params->number_of_sabre_runs, my_params->num_random_sols, false);
 
 	std::cout << "############ STARTING THE DFS SEARCH ################" << std::endl;
 	call_RANDOM_mcore_search(my_params->PHYSIC_MACHINE,
@@ -95,7 +118,7 @@ void call_jurema_search(const Parameters *my_params){
 		&best_num_gates,
 		&best_num_swaps,
 		best_mapping,
-		my_params->number_of_sabre_runs, my_params->num_random_sols);
+		my_params->number_of_sabre_runs, my_params->num_random_sols, false);
 
 	std::cout << "################# END OF THE RANDOM SEARCH ##########################" << std::endl;
 	
@@ -142,7 +165,7 @@ void call_jurema_search(const Parameters *my_params){
 void call_searches(const Parameters *my_params){
 
  
-	if (my_params->search == 'k' || my_params->search == 't' || my_params->search == 'r' )
+	if (my_params->search == 'k' || my_params->search == 't' || my_params->search == 'r' || my_params->search == 'p')
 	{
 		call_heuristics(my_params);
 	}

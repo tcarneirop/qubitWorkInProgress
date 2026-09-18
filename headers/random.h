@@ -34,12 +34,13 @@ std::vector<int> random_heuristic(
     int *shared_best_num_gates,
     int *shared_best_num_swaps,
     int *shared_best_mapping, 
-    const int NUMBER_OF_SABRE_RUNS, const unsigned long long num_random_sols)
+    const int NUMBER_OF_SABRE_RUNS, const unsigned long long num_random_sols, const bool plot)
 {
 
 
     // X solutions, each containing D integers
     std::vector<int> solutions(num_random_sols * logic);
+    std::vector<RoutingResult> set_of_results(num_random_sols);
     std::unordered_set<std::vector<int>, VectorHash> generated;
 
     #pragma omp parallel
@@ -90,8 +91,13 @@ std::vector<int> random_heuristic(
         int* mapping= solutions.data() + i * logic;
        
 
-        results = pruning_SABRE_routing_many(circuit, num_gates, PHYSIC_MACHINE, physic,logic, 1, mapping, 1, NUMBER_OF_SABRE_RUNS, 1, shared_best_depth, false);
 
+        #ifdef ODEPTH
+        results = pruning_SABRE_routing_many(circuit, num_gates, PHYSIC_MACHINE, physic, logic, 1, mapping, 1, NUMBER_OF_SABRE_RUNS, 1, shared_best_depth, false);
+        #elif defined(OGATES)
+        results = pruning_SABRE_routing_many(circuit, num_gates, PHYSIC_MACHINE, physic, logic, 1, mapping, 1, NUMBER_OF_SABRE_RUNS, 1, shared_best_num_swaps, false);
+        #endif
+        
 
         // Fast path
         #pragma omp atomic read
@@ -100,6 +106,8 @@ std::vector<int> random_heuristic(
         local_best_depth = *shared_best_depth;
         
         bool improved = false;
+
+        set_of_results[i] = results[0];
 
         #ifdef ODEPTH
 		if (results[0].depth < local_best_depth || (results[0].depth == local_best_depth && results[0].swaps < local_best_num_swaps))
@@ -151,7 +159,7 @@ std::vector<int> random_heuristic(
 
         #endif
 
-            if (improved)
+            if (!plot && improved)
             {
                 #pragma omp critical(printsol)
                 {
@@ -172,9 +180,27 @@ std::vector<int> random_heuristic(
         }/// if, new sol found that improves the current solution...
         
     }
+
+    if(plot) for (int i = 0; i < num_random_sols; ++i)
+    {
+        int *mapping = solutions.data() + i * logic;
+        std::cout<< "\n Solution: " << i 
+                << "\n\tDepth: " << set_of_results[i].depth
+                << "\n\tNum gates: " << set_of_results[i].num_gates
+                << "\n\tNum swaps: " << set_of_results[i].swaps
+                << "\n\tMapping: [";
+                for (int m = 0; m < logic - 1; ++m)
+                    std::cout << mapping[m] << ", ";
+                    std::cout << mapping[logic - 1] << "]"<< std::endl;
+    
+    }    
+
+
     return solutions;
           
 }
+
+
 
 
 #endif

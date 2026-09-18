@@ -639,11 +639,7 @@ void pruning_sabre_route_one(
                     swaps++;
 
 #ifdef ODEPTH
-                    int depth = 0;
-                    for (int i = 0; i < N; ++i)
-                        if (last_layer[i] + 1 > depth)
-                            depth = last_layer[i] + 1;
-
+                    current_depth = li;
                     if (pruning && current_depth > *shared_best_value)
                     {
                         *out_num_gates = INT_MAX;
@@ -679,28 +675,7 @@ void pruning_sabre_route_one(
                 last_layer[phys_qubit_1] += 1;
                 ++num_gates;
 
-#ifdef ODEPTH
-                if (pruning && current_depth > *shared_best_value)
-                {
-                    *out_num_gates = INT_MAX;
-                    *out_depth = INT_MAX;
-                    *out_swap = INT_MAX;
-                    // std::cout<<"\nPRUNNING 0: "<< current_depth <<" "<< *shared_best_value<<std::endl;
-                    return;
-                }
-
-#elif defined(OGATES)
-
-                if (pruning && swaps > *shared_best_value)
-                {
-                    *out_num_gates = INT_MAX;
-                    *out_depth = INT_MAX;
-                    *out_swap = INT_MAX;
-
-                    // std::cout<<"\nPRUNNING 0: "<< swaps <<" "<< *shared_best_value<<std::endl;
-                    return;
-                }
-#endif
+    
             }
             else
             {
