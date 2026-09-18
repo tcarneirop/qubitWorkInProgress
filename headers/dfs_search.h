@@ -26,10 +26,11 @@ unsigned long long  mcore_final_search_64(int *PHYSIC_MACHINE, int *circuit,  co
     const long long cutoff_depth, 
     int* shared_best_depth, 
     int *shared_best_num_gates, 
+    int *shared_best_num_swaps,
     int *shared_best_mapping, 
     unsigned long long *shared_sols_counter,
     const int NUMBER_OF_SABRE_RUNS, Clock::time_point start, 
-    std::vector<unsigned long long> &number_of_sols, const unsigned long long num_sols_to_check)
+    std::vector<unsigned long long> &number_of_sols, const unsigned long long num_sols_to_check, const bool pruning)
 {
 
 
@@ -41,6 +42,7 @@ unsigned long long  mcore_final_search_64(int *PHYSIC_MACHINE, int *circuit,  co
 
     int local_best_depth;
     int local_best_num_gates;
+    int local_best_num_swaps;
 
     std::vector<RoutingResult> results;
     std::vector<int> best_mapping;
@@ -115,7 +117,12 @@ unsigned long long  mcore_final_search_64(int *PHYSIC_MACHINE, int *circuit,  co
 				++numSolutions;
 
 				
-				results = SABRE_routing_many(circuit, num_gates, PHYSIC_MACHINE, physic, logic, 1, mapping, 1, NUMBER_OF_SABRE_RUNS, 1);
+				#ifdef ODEPTH
+				results = pruning_SABRE_routing_many(circuit, num_gates, PHYSIC_MACHINE, physic, logic, 1, mapping, 1, NUMBER_OF_SABRE_RUNS, 1, shared_best_depth, pruning);
+				#elif defined(OGATES)
+				results = pruning_SABRE_routing_many(circuit, num_gates, PHYSIC_MACHINE, physic, logic, 1, mapping, 1, NUMBER_OF_SABRE_RUNS, 1, shared_best_num_swaps, pruning);
+				#endif
+
 
 				#ifdef SOLREPORTDEPTH
 				number_of_sols[results[0].depth]++;
@@ -124,28 +131,31 @@ unsigned long long  mcore_final_search_64(int *PHYSIC_MACHINE, int *circuit,  co
 				#endif
 
 				#pragma omp atomic read
-				local_best_num_gates = *shared_best_num_gates;
+				local_best_num_swaps = *shared_best_num_swaps;
 				#pragma omp atomic read
 				local_best_depth = *shared_best_depth;
 				
 				bool improved = false;
 
 				#ifdef ODEPTH
-				if (results[0].depth < local_best_depth || (results[0].depth == local_best_depth && results[0].num_gates < local_best_num_gates))
+				if (results[0].depth < local_best_depth || (results[0].depth == local_best_depth && results[0].swaps < local_best_num_swaps))
 				{
 					
 					#pragma omp critical(check_sol)
 					{
-						// Read the current pair again
+						// Read the current sol again
 						local_best_num_gates = *shared_best_num_gates;
 						local_best_depth = *shared_best_depth;
+						local_best_num_swaps = *shared_best_num_swaps;
 
-						if(results[0].depth < local_best_depth || (results[0].depth == local_best_depth && results[0].num_gates < local_best_num_gates))
+
+						if (results[0].depth < local_best_depth || (results[0].depth == local_best_depth && results[0].swaps < local_best_num_swaps))
 						{
 							improved = true;
 
 							*shared_best_num_gates = results[0].num_gates;
 							*shared_best_depth = results[0].depth;
+							*shared_best_num_swaps = results[0].swaps;
 
 							memcpy(shared_best_mapping,mapping, logic * sizeof(int) );
 						}
@@ -153,36 +163,40 @@ unsigned long long  mcore_final_search_64(int *PHYSIC_MACHINE, int *circuit,  co
 
 				#elif defined(OGATES)
 					
-				if (results[0].num_gates < local_best_num_gates || (results[0].num_gates == local_best_num_gates && results[0].depth < local_best_depth))
+				if (results[0].swaps < local_best_num_swaps || (results[0].swaps == local_best_num_swaps && results[0].depth < local_best_depth))
 				{
+
 
 					#pragma omp critical(check_sol)
 					{
-						// Read the current pair again
+								// Read the current pair again
 						local_best_num_gates = *shared_best_num_gates;
 						local_best_depth = *shared_best_depth;
+						local_best_num_swaps = *shared_best_num_swaps;
 
-						if(results[0].num_gates < local_best_num_gates || (results[0].num_gates == local_best_num_gates && results[0].depth < local_best_depth))
+						if (results[0].swaps < local_best_num_swaps || (results[0].swaps == local_best_num_swaps && results[0].depth < local_best_depth))
 						{
 							improved = true;
 							*shared_best_num_gates = results[0].num_gates;
 							*shared_best_depth = results[0].depth;
+							*shared_best_num_swaps = results[0].swaps;
+
 							memcpy(shared_best_mapping,mapping, logic * sizeof(int) );
 						}
 					}
 
 				#endif
 
-					if (improved)
+				if (improved)
 					{
 						#pragma omp critical(printsol)
 						{
 
 							(*shared_sols_counter)++;
 							#ifdef ODEPTH
-							std::cout << "New solution found at: " << std::chrono::duration<double>(Clock::now() - start).count() << "\n\tSolution: " << *shared_sols_counter << ", From (depth) " << local_best_depth << " to " << results[0].depth << "\n\tDepth: " << results[0].depth << "\n\tNum gates: " << results[0].num_gates << "\n\tMapping: ";
+							std::cout << "New solution found at: " << std::chrono::duration<double>(Clock::now() - start).count() << "\n\tSolution (depth): " << *shared_sols_counter << ", From " << local_best_depth << " to " << results[0].depth << "\n\tDepth: " << results[0].depth << "\n\tNum gates: " << results[0].num_gates << "\n\tSwaps: " << results[0].swaps << "\n\tMapping: ";
 							#elif defined(OGATES)
-							std::cout << "New solution found at: " << std::chrono::duration<double>(Clock::now() - start).count() << "\n\tSolution: " << *shared_sols_counter << ", From (gates) " << local_best_num_gates << " to " << results[0].num_gates << "\n\tNum gates: " << results[0].num_gates << "\n\tDepth: " << results[0].depth << "\n\tMapping: ";
+							std::cout << "New solution found at: " << std::chrono::duration<double>(Clock::now() - start).count() << "\n\tSolution (gates): " << *shared_sols_counter << ", From " << local_best_num_gates << " to " << results[0].num_gates << "\n\tDepth: " << results[0].depth << "\n\tNum gates: " << results[0].num_gates << "\n\tSwaps: " << results[0].swaps << "\n\tMapping: ";
 							#endif
 							std::cout << "[";
 							for (int m = 0; m < logic - 1; ++m)
@@ -330,11 +344,15 @@ unsigned long long partial_search_64( const long long physic, const long long cu
 
 
 void call_RANDOM_mcore_search(int *PHYSIC_MACHINE, int *circuit, const int num_gates, const long long physic,  
-    const long long logic,  const long long cutoff_depth, int *best_depth, 
+    const long long logic,  const long long cutoff_depth, 
+    int *best_depth, 
     int *best_num_gates,
+    int *best_num_swaps,
     int *vec_best_mapping, 
     const float PERCENT,
-    const int NUMBER_OF_SABRE_RUNS, const unsigned long long num_sols_to_check){
+    const int NUMBER_OF_SABRE_RUNS, 
+    const unsigned long long num_sols_to_check, 
+    const bool pruning){
     
 
     Subproblem *subproblem_pool = (Subproblem*)(malloc(sizeof(Subproblem)*(unsigned)100000000));
@@ -403,12 +421,15 @@ void call_RANDOM_mcore_search(int *PHYSIC_MACHINE, int *circuit, const int num_g
     }
     #endif
 
-    #pragma omp parallel for schedule(runtime) default(none) shared(num_sols_to_check, number_of_sols_value,start,values, best_depth, best_num_gates, vec_best_mapping,shared_sols_counter,num_subproblems,PHYSIC_MACHINE, circuit, num_gates, physic, logic, subproblem_pool, cutoff_depth,NUMBER_OF_SABRE_RUNS) reduction(+:num_sols)
+    #pragma omp parallel for schedule(runtime) default(none) shared(pruning, num_sols_to_check, number_of_sols_value,start,values, best_depth, best_num_gates,best_num_swaps, vec_best_mapping,shared_sols_counter,num_subproblems,PHYSIC_MACHINE, circuit, num_gates, physic, logic, subproblem_pool, cutoff_depth,NUMBER_OF_SABRE_RUNS) reduction(+:num_sols)
     for(unsigned long long subproblem = 0; subproblem<values.size();++subproblem){
         num_sols += mcore_final_search_64(PHYSIC_MACHINE, circuit, num_gates, physic, logic, subproblem_pool+values[subproblem], 
-            cutoff_depth, best_depth, best_num_gates,vec_best_mapping,
-            &shared_sols_counter, NUMBER_OF_SABRE_RUNS,start,number_of_sols_value,
-            num_sols_to_check);
+            cutoff_depth, best_depth, best_num_gates, best_num_swaps, 
+            vec_best_mapping,
+            &shared_sols_counter, 
+            NUMBER_OF_SABRE_RUNS,start,
+            number_of_sols_value,
+            num_sols_to_check, pruning);
     }
 
     

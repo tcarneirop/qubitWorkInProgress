@@ -44,6 +44,7 @@ int cli_parameters_parser(Parameters *my_params, int argc, char *argv[])
 		   "Search: DFS - d, Jurema - j, K-changes - k, tests - t")
 		->check(CLI::IsMember({"d", "j", "k", "t", "r"}));
 
+	app.add_flag("--pruning", my_params->pruning, "Enable pruning");
 
 	app.add_option("--permutation", my_params->permutation, "Permutation");
 
@@ -108,6 +109,8 @@ void start_parameters_circuit(Parameters *my_params, const int circuit_flat_n, c
 	std::cout << "circuit_flat.n (logic): " << my_params->nb_logic << std::endl;
 	std::cout << "circuit_flat.num_gates:" << my_params->circuit_flat_num_gates << std::endl;
 	std::cout << "Number of SABRE runs: " << my_params->number_of_sabre_runs << std::endl;
+	if(my_params->pruning)
+		std::cout << "\tPRUNING SABRE "<< std::endl;
 	std::cout << "Physic QUBITS: " << (long long)(my_params->nb_physic) << " Logic QUBITS: " << (long long)(my_params->nb_logic) << std::endl;
 	std::cout << "Number of random sols: " << my_params->num_random_sols << std::endl;
 	std::cout << "Number of sols to skip: " << my_params->num_sols_to_skip << std::endl;

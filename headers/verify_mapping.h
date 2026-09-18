@@ -17,9 +17,9 @@ void verify_mapping(const Parameters *my_params){
 		std::cout << x << " ";	
 	std::cout<<std::endl;
 	
-	
-	results = SABRE_routing_many(my_params->circuit_flat_gates_data, my_params->circuit_flat_num_gates, my_params->PHYSIC_MACHINE,my_params->nb_physic,
-		 my_params->nb_logic, 1, my_params->permutation.data(), 1, my_params->number_of_sabre_runs, 1);
+	//remember this 0 is nullptr
+	results = pruning_SABRE_routing_many(my_params->circuit_flat_gates_data, my_params->circuit_flat_num_gates, my_params->PHYSIC_MACHINE,my_params->nb_physic,
+		 my_params->nb_logic, 1, my_params->permutation.data(), 1, my_params->number_of_sabre_runs, 1,0,false);
 
 	std::cout<<"\nNumber of SABRE runs: "<< my_params->number_of_sabre_runs<<std::endl;	 
 	std::cout<<"\tDepth: "<< results[0].depth<<std::endl;

@@ -5,7 +5,7 @@ using Clock = std::chrono::steady_clock;
 
 unsigned long long jurema_search_64(int *PHYSIC_MACHINE, int *circuit, const int num_gates,
 									const long long physic, const long long logic,
-									int *mapping,
+									int *current_mapping,
 									const long long cutoff_depth,
 									int *shared_best_depth,
 									int *shared_best_num_gates,
@@ -15,8 +15,11 @@ unsigned long long jurema_search_64(int *PHYSIC_MACHINE, int *circuit, const int
 									const int NUMBER_OF_SABRE_RUNS, Clock::time_point start,
 									std::vector<unsigned long long> &number_depth_values,
 									std::vector<unsigned long long> &number_swaps_values,
-									const unsigned long long num_sols_to_check)
+									const unsigned long long num_sols_to_check,
+									const bool pruning
+								)
 {
+	std::vector<int> mapping(current_mapping, current_mapping + logic);
 
 	unsigned int depth = 0U;
 	long long aQueenBitCol[MAX_BOARDSIZE];
@@ -127,7 +130,14 @@ unsigned long long jurema_search_64(int *PHYSIC_MACHINE, int *circuit, const int
 				++numSolutions;
 
 
-				results = SABRE_routing_many(circuit, num_gates, PHYSIC_MACHINE, physic, logic, 1, mapping, 1, NUMBER_OF_SABRE_RUNS, 1);
+				//results = SABRE_routing_many(circuit, num_gates, PHYSIC_MACHINE, physic, logic, 1, mapping, 1, NUMBER_OF_SABRE_RUNS, 1);
+
+				#ifdef ODEPTH
+				results = pruning_SABRE_routing_many(circuit, num_gates, PHYSIC_MACHINE, physic, logic, 1, mapping.data(), 1, NUMBER_OF_SABRE_RUNS, 1, shared_best_depth, pruning);
+				#elif defined(OGATES)
+				results = pruning_SABRE_routing_many(circuit, num_gates, PHYSIC_MACHINE, physic, logic, 1, mapping.data(), 1, NUMBER_OF_SABRE_RUNS, 1, shared_best_num_swaps, pruning);
+				#endif
+
 
 				#if defined(SOLREPORTDEPTH) || defined(SOLREPORTGATES)
 				number_depth_values[results[0].depth]++;
@@ -135,14 +145,14 @@ unsigned long long jurema_search_64(int *PHYSIC_MACHINE, int *circuit, const int
 				#endif
 
 				#pragma omp atomic read
-				local_best_num_gates = *shared_best_num_gates;
+				local_best_num_swaps = *shared_best_num_swaps;
 				#pragma omp atomic read
 				local_best_depth = *shared_best_depth;
 				
 				bool improved = false;
 
 				#ifdef ODEPTH
-				if (results[0].depth < local_best_depth || (results[0].depth == local_best_depth && results[0].num_gates < local_best_num_gates))
+				if (results[0].depth < local_best_depth || (results[0].depth == local_best_depth && results[0].swaps < local_best_num_swaps))
 				{
 					
 					#pragma omp critical(check_sol)
@@ -152,7 +162,7 @@ unsigned long long jurema_search_64(int *PHYSIC_MACHINE, int *circuit, const int
 						local_best_depth = *shared_best_depth;
 						local_best_num_swaps = *shared_best_num_swaps;
 
-						if(results[0].depth < local_best_depth || (results[0].depth == local_best_depth && results[0].num_gates < local_best_num_gates))
+						if (results[0].depth < local_best_depth || (results[0].depth == local_best_depth && results[0].swaps < local_best_num_swaps))
 						{
 							improved = true;
 
@@ -160,13 +170,13 @@ unsigned long long jurema_search_64(int *PHYSIC_MACHINE, int *circuit, const int
 							*shared_best_depth = results[0].depth;
 							*shared_best_num_swaps = results[0].swaps;
 
-							memcpy(shared_best_mapping,mapping, logic * sizeof(int) );
+							memcpy(shared_best_mapping,mapping.data(), logic * sizeof(int) );
 						}
 					}
 
 				#elif defined(OGATES)
 					
-				if (results[0].num_gates < local_best_num_gates || (results[0].num_gates == local_best_num_gates && results[0].depth < local_best_depth))
+				if (results[0].swaps < local_best_num_swaps || (results[0].swaps == local_best_num_swaps && results[0].depth < local_best_depth))
 				{
 
 					#pragma omp critical(check_sol)
@@ -176,7 +186,7 @@ unsigned long long jurema_search_64(int *PHYSIC_MACHINE, int *circuit, const int
 						local_best_depth = *shared_best_depth;
 						local_best_num_swaps = *shared_best_num_swaps;
 
-						if(results[0].num_gates < local_best_num_gates || (results[0].num_gates == local_best_num_gates && results[0].depth < local_best_depth))
+						if (results[0].swaps < local_best_num_swaps || (results[0].swaps == local_best_num_swaps && results[0].depth < local_best_depth))
 						{
 							improved = true;
 							
@@ -184,7 +194,7 @@ unsigned long long jurema_search_64(int *PHYSIC_MACHINE, int *circuit, const int
 							*shared_best_depth = results[0].depth;
 							*shared_best_num_swaps = results[0].swaps;
 
-							memcpy(shared_best_mapping,mapping, logic * sizeof(int) );
+							memcpy(shared_best_mapping,mapping.data(), logic * sizeof(int) );
 						}
 					}
 
@@ -250,7 +260,9 @@ unsigned long long call_jurema(
 	unsigned long long *shared_sols_counter,
 	const unsigned long long num_sols_to_check,
 	const int NUMBER_OF_SABRE_RUNS,
-	const int num_random_sols,Clock::time_point start
+	const int num_random_sols,
+	const bool pruning,
+	Clock::time_point start
 
 )
 {
@@ -285,7 +297,9 @@ unsigned long long call_jurema(
 			start,
 			number_of_sols_depth,
 			number_of_sols_swaps,
-			num_sols_to_check);
+			num_sols_to_check,
+			pruning
+		);
 	}
 
 	
