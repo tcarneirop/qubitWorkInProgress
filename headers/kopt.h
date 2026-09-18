@@ -121,14 +121,6 @@ unsigned long long kchange_SABRE(
 					//needs to be outside the  critical
 					if(recursive){
 						++num_sols;
-						//std::cout<<"RECURSIVE"<<std::endl;
-						std::cout << "RECURSE: ";
-						for (int i = 0; i < logic; ++i)
-							std::cout << new_mapping[i] << " ";
-						std::cout << " depth=" << results[0].depth
-								<< " best=" << *shared_best_depth
-								<< std::endl;
-
 
 						num_sols+=kchange_SABRE(
 							PHYSIC_MACHINE, circuit, num_gates,
@@ -184,7 +176,7 @@ void call_kchange(
 		&shared_best_num_gates,
 		&shared_best_num_swaps,
 		shared_best_mapping,
-		NUMBER_OF_SABRE_RUNS, NUM_RAND_SOLS);
+		NUMBER_OF_SABRE_RUNS, NUM_RAND_SOLS, false);
 
 	std::cout << "\n\n########################## "<< NUM_RAND_SOLS<<" SOLUTION(S) GENERATED ##########################" << std::endl;
 
@@ -279,7 +271,7 @@ void call_kchange_vs_jurema(
 		&shared_best_num_gates,
 		&shared_best_num_swaps,
 		shared_best_mapping,
-		NUMBER_OF_SABRE_RUNS, NUM_RAND_SOLS);
+		NUMBER_OF_SABRE_RUNS, NUM_RAND_SOLS, false);
 
 	random_depth = shared_best_depth;
 	random_gates = shared_best_num_gates;

@@ -42,7 +42,7 @@ int cli_parameters_parser(Parameters *my_params, int argc, char *argv[])
 		   "--search",
 		   search,
 		   "Search: DFS - d, Jurema - j, K-changes - k, tests - t")
-		->check(CLI::IsMember({"d", "j", "k", "t", "r"}));
+		->check(CLI::IsMember({"d", "j", "k", "t", "r", "p"}));
 
 	app.add_flag("--pruning", my_params->pruning, "Enable pruning");
 
