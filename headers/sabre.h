@@ -1,7 +1,7 @@
 #ifndef SABRE_H
 #define SABRE_H
 
-//Melbourne ibm QX5.
+// Melbourne ibm QX5.
 int ALBATROZ[256] = {
     0, 1, 2, 3, 4, 5, 6, 7, 8, 7, 6, 5, 4, 3, 2, 1,
     1, 0, 1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2, 1, 2,
@@ -20,7 +20,7 @@ int ALBATROZ[256] = {
     2, 1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2, 1, 0, 1,
     1, 2, 3, 4, 5, 6, 7, 8, 7, 6, 5, 4, 3, 2, 1, 0};
 
-    int QX3[256] = {
+int QX3[256] = {
 
     0, 1, 2, 3, 4, 5, 6, 7, 8, 7, 6, 5, 4, 3, 2, 1,
 
@@ -52,8 +52,7 @@ int ALBATROZ[256] = {
 
     2, 3, 2, 1, 2, 3, 4, 5, 6, 5, 4, 3, 2, 1, 0, 1,
 
-    1, 2, 3, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2, 1, 0
-};
+    1, 2, 3, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2, 1, 0};
 
 int MELBOURNE_15[225] = {
 
@@ -85,9 +84,7 @@ int MELBOURNE_15[225] = {
 
     2, 1, 2, 3, 4, 5, 6, 6, 5, 4, 3, 2, 1, 0, 1,
 
-    1, 2, 3, 4, 5, 6, 7, 7, 6, 5, 4, 3, 2, 1, 0
-};
-
+    1, 2, 3, 4, 5, 6, 7, 7, 6, 5, 4, 3, 2, 1, 0};
 
 int CAIRO[27 * 27] = {
     0, 1, 2, 3, 2, 4, 4, 3, 5, 6, 4, 6, 5, 6, 7, 6, 8, 8, 7, 9, 10, 8, 10, 9, 10, 11, 12,
@@ -116,32 +113,29 @@ int CAIRO[27 * 27] = {
     9, 8, 9, 10, 7, 9, 7, 6, 8, 9, 5, 7, 4, 5, 6, 3, 5, 3, 2, 4, 5, 1, 3, 0, 1, 2, 3,
     10, 9, 10, 9, 8, 8, 8, 7, 7, 8, 6, 6, 5, 6, 5, 4, 4, 4, 3, 3, 4, 2, 2, 1, 0, 1, 2,
     11, 10, 9, 8, 9, 7, 9, 8, 6, 7, 7, 5, 6, 5, 4, 5, 3, 5, 4, 2, 3, 3, 1, 2, 1, 0, 1,
-    12, 11, 10, 9, 10, 8, 10, 9, 7, 8, 8, 6, 7, 6, 5, 6, 4, 6, 5, 3, 4, 4, 2, 3, 2, 1, 0
-};
+    12, 11, 10, 9, 10, 8, 10, 9, 7, 8, 8, 6, 7, 6, 5, 6, 4, 6, 5, 3, 4, 4, 2, 3, 2, 1, 0};
 
 int BOEBLINGEN[20 * 20] = {
-    0,1,2,3,4,3,2,3,4,5,4,5,4,5,6,7,6,7,6,7,
-    1,0,1,2,3,2,1,2,3,4,3,4,3,4,5,6,5,6,5,6,
-    2,1,0,1,2,3,2,3,2,3,4,5,4,5,4,7,6,7,6,7,
-    3,2,1,0,1,4,3,2,1,2,5,4,3,4,3,6,5,6,5,6,
-    4,3,2,1,0,5,4,3,2,3,6,5,4,5,4,7,6,7,6,7,
-    3,2,3,4,5,0,1,2,3,4,1,2,3,4,5,4,3,4,5,6,
-    2,1,2,3,4,1,0,1,2,3,2,3,2,3,4,5,4,5,4,5,
-    3,2,3,2,3,2,1,0,1,2,3,2,1,2,3,4,3,4,3,4,
-    4,3,2,1,2,3,2,1,0,1,4,3,2,3,2,5,4,5,4,5,
-    5,4,3,2,3,4,3,2,1,0,5,4,3,2,1,6,5,4,3,4,
-    4,3,4,5,6,1,2,3,4,5,0,1,2,3,4,3,2,3,4,5,
-    5,4,5,4,5,2,3,2,3,4,1,0,1,2,3,2,1,2,3,4,
-    4,3,4,3,4,3,2,1,2,3,2,1,0,1,2,3,2,3,2,3,
-    5,4,5,4,5,4,3,2,3,2,3,2,1,0,1,4,3,2,1,2,
-    6,5,4,3,4,5,4,3,2,1,4,3,2,1,0,5,4,3,2,3,
-    7,6,7,6,7,4,5,4,5,6,3,2,3,4,5,0,1,2,3,4,
-    6,5,6,5,6,3,4,3,4,5,2,1,2,3,4,1,0,1,2,3,
-    7,6,7,6,7,4,5,4,5,4,3,2,3,2,3,2,1,0,1,2,
-    6,5,6,5,6,5,4,3,4,3,4,3,2,1,2,3,2,1,0,1,
-    7,6,7,6,7,6,5,4,5,4,5,4,3,2,3,4,3,2,1,0
-};
-
+    0, 1, 2, 3, 4, 3, 2, 3, 4, 5, 4, 5, 4, 5, 6, 7, 6, 7, 6, 7,
+    1, 0, 1, 2, 3, 2, 1, 2, 3, 4, 3, 4, 3, 4, 5, 6, 5, 6, 5, 6,
+    2, 1, 0, 1, 2, 3, 2, 3, 2, 3, 4, 5, 4, 5, 4, 7, 6, 7, 6, 7,
+    3, 2, 1, 0, 1, 4, 3, 2, 1, 2, 5, 4, 3, 4, 3, 6, 5, 6, 5, 6,
+    4, 3, 2, 1, 0, 5, 4, 3, 2, 3, 6, 5, 4, 5, 4, 7, 6, 7, 6, 7,
+    3, 2, 3, 4, 5, 0, 1, 2, 3, 4, 1, 2, 3, 4, 5, 4, 3, 4, 5, 6,
+    2, 1, 2, 3, 4, 1, 0, 1, 2, 3, 2, 3, 2, 3, 4, 5, 4, 5, 4, 5,
+    3, 2, 3, 2, 3, 2, 1, 0, 1, 2, 3, 2, 1, 2, 3, 4, 3, 4, 3, 4,
+    4, 3, 2, 1, 2, 3, 2, 1, 0, 1, 4, 3, 2, 3, 2, 5, 4, 5, 4, 5,
+    5, 4, 3, 2, 3, 4, 3, 2, 1, 0, 5, 4, 3, 2, 1, 6, 5, 4, 3, 4,
+    4, 3, 4, 5, 6, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 3, 2, 3, 4, 5,
+    5, 4, 5, 4, 5, 2, 3, 2, 3, 4, 1, 0, 1, 2, 3, 2, 1, 2, 3, 4,
+    4, 3, 4, 3, 4, 3, 2, 1, 2, 3, 2, 1, 0, 1, 2, 3, 2, 3, 2, 3,
+    5, 4, 5, 4, 5, 4, 3, 2, 3, 2, 3, 2, 1, 0, 1, 4, 3, 2, 1, 2,
+    6, 5, 4, 3, 4, 5, 4, 3, 2, 1, 4, 3, 2, 1, 0, 5, 4, 3, 2, 3,
+    7, 6, 7, 6, 7, 4, 5, 4, 5, 6, 3, 2, 3, 4, 5, 0, 1, 2, 3, 4,
+    6, 5, 6, 5, 6, 3, 4, 3, 4, 5, 2, 1, 2, 3, 4, 1, 0, 1, 2, 3,
+    7, 6, 7, 6, 7, 4, 5, 4, 5, 4, 3, 2, 3, 2, 3, 2, 1, 0, 1, 2,
+    6, 5, 6, 5, 6, 5, 4, 3, 4, 3, 4, 3, 2, 1, 2, 3, 2, 1, 0, 1,
+    7, 6, 7, 6, 7, 6, 5, 4, 5, 4, 5, 4, 3, 2, 3, 4, 3, 2, 1, 0};
 
 // IBM Tenerife 5-Qubit Adjacency Matrix (Flattened 5x5)
 // Size: 25 elements
@@ -150,8 +144,7 @@ const int TENERIFE_5[25] = {
     1, 0, 1, 0, 0,
     1, 1, 0, 1, 1,
     0, 0, 1, 0, 1,
-    0, 0, 1, 1, 0
-};
+    0, 0, 1, 1, 0};
 
 // IBM Yorktown 5-Qubit Adjacency Matrix (Flattened 5x5)
 // Size: 25 elements
@@ -160,8 +153,7 @@ const int YORKTOWN_5[25] = {
     1, 0, 1, 1, 1,
     1, 1, 0, 1, 1,
     0, 1, 1, 0, 1,
-    0, 1, 1, 1, 0
-};
+    0, 1, 1, 1, 0};
 
 constexpr int DIST_SIZE = 5;
 int dist[DIST_SIZE * DIST_SIZE] = {
@@ -169,18 +161,15 @@ int dist[DIST_SIZE * DIST_SIZE] = {
     1, 0, 1, 2, 3,
     2, 1, 0, 1, 2,
     3, 2, 1, 0, 1,
-    4, 3, 2, 1, 0
-};
-
+    4, 3, 2, 1, 0};
 
 #define H_TOL 1e-5f
 struct RoutingResult
 {
-    int num_gates =0;
+    int num_gates = 0;
     int depth = 0;
     int swaps = 0;
 };
-
 
 //@todo: do you access directly the struct like this?
 /// For instance, you are using the struct as a global variable? this might be very bad for distributed/parallel
@@ -423,7 +412,7 @@ void precompute_dag(const std::vector<int> &gates_q1, const std::vector<int> &ga
     {
         const int q1 = gates_q1[g];
         const int q2 = gates_q2[g];
-        //printf("\n\nGATES!!!\n\t%d - %d\n", gates_q1[g], gates_q2[g]);
+        // printf("\n\nGATES!!!\n\t%d - %d\n", gates_q1[g], gates_q2[g]);
         const int prev1 = last_touch_q[q1];
         if (prev1 != -1)
         {
@@ -529,15 +518,12 @@ int build_extended_front(const int *gates_q1, const int *gates_q2,
     return ext_size;
 }
 
-
-
 void pruning_sabre_route_one(
     const SharedCtx &ctx,
-        int *mapping, uint32_t rng_seed,
-        Scratch &sc,
-        int *out_num_gates, int *out_depth, 
-        int *out_swap, int *shared_best_value, const bool pruning
-    )
+    int *mapping, uint32_t rng_seed,
+    Scratch &sc,
+    int *out_num_gates, int *out_depth,
+    int *out_swap, int *shared_best_value, const bool pruning)
 {
     // --- Unpack ctx as raw pointer / scalar locals for terse body code. ---
     const int *gates_q1 = ctx.gates_q1.data();
@@ -650,38 +636,38 @@ void pruning_sabre_route_one(
                     last_layer[pb] = li;
 
                     num_gates += 3;
-                    swaps++;                    
-                
-                    #ifdef ODEPTH
+                    swaps++;
+
+#ifdef ODEPTH
                     int depth = 0;
                     for (int i = 0; i < N; ++i)
-                    if (last_layer[i] + 1 > depth)
-                        depth = last_layer[i] + 1;
+                        if (last_layer[i] + 1 > depth)
+                            depth = last_layer[i] + 1;
 
-                    
-                    if(pruning && current_depth > *shared_best_value){
+                    if (pruning && current_depth > *shared_best_value)
+                    {
                         *out_num_gates = INT_MAX;
                         *out_depth = INT_MAX;
                         *out_swap = INT_MAX;
 
-                        //std::cout<<"\nPRUNING -1: "<< current_depth<<" "<< *shared_best_value<<std::endl;
+                        // std::cout<<"\nPRUNING -1: "<< current_depth<<" "<< *shared_best_value<<std::endl;
                         return;
                     }
 
-                    #elif defined(OGATES)
-                    
-                    if(pruning && swaps>*shared_best_value){
-                      
+#elif defined(OGATES)
+
+                    if (pruning && swaps > *shared_best_value)
+                    {
+
                         *out_num_gates = INT_MAX;
                         *out_depth = INT_MAX;
                         *out_swap = INT_MAX;
 
-                        //std::cout<<"\nPRUNNING -1: "<< swaps<<" "<< *shared_best_value<<std::endl;
+                        // std::cout<<"\nPRUNNING -1: "<< swaps<<" "<< *shared_best_value<<std::endl;
                         return;
                     }
 
-                    #endif
-                
+#endif
                 }
                 pending_count = 0;
                 pending_committed = true;
@@ -689,31 +675,32 @@ void pruning_sabre_route_one(
 
             if (qubit_2 == -1)
             {
-                
+
                 last_layer[phys_qubit_1] += 1;
                 ++num_gates;
-                   
-                #ifdef ODEPTH
-                if(pruning && current_depth > *shared_best_value){
+
+#ifdef ODEPTH
+                if (pruning && current_depth > *shared_best_value)
+                {
                     *out_num_gates = INT_MAX;
                     *out_depth = INT_MAX;
-                    *out_swap = INT_MAX;                    
-                    //std::cout<<"\nPRUNNING 0: "<< current_depth <<" "<< *shared_best_value<<std::endl;
+                    *out_swap = INT_MAX;
+                    // std::cout<<"\nPRUNNING 0: "<< current_depth <<" "<< *shared_best_value<<std::endl;
                     return;
                 }
 
-                #elif defined(OGATES)
-                
-                if(pruning && swaps > *shared_best_value){
+#elif defined(OGATES)
+
+                if (pruning && swaps > *shared_best_value)
+                {
                     *out_num_gates = INT_MAX;
                     *out_depth = INT_MAX;
                     *out_swap = INT_MAX;
 
-                    //std::cout<<"\nPRUNNING 0: "<< swaps <<" "<< *shared_best_value<<std::endl;
+                    // std::cout<<"\nPRUNNING 0: "<< swaps <<" "<< *shared_best_value<<std::endl;
                     return;
                 }
-                #endif
-
+#endif
             }
             else
             {
@@ -721,34 +708,33 @@ void pruning_sabre_route_one(
                 last_layer[phys_qubit_1] = li;
                 last_layer[phys_qubit_2] = li;
                 ++num_gates;
-                
-                
-                //@HERE
-                #ifdef ODEPTH
+
+//@HERE
+#ifdef ODEPTH
 
                 current_depth = li;
 
-                if(pruning && current_depth > *shared_best_value){
+                if (pruning && current_depth > *shared_best_value)
+                {
                     *out_num_gates = INT_MAX;
                     *out_depth = INT_MAX;
                     *out_swap = INT_MAX;
 
-                    //std::cout<<"\nPRUNNING 1: "<< current_depth<<" "<< *shared_best_value<<std::endl;
+                    // std::cout<<"\nPRUNNING 1: "<< current_depth<<" "<< *shared_best_value<<std::endl;
                     return;
                 }
 
-                #elif defined(OGATES)
-                if(pruning && swaps > *shared_best_value){
+#elif defined(OGATES)
+                if (pruning && swaps > *shared_best_value)
+                {
                     *out_num_gates = INT_MAX;
                     *out_depth = INT_MAX;
                     *out_swap = INT_MAX;
-                    //std::cout<<"\nPRUNNING 1: "<< swaps<<" "<< *shared_best_value<<std::endl;
+                    // std::cout<<"\nPRUNNING 1: "<< swaps<<" "<< *shared_best_value<<std::endl;
                     return;
                 }
 
-                #endif
-
-        
+#endif
             }
 
             gate_to_remove_gid[gate_to_remove_count++] = g_id;
@@ -878,8 +864,6 @@ void pruning_sabre_route_one(
                 last_layer[pb] = li;
                 num_gates += 3;
                 swaps++;
-                 
-
             }
             for (int j = 0; j < d - 1 - k; ++j)
             {
@@ -894,9 +878,6 @@ void pruning_sabre_route_one(
                 swaps++;
 
                 current_depth = li;
-                
-
-
             }
 
             // target_gate is now at distance 1; next outer iteration will route it.
@@ -1042,23 +1023,18 @@ void pruning_sabre_route_one(
     *out_num_gates = num_gates;
     *out_depth = depth;
     *out_swap = swaps;
-
 }
 
-
-
-
-                  
 std::vector<RoutingResult> pruning_SABRE_routing_many(
     const int *gates_flat, int num_gates_in,
     const int *dist, int N,
     int n, int P, const int *mappings_data, uint32_t base_seed,
-    int num_trials, int num_threads, int* shared_best_value, const bool pruning)
+    int num_trials, int num_threads, int *shared_best_value, const bool pruning)
 {
 
-    //std::random_device rd;
-    //std::mt19937 rng(rd());
-    //base_seed = rng();
+    // std::random_device rd;
+    // std::mt19937 rng(rd());
+    // base_seed = rng();
 
     SharedCtx ctx;
     ctx.dist = dist;
@@ -1140,28 +1116,26 @@ std::vector<RoutingResult> pruning_SABRE_routing_many(
     if (nt < 1)
         nt = 1;
 
-  
     std::vector<int> trial_results((size_t)P * (size_t)num_trials * 3);
 
-    //Scratch sc(ctx);
+    // Scratch sc(ctx);
     for (int p = 0; p < P; ++p)
     {
         for (int t = 0; t < num_trials; ++t)
         {
             Scratch sc(ctx);
-            ///@@@@@@@@@@@@@@@@@@@
+        
             std::copy(mappings_data + (size_t)p * n,
-                        mappings_data + (size_t)(p + 1) * n,
-                        sc.mapping_buf.begin());
+                      mappings_data + (size_t)(p + 1) * n,
+                      sc.mapping_buf.begin());
 
             const uint32_t rng_seed =
-                base_seed + (uint32_t)p * (uint32_t)num_trials + (uint32_t)t + 1u; 
+                base_seed + (uint32_t)p * (uint32_t)num_trials + (uint32_t)t + 1u;
 
             //////////@hHERE
             int num_gates = INT_MAX, depth = INT_MAX, swaps = INT_MAX;
             pruning_sabre_route_one(ctx, sc.mapping_buf.data(), rng_seed, sc,
-                            &num_gates, &depth, &swaps, shared_best_value, pruning);
-
+                                    &num_gates, &depth, &swaps, shared_best_value, pruning);
 
             const size_t base = ((size_t)p * (size_t)num_trials + (size_t)t) * 3;
             trial_results[base + 0] = num_gates;
@@ -1170,6 +1144,28 @@ std::vector<RoutingResult> pruning_SABRE_routing_many(
         }
     }
 
+    /*
+        for (int p = 0; p < P; ++p)
+        {
+            int best_num_gates = std::numeric_limits<int>::max();
+            int best_depth = std::numeric_limits<int>::max();
+            int best_swaps = std::numeric_limits<int>::max();
+
+            for (int t = 0; t < num_trials; ++t)
+            {
+                //
+                const size_t base = ((size_t)p * (size_t)num_trials + (size_t)t) * 3;
+                const int ng = trial_results[base + 0];
+                if (ng < best_num_gates)
+                {
+                    best_num_gates = ng;
+                    best_depth = trial_results[base + 1];
+                    best_swaps = trial_results[base + 2];
+                }
+            }
+            results[p] = {best_num_gates, best_depth, best_swaps};
+        }
+     */
 
     for (int p = 0; p < P; ++p)
     {
@@ -1179,21 +1175,31 @@ std::vector<RoutingResult> pruning_SABRE_routing_many(
 
         for (int t = 0; t < num_trials; ++t)
         {
-            //
             const size_t base = ((size_t)p * (size_t)num_trials + (size_t)t) * 3;
             const int ng = trial_results[base + 0];
-            if (ng < best_num_gates)
+            const int d = trial_results[base + 1];
+            const int sw = trial_results[base + 2];
+
+#ifdef ODEPTH
+            const bool better = (d < best_depth) ||
+                                (d == best_depth && sw < best_swaps);
+#elif defined(OGATES)
+            const bool better = (sw < best_swaps) ||
+                                (sw == best_swaps && d < best_depth);
+#else
+            const bool better = (ng < best_num_gates);
+#endif
+
+            if (better)
             {
                 best_num_gates = ng;
-                best_depth = trial_results[base + 1];
-                best_swaps = trial_results[base + 2];
+                best_depth = d;
+                best_swaps = sw;
             }
         }
         results[p] = {best_num_gates, best_depth, best_swaps};
     }
-
     return results;
 }
-
 
 #endif
