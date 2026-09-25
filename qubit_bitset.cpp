@@ -30,6 +30,7 @@ struct Parameters {
 	int number_of_sabre_runs = 20;
 	float pool_percent = 1.f;
 	int num_random_sols = 100;
+	int num_random_sols_chosen = 100;
 	unsigned long long num_sols_to_skip = 0ULL;
 	std::string topology = "albatroz";
 	char search = 'r';
@@ -43,6 +44,7 @@ struct Parameters {
 	int perm_depth;
 	int perm_num_gates;
 	bool pruning = false;
+	bool plot = false;
 
 };
 
