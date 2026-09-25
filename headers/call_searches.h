@@ -20,7 +20,7 @@ void call_heuristics(const Parameters *my_params){
 			my_params->circuit_flat_num_gates,
 			(long long)my_params->nb_physic,
 			(long long)my_params->nb_logic,
-			my_params->number_of_sabre_runs, my_params->num_random_sols, recursive, my_params->pruning);
+			my_params->number_of_sabre_runs, my_params->num_random_sols, my_params->num_random_sols_chosen, recursive, my_params->pruning);
 	}
 	else
 	{
@@ -32,11 +32,14 @@ void call_heuristics(const Parameters *my_params){
 				my_params->circuit_flat_num_gates,
 				(long long) my_params->nb_physic,
 				(long long) my_params->nb_logic,
-				my_params->number_of_sabre_runs, my_params->num_random_sols, my_params->cutoff_depth);
+				my_params->number_of_sabre_runs, my_params->num_random_sols, 
+				my_params->num_random_sols_chosen, my_params->cutoff_depth);
 
-		}else if(my_params->search == 'p'){
+		}else if(my_params->search == 'a'){
 			
-			std::cout << "################# RANDOM HEURISTIC - PLOTTING RANDOM SOLS  ##########################" << std::endl;
+			std::cout << "################# RANDOM HEURISTIC #####################" << std::endl;
+			if(my_params->plot)
+				std::cout << "################# PLOTTING RANDOM SOLS #####################" << std::endl;
 
 			int shared_best_depth = INT_MAX;
 			int shared_best_num_gates = INT_MAX;
@@ -53,7 +56,7 @@ void call_heuristics(const Parameters *my_params){
 				&shared_best_num_gates,
 				&shared_best_num_swaps,
 				shared_best_mapping, 
-				my_params->number_of_sabre_runs,  my_params->num_random_sols, true);
+				my_params->number_of_sabre_runs,  my_params->num_random_sols, my_params->plot);
 
 		}
 
@@ -141,7 +144,7 @@ void call_jurema_search(const Parameters *my_params){
 		&shared_sols_counter,
 		my_params->num_sols_to_skip,
 		my_params->number_of_sabre_runs,
-		my_params->num_random_sols,
+		my_params->num_random_sols, my_params->num_random_sols_chosen,
 		my_params->pruning,
 		start
 	);
@@ -165,7 +168,7 @@ void call_jurema_search(const Parameters *my_params){
 void call_searches(const Parameters *my_params){
 
  
-	if (my_params->search == 'k' || my_params->search == 't' || my_params->search == 'r' || my_params->search == 'p')
+	if (my_params->search == 'k' || my_params->search == 't' || my_params->search == 'r' || my_params->search == 'a')
 	{
 		call_heuristics(my_params);
 	}

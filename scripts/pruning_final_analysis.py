@@ -103,7 +103,7 @@ BASE_DIR = os.path.dirname(
 
 EXPERIMENT_DIR = os.path.join(
     BASE_DIR,
-    "printing_exec_log",
+    "prining_exec",
     EXPERIMENT_NAME
 )
 
@@ -771,56 +771,36 @@ def create_pdf(statistics_results):
 # ============================================================
 # Plot-only CSV loader
 # ============================================================
-
 def load_csv(filename):
-
     results = []
 
     with open(filename, newline="") as f:
         reader = csv.DictReader(f)
 
         for row in reader:
-
-            k_sabre = int(
-                row.get(
-                    "kchanges_sabre_runs",
-                    row.get("sabre_runs", 1)
-                )
-            )
-
-            p_sabre = int(
-                row.get(
-                    "pruning_sabre_runs",
-                    row.get("sabre_runs", 1)
-                )
-            )
-
-            k_time = float(row["kchanges"])
-            p_time = float(row["pruning"])
+            k_time = float(row["kchanges_time"])
+            p_time = float(row["pruning_time"])
 
             results.append({
                 "instance": row["instance"],
                 "run": int(row["run"]),
-                "gates": int(row["gates"]),
-                "kchanges_sabre_runs": k_sabre,
-                "pruning_sabre_runs": p_sabre,
-                "physic": int(row["physic"]),
-                "logic": int(row["logic"]),
+
+                # Compatibility with old plotting code
+                "gates": int(row["kchanges_gates"]),
+                "physic": int(row["kchanges_swaps"]),
+                "logic": int(row["kchanges_depth"]),
+
+                "kchanges_sabre_runs": 1,
+                "pruning_sabre_runs": 1,
+
                 "kchanges": k_time,
                 "pruning": p_time,
-                "kchanges_per_sabre": float(
-                    row.get(
-                        "kchanges_per_sabre",
-                        k_time / k_sabre
-                    )
-                ),
-                "pruning_per_sabre": float(
-                    row.get(
-                        "pruning_per_sabre",
-                        p_time / p_sabre
-                    )
-                ),
-                "pruning_percent": float(row["pruning_percent"]),
+
+                "kchanges_per_sabre": k_time,
+                "pruning_per_sabre": p_time,
+
+                "pruning_percent": float(row["time_ratio_percent"]),
+
                 "logfile": row["logfile"],
             })
 
@@ -1264,7 +1244,28 @@ def main():
                         run_number
                     )
 
-                    results.append(result)
+                    results.append({
+    "instance": row["instance"],
+    "run": int(row["run"]),
+    "gates": int(row["kchanges_gates"]),
+
+    "sabre_runs": 1,
+    "kchanges_sabre_runs": 1,
+    "pruning_sabre_runs": 1,
+
+    "physic": int(row["kchanges_swaps"]),
+    "logic": int(row["kchanges_depth"]),
+
+    "kchanges": k_time,
+    "pruning": p_time,
+
+    "kchanges_per_sabre": k_time,
+    "pruning_per_sabre": p_time,
+
+    "pruning_percent": float(row["time_ratio_percent"]),
+
+    "logfile": row["logfile"],
+})
 
                 except Exception as e:
 

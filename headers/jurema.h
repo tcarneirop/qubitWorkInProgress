@@ -260,7 +260,7 @@ unsigned long long call_jurema(
 	unsigned long long *shared_sols_counter,
 	const unsigned long long num_sols_to_check,
 	const int NUMBER_OF_SABRE_RUNS,
-	const int num_random_sols,
+	const int num_random_sols, const int num_random_sols_chosen,
 	const bool pruning,
 	Clock::time_point start
 
@@ -275,7 +275,7 @@ unsigned long long call_jurema(
 	
 
 	#pragma omp parallel for schedule(runtime) reduction(+ : num_sols)
-	for (int i = 0; i < num_random_sols; ++i)
+	for (int i = 0; i < num_random_sols_chosen; ++i)
 	{
 
 		int *mapping = solutions + i * logic;
