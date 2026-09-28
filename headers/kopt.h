@@ -420,7 +420,7 @@ void call_kchange_vs_jurema(
 	
 
 	start = Clock::now();
- 
+ /* 
 	#pragma omp parallel for schedule(runtime) reduction(+:num_sols)
 	for (int i = 0; i <  NUM_RAND_SOLS_CHOSEN; ++i)
 	{
@@ -441,7 +441,7 @@ void call_kchange_vs_jurema(
 			0,false
 		);
 	}
- 
+  */
 	jurema_num_sols = num_sols;
 	jurema_depth = shared_best_depth;
 	jurema_gates = shared_best_num_gates;
