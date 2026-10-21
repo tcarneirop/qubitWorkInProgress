@@ -1007,9 +1007,9 @@ std::vector<RoutingResult> pruning_SABRE_routing_many(
     int num_trials, int num_threads, int *shared_best_value, const bool pruning)
 {
 
-    // std::random_device rd;
-    // std::mt19937 rng(rd());
-    // base_seed = rng();
+    //std::random_device rd;
+    //std::mt19937 rng(rd());
+    //base_seed = rng();
 
     SharedCtx ctx;
     ctx.dist = dist;

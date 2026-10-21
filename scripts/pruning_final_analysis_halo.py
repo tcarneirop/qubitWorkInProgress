@@ -66,6 +66,13 @@ parser.add_argument(
     help="Optimization target: depth or gates"
 )
 
+parser.add_argument(
+    "--qasm-dir",
+    type=str,
+    default="~/qubitWorkInProgress/qubikos/",
+    help="Directory containing the QASM files"
+)
+
 args = parser.parse_args()
 
 
@@ -73,10 +80,7 @@ args = parser.parse_args()
 # Configuration
 # ============================================================
 
-QASM_DIR = os.path.expanduser(
-    "~/qubitWorkInProgress/qubikos/"
-    #"~/qubitWorkInProgress/NEW_Bechmark"
-)
+QASM_DIR = os.path.expanduser(args.qasm_dir)
 
 # Convention used in this project:
 #   depth_qubit.exe -> optimize DEPTH
@@ -846,7 +850,12 @@ def create_pdf(statistics_results):
                 alpha=0.3
             )
 
-            ax.legend()
+            fig.legend(
+                loc="upper center",
+                bbox_to_anchor=(0.5, 0.98),
+                ncol=2,
+                frameon=False,
+            )
 
             # =================================================
             # Table
@@ -1093,7 +1102,12 @@ def create_sabre_pdf(statistics_results):
                 alpha=0.3
             )
 
-            ax.legend()
+            fig.legend(
+                loc="upper center",
+                bbox_to_anchor=(0.5, 0.98),
+                ncol=2,
+                frameon=False,
+            )
 
             # =================================================
             # Table
@@ -1164,9 +1178,27 @@ def create_sabre_pdf(statistics_results):
             for cell in table.get_celld().values():
                 cell.set_linewidth(0.7)
 
-            fig.tight_layout()
+            fig.subplots_adjust(left=0.04, right=0.98, bottom=0.07, top=0.94)
             pdf.savefig(fig)
             plt.close(fig)
+
+
+def _set_speedup_ylim(ax, values):
+
+    values = [v for v in values if np.isfinite(v)]
+
+    if not values:
+        ax.set_ylim(0, 100)
+        return
+
+    min_value = min(values)
+
+    # Keep the normal 0--100% scale when all results are faster with pruning.
+    # If K-Changes is faster for some points, expose the negative region too.
+    if min_value >= 0:
+        ax.set_ylim(0, 100)
+    else:
+        ax.set_ylim(min(-5.0, min_value - 5.0), 100)
 
 
 def create_swaps_pdf(statistics_results):
@@ -1191,11 +1223,14 @@ def create_swaps_pdf(statistics_results):
         except ValueError:
             continue
 
+        ratio = r["ratio_mean"]
+
         rows.append({
             "swaps": swaps,
             "twoq": twoq,
             "oneq": oneq,
-            "ratio": r["ratio_mean"],
+            "ratio": ratio,
+            "speedup": 100.0 - ratio,
         })
 
     if not rows:
@@ -1208,245 +1243,86 @@ def create_swaps_pdf(statistics_results):
         )
     ) as pdf:
 
-        fig, ax = plt.subplots(figsize=(12, 7))
+        fig, ax = plt.subplots(figsize=(14, 7))
+        fig.subplots_adjust(left=0.09, right=0.76, bottom=0.16, top=0.88)
 
         x = [r["swaps"] for r in rows]
-        y = [r["ratio"] for r in rows]
+        y = [r["speedup"] for r in rows]
 
-        # Color-code points by total number of gates so that points with the
-        # same circuit size can be tracked across different # swaps values.
-        gate_values = sorted(set(r["twoq"] + r["oneq"] for r in rows))
+        gate_values = sorted(set(r["twoq"] for r in rows))
         cmap = plt.get_cmap("tab10")
         gate_colors = {
             gates: cmap(i % cmap.N)
             for i, gates in enumerate(gate_values)
         }
 
-        point_colors = [
-            gate_colors[r["twoq"] + r["oneq"]]
-            for r in rows
-        ]
+        point_colors = [gate_colors[r["twoq"]] for r in rows]
 
-        ax.axhline(
-            100,
-            linestyle="--",
-            linewidth=1.5
-        )
+        ax.axhline(0, linestyle="--", linewidth=1.5)
+        ax.scatter(x, y, s=42, alpha=0.75, c=point_colors)
 
-        ax.scatter(
-            x,
-            y,
-            s=42,
-            alpha=0.75,
-            c=point_colors
-        )
-
-        legend_handles = [
-            Line2D(
-                [0],
-                [0],
-                marker="o",
-                linestyle="none",
-                markerfacecolor=gate_colors[gates],
-                markeredgecolor=gate_colors[gates],
-                markersize=7,
-                label=f"{gates} gates"
-            )
-            for gates in gate_values
-        ]
-
-        ax.legend(
-            handles=legend_handles,
-            title="# gates",
-            loc="upper left"
-        )
-
-        ax.set_xscale("log")
-
-        # Keep the logarithmic spacing, but display tick labels normally
-        # (e.g. 100, 1000, 10000 instead of 10², 10³, 10⁴).
+        #ax.set_xscale("log")
         plain_formatter = ScalarFormatter()
         plain_formatter.set_scientific(False)
         plain_formatter.set_useOffset(False)
         ax.xaxis.set_major_formatter(plain_formatter)
 
         ax.set_xlabel("# swaps")
-        ax.set_ylabel("Pruning / K-Changes (%)")
-        ax.set_ylim(0, 100)
-
+        ax.set_ylabel("Pruning speedup (%)")
+        _set_speedup_ylim(ax, y)
         ax.set_title(
-            f"{OPTIMIZATION_LABEL} optimization — Pruning Advantage as a Function of the Number of Swaps"
+            f"{OPTIMIZATION_LABEL} optimization — "
+            f"Pruning Advantage as a Function of the Number of Swaps"
         )
 
         grouped = {}
-
         for r in rows:
+            grouped.setdefault(r["swaps"], {"pruning": 0, "total": 0})
+            grouped[r["swaps"]]["total"] += 1
+            if r["speedup"] > 0:
+                grouped[r["swaps"]]["pruning"] += 1
 
-            s = r["swaps"]
-
-            if s not in grouped:
-                grouped[s] = {
-                    "pruning": 0,
-                    "total": 0
-                }
-
-            grouped[s]["total"] += 1
-
-            if r["ratio"] < 100:
-                grouped[s]["pruning"] += 1
-
-        for s, counts in sorted(grouped.items()):
-
-            ax.annotate(
-                f"{counts['pruning']}/{counts['total']}",
-                xy=(s, 100),
-                xytext=(0, -25),
-                textcoords="offset points",
-                ha="center",
-                va="top",
-                fontsize=10
+        legend_handles = [
+            Line2D(
+                [0], [0], marker="o", linestyle="none",
+                markerfacecolor=gate_colors[gates],
+                markeredgecolor=gate_colors[gates],
+                markersize=7, label=f"{gates} gates"
             )
+            for gates in gate_values
+        ]
 
-        ax.text(
-            0.98,
-            0.96,
-            "Below 100% → Pruning faster\n"
-            "Above 100% → K-Changes faster",
-            transform=ax.transAxes,
-            ha="right",
-            va="top",
-            fontsize=10
+        # The complete legend is outside the plotting axes.
+        fig.legend(
+            handles=legend_handles,
+            title="# two-qubit gates",
+            loc="upper left",
+            bbox_to_anchor=(0.79, 0.84),
+            frameon=False,
+            ncol=1,
+        )
+
+        info_lines = [
+            f"{s} swaps: {counts['pruning']}/{counts['total']} with pruning faster"
+            for s, counts in sorted(grouped.items())
+        ]
+
+        fig.text(
+            0.79, 0.50,
+            "\n".join(info_lines),
+            ha="left", va="top", fontsize=9
+        )
+
+        fig.text(
+            0.79, 0.18,
+            "Above 0% → Pruning faster\n"
+            "Below 0% → K-Changes faster",
+            ha="left", va="top", fontsize=9
         )
 
         ax.grid(alpha=0.25)
-
-        pdf.savefig(
-            fig,
-            bbox_inches="tight"
-        )
-
+        pdf.savefig(fig)
         plt.close(fig)
-
-
-# ============================================================
-# Pruning advantage as a function of number of gates
-# for each fixed number of swaps
-# ============================================================
-
-def create_gates_vs_swaps_pdf(statistics_results):
-
-    rows = []
-
-    for r in statistics_results:
-        name = os.path.splitext(
-            os.path.basename(r["instance"])
-        )[0]
-
-        parts = name.split("_")
-
-        if len(parts) < 3:
-            continue
-
-        try:
-            swaps = int(parts[0])
-            twoq = int(parts[1])
-            oneq = int(parts[2])
-        except ValueError:
-            continue
-
-        total_gates = twoq + oneq
-
-        if total_gates <= 0:
-            continue
-
-        ratio = r["ratio_mean"]
-
-        if not np.isfinite(ratio):
-            continue
-
-        rows.append({
-            "swaps": swaps,
-            "gates": total_gates,
-            "ratio": ratio,
-        })
-
-    if not rows:
-        return
-
-    grouped = {}
-
-    for r in rows:
-        grouped.setdefault(r["swaps"], []).append(r)
-
-    for swaps in grouped:
-        grouped[swaps].sort(key=lambda r: r["gates"])
-
-    output = os.path.join(
-        EXPERIMENT_DIR,
-        f"{OPTIMIZATION}_pruning_advantage_vs_gates.pdf"
-    )
-
-    with PdfPages(output) as pdf:
-
-        for swaps in sorted(grouped):
-
-            group = grouped[swaps]
-
-            fig, ax = plt.subplots(figsize=(12, 7))
-
-            ax.scatter(
-                [r["gates"] for r in group],
-                [r["ratio"] for r in group],
-                s=60,
-                alpha=0.85
-            )
-
-            ax.axhline(
-                100,
-                linestyle="--",
-                linewidth=1.2
-            )
-
-            ax.set_xscale("log")
-
-            # Keep logarithmic spacing, but display tick labels normally
-            # (e.g. 100, 1000, 10000 instead of 10², 10³, 10⁴).
-            plain_formatter = ScalarFormatter()
-            plain_formatter.set_scientific(False)
-            plain_formatter.set_useOffset(False)
-            ax.xaxis.set_major_formatter(plain_formatter)
-
-            ax.set_xlabel("# two-qubit gates")
-            ax.set_ylabel("Pruning / K-Changes (%)")
-            ax.set_ylim(0, 100)
-
-            ax.set_title(
-                f"{OPTIMIZATION_LABEL} optimization — "
-                f"Pruning Advantage vs # two-qubit gates\n"
-                f"# swaps = {swaps}"
-            )
-
-            ax.text(
-                0.98,
-                0.96,
-                "Below 100% → Pruning faster\n"
-                "Above 100% → K-Changes faster",
-                transform=ax.transAxes,
-                ha="right",
-                va="top",
-                fontsize=10
-            )
-
-            ax.grid(alpha=0.25)
-
-            fig.tight_layout()
-
-            pdf.savefig(
-                fig,
-                bbox_inches="tight"
-            )
-
-            plt.close(fig)
 
 
 # ============================================================
@@ -1487,6 +1363,7 @@ def create_large_swaps_pdf(statistics_results):
             "swaps": swaps,
             "twoq": twoq,
             "ratio": ratio,
+            "speedup": 100.0 - ratio,
             "density": swaps / total_gates,
         })
 
@@ -1498,8 +1375,8 @@ def create_large_swaps_pdf(statistics_results):
         dtype=float
     )
 
-    ratios = np.array(
-        [r["ratio"] for r in rows],
+    speedups = np.array(
+        [r["speedup"] for r in rows],
         dtype=float
     )
 
@@ -1510,14 +1387,10 @@ def create_large_swaps_pdf(statistics_results):
 
     # Correlation is undefined when density has zero variance.
     density_corr = (
-        np.corrcoef(density, ratios)[0, 1]
-        if len(rows) > 1 and np.std(density) > 0 and np.std(ratios) > 0
+        np.corrcoef(density, speedups)[0, 1]
+        if len(rows) > 1 and np.std(density) > 0 and np.std(speedups) > 0
         else float("nan")
     )
-
-    ymin = min(ratios.min(), 100.0)
-    ymax = max(ratios.max(), 100.0)
-    margin = max(5.0, 0.08 * (ymax - ymin))
 
     output = os.path.join(
         EXPERIMENT_DIR,
@@ -1526,7 +1399,8 @@ def create_large_swaps_pdf(statistics_results):
 
     with PdfPages(output) as pdf:
 
-        fig, ax = plt.subplots(figsize=(10, 6))
+        fig, ax = plt.subplots(figsize=(13, 6))
+        fig.subplots_adjust(left=0.09, right=0.76, bottom=0.14, top=0.86)
 
         ax.axhline(
             100,
@@ -1543,7 +1417,7 @@ def create_large_swaps_pdf(statistics_results):
 
         ax.scatter(
             density,
-            ratios,
+            speedups,
             c=point_colors,
             s=55,
             alpha=0.8
@@ -1565,7 +1439,7 @@ def create_large_swaps_pdf(statistics_results):
         ]
 
         ax.set_xlabel("# swaps / total gates")
-        ax.set_ylabel("Pruning / K-Changes (%)")
+        ax.set_ylabel("Pruning speedup (%)")
 
         corr_label = (
             f"r = {density_corr:.3f}"
@@ -1578,7 +1452,7 @@ def create_large_swaps_pdf(statistics_results):
             f"{corr_label}"
         )
 
-        ax.set_ylim(0, 100)
+        _set_speedup_ylim(ax, speedups)
 
         ax.grid(alpha=0.25)
 
@@ -1587,27 +1461,25 @@ def create_large_swaps_pdf(statistics_results):
             fontsize=14
         )
 
-        # Keep both the gate legend and the interpretation note outside the
-        # plotting area so neither can cover the data points.
+        # Keep the gate legend and interpretation note completely
+        # outside the plotting axes.
         fig.legend(
             handles=gate_handles,
             title="# two-qubit gates",
-            loc="center left",
-            bbox_to_anchor=(0.89, 0.50),
-            frameon=True
+            loc="upper left",
+            bbox_to_anchor=(0.79, 0.82),
+            frameon=False,
+            ncol=1,
         )
 
         fig.text(
-            0.5,
-            0.02,
-            "Below 100% → Pruning faster    |    "
-            "Above 100% → K-Changes faster",
-            ha="center",
+            0.79,
+            0.28,
+            "Above 0% → Pruning faster\n"
+            "Below 0% → K-Changes faster",
+            ha="left",
+            va="top",
             fontsize=9
-        )
-
-        fig.tight_layout(
-            rect=[0.00, 0.05, 0.87, 0.94]
         )
 
         pdf.savefig(
@@ -1624,7 +1496,7 @@ def create_large_swaps_pdf(statistics_results):
         summary = [
             ["Population", f"{len(rows)} instances"],
             [
-                "Swaps/total gates vs Pruning/K",
+                "Swaps/total gates vs Pruning speedup",
                 corr_label
             ],
         ]
@@ -1651,6 +1523,371 @@ def create_large_swaps_pdf(statistics_results):
             bbox_inches="tight"
         )
 
+        plt.close(fig)
+
+
+# ============================================================
+# Fixed-swaps / fixed-gates trend PDFs
+# ============================================================
+
+def create_gates_vs_swaps_pdf(statistics_results):
+
+    rows = []
+
+    for r in statistics_results:
+        name = os.path.splitext(
+            os.path.basename(r["instance"])
+        )[0]
+
+        parts = name.split("_")
+
+        if len(parts) < 3:
+            continue
+
+        try:
+            swaps = int(parts[0])
+            twoq = int(parts[1])
+            oneq = int(parts[2])
+        except ValueError:
+            continue
+
+        ratio = r["ratio_mean"]
+
+        rows.append({
+            "swaps": swaps,
+            "twoq": twoq,
+            "oneq": oneq,
+            "ratio": ratio,
+            "speedup": 100.0 - ratio,
+            "speedup_std": r["ratio_std"],
+        })
+
+    if not rows:
+        return
+
+    # Keep the existing combined PDF and additionally generate the two
+    # requested analysis PDFs separately.
+    output_combined = os.path.join(
+        EXPERIMENT_DIR,
+        f"{OPTIMIZATION}_pruning_advantage_vs_gates.pdf"
+    )
+    output_fixed_swaps = os.path.join(
+        EXPERIMENT_DIR,
+        f"{OPTIMIZATION}_fixed_swaps_vary_gates.pdf"
+    )
+    output_fixed_gates = os.path.join(
+        EXPERIMENT_DIR,
+        f"{OPTIMIZATION}_fixed_gates_vary_swaps.pdf"
+    )
+
+    by_swaps = {}
+    for row in rows:
+        by_swaps.setdefault(row["swaps"], []).append(row)
+
+    by_gates = {}
+    for row in rows:
+        by_gates.setdefault(row["twoq"], []).append(row)
+
+    cmap = plt.get_cmap("tab10")
+
+    all_values = [
+        value
+        for row in rows
+        for value in (
+            row["speedup"],
+            row["speedup"] + row["speedup_std"],
+            row["speedup"] - row["speedup_std"],
+        )
+    ]
+
+    def make_fixed_swaps_figure():
+        fig, ax = plt.subplots(figsize=(13, 7))
+        fig.subplots_adjust(
+            left=0.09,
+            right=0.76,
+            bottom=0.16,
+            top=0.86,
+        )
+
+        swap_values = sorted(by_swaps)
+        
+        for i, swaps in enumerate(swap_values):
+            group = sorted(
+                by_swaps[swaps],
+                key=lambda row: row["twoq"]
+            )
+
+            x = np.array(
+                [row["twoq"] for row in group],
+                dtype=float
+            )
+
+            y = np.array(
+                [row["speedup"] for row in group],
+                dtype=float
+            )
+
+            std = np.array(
+                [row["speedup_std"] for row in group],
+                dtype=float
+            )
+
+            color = cmap(i % cmap.N)
+
+            # Mean line + points
+            ax.plot(
+                x,
+                y,
+                "o-",
+                linewidth=1.0,
+                markersize=4.0,
+                label=f"{swaps} swaps",
+                color=color,
+            )
+
+            # Halo = ±1 standard deviation
+            ax.fill_between(
+                x,
+                y - std,
+                y + std,
+                color=color,
+                alpha=0.15,
+            )
+            ax.axhline(0, linestyle="--", linewidth=1.2)
+        #ax.set_xscale("log")
+
+        plain_formatter = ScalarFormatter()
+        plain_formatter.set_scientific(False)
+        plain_formatter.set_useOffset(False)
+        ax.xaxis.set_major_formatter(plain_formatter)
+        ax.tick_params(axis="x", labelsize=19)
+        ax.tick_params(axis="y", labelsize=19)
+        ax.set_xlabel("Instance", fontsize=20)
+        ax.set_ylabel("Early Termination Advantage (%)", fontsize=20)
+        _set_speedup_ylim(ax, all_values)
+        #ax.set_title(
+        #    f"{OPTIMIZATION_LABEL} optimization — "
+        #    "Fixed #swaps and # two-qubit gates"
+        #)
+        ax.grid(alpha=0.25)
+
+        fig.legend(
+            title="# swaps",
+            loc="upper left",
+            bbox_to_anchor=(0.1, 0.85),
+            frameon=True,
+            ncol=1,
+            fontsize=18,
+            title_fontsize=18,
+        )
+        return fig
+
+    # def make_fixed_gates_figure():
+    #     fig, ax = plt.subplots(figsize=(13, 7))
+    #     fig.subplots_adjust(
+    #         left=0.09,
+    #         right=0.76,
+    #         bottom=0.16,
+    #         top=0.86,
+    #     )
+
+    #     gate_values = sorted(by_gates)
+    #     for i, gates in enumerate(gate_values):
+    #         group = sorted(
+    #             by_gates[gates],
+    #             key=lambda row: row["swaps"]
+    #         )
+
+    #         x = [row["swaps"] for row in group]
+    #         y = [row["speedup"] for row in group]
+    #         yerr = [row["speedup_std"] for row in group]
+
+    #         ax.errorbar(
+    #             x,
+    #             y,
+    #             yerr=yerr,
+    #             fmt="o-",
+    #             linewidth=1.8,
+    #             markersize=5.5,
+    #             capsize=3,
+    #             label=f"{gates} gates",
+    #             color=cmap(i % cmap.N),
+    #         )
+
+    #     ax.axhline(0, linestyle="--", linewidth=1.2)
+    #     #ax.set_xscale("log")
+
+    #     plain_formatter = ScalarFormatter()
+    #     plain_formatter.set_scientific(False)
+    #     plain_formatter.set_useOffset(False)
+    #     ax.xaxis.set_major_formatter(plain_formatter)
+
+    #     ax.set_xlabel("# swaps")
+    #     ax.set_ylabel("Pruning speedup (%)")
+    #     _set_speedup_ylim(ax, all_values)
+    #     ax.set_title(
+    #         f"{OPTIMIZATION_LABEL} optimization — "
+    #         "Fixed # two-qubit gates, varying # swaps"
+    #     )
+    #     ax.grid(alpha=0.25)
+
+    #     fig.legend(
+    #         title="# two-qubit gates",
+    #         loc="upper left",
+    #         bbox_to_anchor=(0.79, 0.84),
+    #         frameon=False,
+    #         ncol=1,
+    #     )
+
+    #     fig.text(
+    #         0.79,
+    #         0.22,
+    #         "Each line fixes # two-qubit gates and varies\n"
+    #         "the number of swaps.",
+    #         ha="left",
+    #         va="top",
+    #         fontsize=9,
+    #     )
+    #     return fig
+
+    # Generate the two requested PDFs separately and keep the existing
+    # two-page combined PDF as well.
+    fixed_swaps_pdf = PdfPages(output_fixed_swaps)
+   # fixed_gates_pdf = PdfPages(output_fixed_gates)
+    combined_pdf = PdfPages(output_combined)
+
+    try:
+        fig = make_fixed_swaps_figure()
+        fixed_swaps_pdf.savefig(fig, bbox_inches="tight")
+        combined_pdf.savefig(fig, bbox_inches="tight")
+        plt.close(fig)
+
+       # fig = make_fixed_gates_figure()
+        #fixed_gates_pdf.savefig(fig, bbox_inches="tight")
+        #combined_pdf.savefig(fig, bbox_inches="tight")
+        #plt.close(fig)
+    finally:
+        fixed_swaps_pdf.close()
+        #fixed_gates_pdf.close()
+        combined_pdf.close()
+
+
+# ============================================================
+# Heatmap: # swaps x # two-qubit gates
+# ============================================================
+
+def create_speedup_heatmap_pdf(statistics_results):
+
+    cells = {}
+    
+    allowed_swaps = set(range(100, 1001, 100))
+
+    for r in statistics_results:
+        name = os.path.splitext(
+            os.path.basename(r["instance"])
+        )[0]
+
+        parts = name.split("_")
+        if len(parts) < 3:
+            continue
+
+        try:
+            swaps = int(parts[0])
+            twoq = int(parts[1])
+            oneq = int(parts[2])
+        except ValueError:
+            continue
+        
+        if swaps not in allowed_swaps:
+            continue
+
+        # The benchmark instances use one-q ubit gates as the third
+        # component. Keep the heatmap keyed by the requested two main
+        # dimensions: swaps and two-qubit gates.
+        speedup = 100.0 - r["ratio_mean"]
+        cells[(swaps, twoq)] = speedup
+
+    if not cells:
+        return
+
+    swap_values = sorted({swaps for swaps, _ in cells})
+
+    gate_values = sorted({twoq for _, twoq in cells})
+
+    matrix = np.full(
+        (len(swap_values), len(gate_values)),
+        np.nan,
+        dtype=float,
+    )
+
+    for i, swaps in enumerate(swap_values):
+        for j, gates in enumerate(gate_values):
+            if (swaps, gates) in cells:
+                matrix[i, j] = cells[(swaps, gates)]
+
+    finite = matrix[np.isfinite(matrix)]
+    if finite.size == 0:
+        return
+
+    output = os.path.join(
+        EXPERIMENT_DIR,
+        f"{OPTIMIZATION}_pruning_speedup_heatmap.pdf"
+    )
+
+    with PdfPages(output) as pdf:
+
+        fig, ax = plt.subplots(figsize=(13, 7))
+        fig.subplots_adjust(
+            left=0.12,
+            right=0.88,
+            bottom=0.16,
+            top=0.86,
+        )
+
+        masked = np.ma.masked_invalid(matrix)
+
+        image = ax.imshow(
+            masked,
+            aspect="auto",
+            interpolation="nearest",
+            vmin=0,
+            vmax=75, 
+        )
+
+        cbar = fig.colorbar(image, ax=ax, pad=0.02)
+        cbar.set_label("Early Termination Advantage (%)",  fontsize=15)
+        cbar.ax.tick_params(labelsize=12)
+        
+
+        ax.set_xticks(range(len(gate_values)))
+        ax.set_xticklabels([str(g) for g in gate_values])
+        ax.set_yticks(range(len(swap_values)))
+        ax.set_yticklabels([str(s) for s in swap_values])
+        ax.tick_params(axis="both", labelsize=12)
+
+        ax.set_xlabel("Proportion", fontsize=15)
+        ax.set_ylabel("# Swaps", fontsize=15)
+        #ax.set_title(
+        #    f"{OPTIMIZATION_LABEL} optimization — "
+        #    "Heatmap: Early Termination Advantage"
+        #)
+
+        # Show the numerical speedup in every populated cell.
+        for i in range(len(swap_values)):
+            for j in range(len(gate_values)):
+                value = matrix[i, j]
+                if np.isfinite(value):
+                    ax.text(
+                        j,
+                        i,
+                        f"{value:.1f}%",
+                        ha="center",
+                        va="center",
+                        fontsize=10,
+                    )
+
+        ax.grid(False)
+        pdf.savefig(fig, bbox_inches="tight")
         plt.close(fig)
 
 
@@ -1788,6 +2025,10 @@ def main():
         statistics_results
     )
 
+    create_speedup_heatmap_pdf(
+        statistics_results
+    )
+
     print("\n" + "=" * 70)
     print("DONE")
     print("=" * 70)
@@ -1804,6 +2045,15 @@ def main():
     )
     print(
         f"Pruning vs gates:  {os.path.join(EXPERIMENT_DIR, f'{OPTIMIZATION}_pruning_advantage_vs_gates.pdf')}"
+    )
+    print(
+        f"Fixed swaps / varying gates: {os.path.join(EXPERIMENT_DIR, f'{OPTIMIZATION}_fixed_swaps_vary_gates.pdf')}"
+    )
+    print(
+        f"Fixed gates / varying swaps: {os.path.join(EXPERIMENT_DIR, f'{OPTIMIZATION}_fixed_gates_vary_swaps.pdf')}"
+    )
+    print(
+        f"Speedup heatmap:   {os.path.join(EXPERIMENT_DIR, f'{OPTIMIZATION}_pruning_speedup_heatmap.pdf')}"
     )
 
 

@@ -49,6 +49,9 @@ std::vector<int> random_heuristic(
             std::random_device{}() +
             omp_get_thread_num()
         );
+        //std::mt19937 rng(
+        //    12345 + omp_get_thread_num()
+        //);
 
         #pragma omp for
         for (int i = 0; i < num_random_sols; ++i) {
