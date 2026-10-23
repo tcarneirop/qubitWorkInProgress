@@ -67,10 +67,10 @@ Use the same CLI parameters with `qubits_depth.exe` to optimize circuit depth in
 
 ### Checking a given permutation
 
-Supply the permutation elements after `--permutation`:
+Supply the permutation elements after `--permutation` using the auxiliary script:
 
-```text
---permutation 0 1 2 3
+```bash
+./gates_qubit.exe --topology "albatroz" --qasmfile NEW_Bechmark/z4_268.qasm  --permutation $(./scripts/cleanPermutation.sh "[11, 3, 0, 1, 12, 4, 15, 13, 6, 5, 8]")
 ```
 
 The application evaluates its routing value using the topology specified with `--topology`. The number of elements must match the problem being evaluated.
