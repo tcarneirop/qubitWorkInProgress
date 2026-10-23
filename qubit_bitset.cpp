@@ -82,7 +82,9 @@ int main(int argc, char **argv)
 	//////////////////////////
 
 
-	cli_parameters_parser(&my_params,argc, argv);
+	int ret = cli_parameters_parser(&my_params, argc, argv);
+	if (ret != 0)
+    	return ret;
 	ParsedCircuit circuit_flat = parse_qasm(my_params.qasm_file);
 	start_parameters_circuit(&my_params, circuit_flat.n, circuit_flat.num_gates, circuit_flat.gates_flat.data());
 	sanity_test(&my_params);

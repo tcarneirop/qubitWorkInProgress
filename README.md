@@ -1,210 +1,76 @@
-# Making
+# Qubit Mapper
+
+Qubit mapping and routing experiments for QASM circuits, with optimization of either the circuit's gate count or its depth.
+
+## Building
+
 ```bash
-make clean 
+make clean
 make all
 ```
 
-# Executing for a specific instance:
-```bash
-$./qubit.exe NEW_Bechmark/sym9_146.qasm 16 0.5 1 1 
-```
-Where $sym9_146.asm$ is the instance, $16$ is a fixed parameter, $0.5$ is the percentage of the permutation lexicografically generated, and the last $1$ is the number of SABRE heuristic runs. 
+`make all` builds both executables from the **same source code**. Compile-time `-D` definitions select the optimization objective:
 
-# Qubit Experiment Runner
+- **`qubit_gates.exe`** — optimize the number of gates.
+- **`qubits_depth.exe`** — optimize circuit depth.
 
-`experiments.sh` automates experiments with `qubit.exe` over multiple parameter combinations and stores the results in a CSV file.
+Both executables have **exactly the same CLI11 command-line interface**. The only distinction is the compile-time optimization objective.
 
-## Usage
+## Running
 
-```bash
-./2207experiments.sh [OPTIONS]
-```
-
-## Options
-
-### `--binary <path>`
-
-Path to the executable.
-
-Example:
+The required inputs are a hardware topology and a QASM file. For example:
 
 ```bash
-./2207experiments.sh --binary ./qubit.exe
+./qubit_gates.exe --topology albatroz --qasmfile NEW_Bechmark/z4_268.qasm
 ```
 
-### `--depths <list>`
+For depth optimization, use the same options with `./qubits_depth.exe`.
 
-Percentage of the partial permutation that is going to be fixed.
-
-Values are specified as fractions of the partial permutation size.
-
-Example:
+To see the current options directly from the executable:
 
 ```bash
---depths 0.2,0.3,0.4,0.5
+./qubit_gates.exe --help
 ```
 
-One experiment is executed for each value.
+### Command-line options
 
-**Warning:** `0.5` can be VERY memory demanding for some instances.
+| Option | Description |
+| --- | --- |
+| `--topology <name>` | **Required.** Hardware topology: `albatroz` (16 qubits), `boeblingen` (20), `cairo` (27), or `melbourne` (15). |
+| `--qasmfile <path>` | **Required.** Input QASM circuit. |
+| `--depth-percent <float>` | Fraction of the permutation to generate a pool or fix the Jurema search. |
+| `--pool-percent <float>` | Fraction of the pool used by DFS or of the solutions pool to explore. |
+| `--sabre-runs <int>` | Number of SABRE runs (default: 20). |
+| `--num-rand-sols <int>` | Number of random solutions evaluated to obtain an initial upper bound (default: 100). |
+| `--num-rand-sols-chosen <int>` | Number of random solutions selected for further work (default: 100). |
+| `--sols-skip <uint>` | Number of complete non-improving solutions before stopping; `0` disables this condition (default: 0). |
+| `--search <code>` | Search algorithm: `d` (DFS), `j` (Jurema), `k` (K-changes), `t` (tests), `r` (recursive 2-change search), `a` (random/aleatoire search). |
+| `--pruning` | Enable cost-bounded routing. |
+| `--plot` | Enable plotting of random solutions. |
+| `--permutation <ints...>` | Evaluate the routing value of a given permutation on the selected topology. |
+| `-h`, `--help` | Display command-line help. |
 
-### `--pool <list>`
+The `p` search code has been removed from this documentation; plotting is controlled independently by `--plot`.
 
-Pool percentages.
-
-Example:
+### Example with search parameters
 
 ```bash
---pool 1,0.1,0.01,0.001
+./qubit_gates.exe \
+  --topology albatroz \
+  --qasmfile NEW_Bechmark/z4_268.qasm \
+  --search j \
+  --depth-percent 0.7 \
+  --sabre-runs 20
 ```
 
-One experiment is executed for each pool value.
+Use the same CLI parameters with `qubits_depth.exe` to optimize circuit depth instead of the gate count.
 
-### `--sabre <list>`
+### Checking a given permutation
 
-Number of SABRE runs.
-
-Example:
-
-```bash
---sabre 1,5,10
-```
-
-### `--timelimits <list>`
-
-Execution time limits.
-
-Example:
-
-```bash
---timelimits 10s,60s,1200s
-```
-
-The format follows the GNU `timeout` command.
-
-### `--numthreads <list>`
-
-Number of OpenMP threads.
-
-Example:
-
-```bash
---numthreads 1,2,4,8,16
-```
-
-One experiment is executed for each number of threads.
-
-If this option is not specified, the default is the number of processors reported by `nproc`.
-
-### `--likwid`
-
-Run the executable using LIKWID to pin threads.
-
-```bash
---likwid
-```
-
-When enabled, the script checks that `likwid-pin` is available before starting the experiments.
-
-### `--csv <file>`
-
-CSV file where experiment results are stored.
-
-Example:
-
-```bash
---csv results.csv
-```
-
-### `--continue`
-
-Skip experiments that are already present in the CSV file.
-
-```bash
---continue
-```
-
-This allows an interrupted experiment campaign to be resumed without re-running completed parameter combinations.
-
-### `--help`, `-h`
-
-Display the command-line help.
-
-```bash
-./2207experiments.sh --help
-```
-
-## Example
-
-```bash
-./2207experiments.sh \
-    --binary ./qubit.exe \
-    --depths 0.25,0.30 \
-    --pool 1 \
-    --sabre 1,10 \
-    --timelimits 5s,10s,60s \
-    --csv 10sresults.csv \
-    --numthreads 256 \
-    --continue
-```
-
-## Parameter Sweep
-
-The script executes one experiment for every combination of the supplied parameters:
-
-- QASM instance
-- time limit
-- depth
-- pool percentage
-- number of SABRE runs
-- number of OpenMP threads
-
-For example:
+Supply the permutation elements after `--permutation`:
 
 ```text
---depths 0.2,0.3
---pool 1,0.1
---sabre 1,10
---timelimits 60s,120s
---numthreads 8,16
+--permutation 0 1 2 3
 ```
 
-produces:
-
-```text
-2 × 2 × 2 × 2 × 2 = 32
-```
-
-experiments per QASM instance.
-
-## Output
-
-### CSV
-
-The CSV records the parameters and the best solution information obtained during each execution:
-
-- executable
-- timeout
-- instance
-- number of SABRE runs
-- pool percentage
-- initial depth
-- number of OpenMP threads
-- execution time
-- final depth found
-- number of gates
-- mapping
-- number of solutions
-- execution status
-
-Even when an experiment reaches its time limit, the script extracts the last reported solution from the output.
-
-### Raw Output
-
-The complete output of each experiment is stored separately under:
-
-```text
-results/<date>_<parameters>/<instance>/<instance>.out
-```
-
-This preserves the complete program output for later analysis.
+The application evaluates its routing value using the topology specified with `--topology`. The number of elements must match the problem being evaluated.

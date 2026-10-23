@@ -49,21 +49,25 @@ int cli_parameters_parser(Parameters *my_params, int argc, char *argv[])
 
 	app.add_option("--permutation", my_params->permutation, "Permutation");
 
-	if ((my_params->search == 'd' || my_params->search == 'j') &&
-		app.get_option("--depth-percent")->count() == 0)
-	{
-		throw CLI::ValidationError(
-			"--depth-percent is required when --search is 'd' or 'j'");
-	}
-
+	
 	CLI11_PARSE(app, argc, argv);
 
 	my_params->search = (char)search[0];
+
+
+	std::cout<<"\n\njidjifdsijfidsjfijdifjds"<<my_params->search<<"\n";
 
 	if (my_params->num_random_sols_chosen > my_params->num_random_sols)
 	{
 		throw CLI::ValidationError(
 			"--num-rand-sols-chosen must be <= --num-rand-sols");
+	}
+	
+	if ((my_params->search == 'd' || my_params->search == 'j') &&
+		app.get_option("--depth-percent")->count() == 0)
+	{
+		throw CLI::ValidationError(
+			"--depth-percent is required when --search is 'd' or 'j'");
 	}
 
 	return ret;
