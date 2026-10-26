@@ -30,9 +30,10 @@ struct Parameters {
 	int number_of_sabre_runs = 20;
 	float pool_percent = 1.f;
 	int num_random_sols = 100;
+	int num_random_sols_chosen = 100;
 	unsigned long long num_sols_to_skip = 0ULL;
 	std::string topology = "albatroz";
-	char search = ' ';
+	char search = 'r';
 	int *PHYSIC_MACHINE;
 	int nb_logic = 0;
 	int nb_physic = 0;
@@ -42,6 +43,8 @@ struct Parameters {
 	std::vector<int> permutation;
 	int perm_depth;
 	int perm_num_gates;
+	bool pruning = false;
+	bool plot = false;
 
 };
 
@@ -79,7 +82,9 @@ int main(int argc, char **argv)
 	//////////////////////////
 
 
-	cli_parameters_parser(&my_params,argc, argv);
+	int ret = cli_parameters_parser(&my_params, argc, argv);
+	if (ret != 0)
+    	return ret;
 	ParsedCircuit circuit_flat = parse_qasm(my_params.qasm_file);
 	start_parameters_circuit(&my_params, circuit_flat.n, circuit_flat.num_gates, circuit_flat.gates_flat.data());
 	sanity_test(&my_params);

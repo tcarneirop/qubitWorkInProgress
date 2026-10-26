@@ -8,17 +8,19 @@ void call_heuristics(const Parameters *my_params){
 	if (my_params->search == 'k'|| my_params->search == 'r' )
 	{
 		
-
 		if(my_params->search == 'r' )
 			recursive = true;
 
 		std::cout << "################# STARTING K-CHANGES SEARCH ##########################" << std::endl;
+		if(my_params->pruning) 
+			std::cout << "##################### PRUNING #########################" << std::endl;
+		
 		call_kchange(
 			my_params->PHYSIC_MACHINE, my_params->circuit_flat_gates_data,
 			my_params->circuit_flat_num_gates,
 			(long long)my_params->nb_physic,
 			(long long)my_params->nb_logic,
-			my_params->number_of_sabre_runs, my_params->num_random_sols, recursive);
+			my_params->number_of_sabre_runs, my_params->num_random_sols, my_params->num_random_sols_chosen, recursive, my_params->pruning);
 	}
 	else
 	{
@@ -30,8 +32,34 @@ void call_heuristics(const Parameters *my_params){
 				my_params->circuit_flat_num_gates,
 				(long long) my_params->nb_physic,
 				(long long) my_params->nb_logic,
-				my_params->number_of_sabre_runs, my_params->num_random_sols, my_params->cutoff_depth,recursive);
+				my_params->number_of_sabre_runs, my_params->num_random_sols, 
+				my_params->num_random_sols_chosen, my_params->cutoff_depth);
+
+		}else if(my_params->search == 'a'){
+			
+			std::cout << "################# RANDOM HEURISTIC #####################" << std::endl;
+			if(my_params->plot)
+				std::cout << "################# PLOTTING RANDOM SOLS #####################" << std::endl;
+
+			int shared_best_depth = INT_MAX;
+			int shared_best_num_gates = INT_MAX;
+			int shared_best_num_swaps = INT_MAX;
+			int *shared_best_mapping = (int *)malloc(sizeof(int) * my_params->nb_logic);
+
+			random_heuristic(
+				my_params->PHYSIC_MACHINE, 
+				my_params->circuit_flat_gates_data,  
+				my_params->circuit_flat_num_gates,
+				(long long) my_params->nb_physic,
+				(long long) my_params->nb_logic,  
+				&shared_best_depth, 
+				&shared_best_num_gates,
+				&shared_best_num_swaps,
+				shared_best_mapping, 
+				my_params->number_of_sabre_runs,  my_params->num_random_sols, my_params->plot);
+
 		}
+
 	}
 }
 
@@ -39,6 +67,7 @@ void call_dfs(const Parameters *my_params){
 
 	int best_depth = INT_MAX;
     int best_num_gates = INT_MAX;
+	int best_num_swaps = INT_MAX;
 	unsigned long long shared_sols_counter = 0ULL;
     int best_mapping[MAX_BOARDSIZE];
 	std::vector<int> solutions;
@@ -52,8 +81,9 @@ void call_dfs(const Parameters *my_params){
 		my_params->nb_physic, my_params->nb_logic,
 		&best_depth,
 		&best_num_gates,
+		&best_num_swaps,
 		best_mapping,
-		my_params->number_of_sabre_runs, my_params->num_random_sols);
+		my_params->number_of_sabre_runs, my_params->num_random_sols, false);
 
 	std::cout << "############ STARTING THE DFS SEARCH ################" << std::endl;
 	call_RANDOM_mcore_search(my_params->PHYSIC_MACHINE,
@@ -62,10 +92,11 @@ void call_dfs(const Parameters *my_params){
 		(long long)my_params->nb_physic,
 		(long long)my_params->nb_logic,
 		(long long)my_params->cutoff_depth,
-		&best_depth, &best_num_gates,
+		&best_depth, &best_num_gates, &best_num_swaps,
 		best_mapping, my_params->pool_percent,
 		my_params->number_of_sabre_runs,
-		my_params->num_sols_to_skip);
+		my_params->num_sols_to_skip,
+		my_params->pruning);
 
 }
 
@@ -74,6 +105,7 @@ void call_jurema_search(const Parameters *my_params){
 		
 	int best_depth = INT_MAX;
     int best_num_gates = INT_MAX;
+	int best_num_swaps = INT_MAX;
 	unsigned long long shared_sols_counter = 0ULL;
     int best_mapping[MAX_BOARDSIZE];
 	std::vector<int> solutions;
@@ -87,12 +119,14 @@ void call_jurema_search(const Parameters *my_params){
 		my_params->nb_physic, my_params->nb_logic,
 		&best_depth,
 		&best_num_gates,
+		&best_num_swaps,
 		best_mapping,
-		my_params->number_of_sabre_runs, my_params->num_random_sols);
+		my_params->number_of_sabre_runs, my_params->num_random_sols, false);
 
 	std::cout << "################# END OF THE RANDOM SEARCH ##########################" << std::endl;
 	
 	std::cout << "\n############ STARTING THE JUREMA SEARCH ################" << std::endl;
+	if(my_params->pruning) std::cout<<"########## PRUNING ##########"<<std::endl;
 	
 	const Clock::time_point start = Clock::now();
 	unsigned long long num_sols = call_jurema(
@@ -105,17 +139,23 @@ void call_jurema_search(const Parameters *my_params){
 		my_params->cutoff_depth,
 		&best_depth,
 		&best_num_gates,
+		&best_num_swaps,
 		best_mapping,
 		&shared_sols_counter,
 		my_params->num_sols_to_skip,
 		my_params->number_of_sabre_runs,
-		my_params->num_random_sols,
-		start);
+		my_params->num_random_sols, my_params->num_random_sols_chosen,
+		my_params->pruning,
+		start
+	);
+
+		
 	
 	std::cout << "\n############ END OF THE JUREMA SEARCH ################" << std::endl;
 	std::cout << "\nBest solution found: \n\t";
 	std::cout << "Depth: " << best_depth << "\n\t";
-	std::cout << "Num gates: " << best_num_gates << "\n";
+	std::cout << "Num Gates: " << best_num_gates << "\n\t";
+	std::cout << "Num Swaps: " << best_num_swaps << "\n";
 	std::cout << "Number of complete solutions found: " << num_sols << "\n";
 	std::cout << "Number of solutions that improved the incumbent: " << shared_sols_counter << "\n\t";
 	std::cout << "Number of SABRE runs (rand+jurema): " << (num_sols+my_params->num_random_sols) * my_params->number_of_sabre_runs << "\n";
@@ -128,7 +168,7 @@ void call_jurema_search(const Parameters *my_params){
 void call_searches(const Parameters *my_params){
 
  
-	if (my_params->search == 'k' || my_params->search == 't' || my_params->search == 'r' )
+	if (my_params->search == 'k' || my_params->search == 't' || my_params->search == 'r' || my_params->search == 'a')
 	{
 		call_heuristics(my_params);
 	}
