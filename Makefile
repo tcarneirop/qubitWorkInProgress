@@ -5,6 +5,9 @@ CXXFLAGS = -fopenmp -DSABRE -std=c++17 -O3
 TARGETD = depth_qubit.exe
 TARGETG = gates_qubit.exe
 
+TARGETNRD = NRdepth_qubit.exe
+TARGETNRG = NRgates_qubit.exe
+
 DEBUG_TARGETD = DEBUG_depth_qubit.exe
 DEBUG_TARGETG = DEBUG_gates_qubit.exe
 
@@ -12,16 +15,26 @@ SOURCE = qubit_bitset.cpp
 
 .PHONY: all gates depth clean
 
-all: gates depth
+all: gates depth  nranddepth nrandgates
 
+nonrandom: nranddepth nrandgates
+random:   depth gates
 solscounter: solsgates solsdepth
 
 
 depth:
-	$(CXX) $(CXXFLAGS) -DODEPTH $(SOURCE) -o $(TARGETD)
+	$(CXX) $(CXXFLAGS) -DODEPTH -DRANDOMSABRE $(SOURCE) -o $(TARGETD)
 
 gates:
-	$(CXX) $(CXXFLAGS) -DOGATES $(SOURCE) -o $(TARGETG)
+	$(CXX) $(CXXFLAGS) -DOGATES -DRANDOMSABRE $(SOURCE) -o $(TARGETG)
+
+
+nranddepth:
+	$(CXX) $(CXXFLAGS) -DODEPTH $(SOURCE) -o $(TARGETNRD)
+
+nrandgates:
+	$(CXX) $(CXXFLAGS) -DOGATES $(SOURCE) -o $(TARGETNRG)
+
 
 
 solsgates:

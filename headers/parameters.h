@@ -41,10 +41,11 @@ int cli_parameters_parser(Parameters *my_params, int argc, char *argv[])
 	app.add_option(
 		   "--search",
 		   search,
-		   "Search: DFS - d, Jurema - j, K-changes - k, tests - t, plot random values - p, random (aleatoire) search - a")
-		->check(CLI::IsMember({"d", "j", "k", "t", "r", "p", "a"}));
+		   "Search: DFS - d, Jurema - j, 2-change - 2, 3-change - 3, tests - t, random (aleatoire) search - a")
+		->check(CLI::IsMember({"d", "j", "2", "3" ,"t", "a"}));
 
-	app.add_flag("--pruning", my_params->pruning, "Enable pruning");
+	app.add_flag("--pruning", my_params->pruning, "Enable SABRE routing with cost-bounded early termination.");
+	app.add_flag("--recursive", my_params->recursive, "Enable recursive k-change search.");
 	app.add_flag("--plot", my_params->plot, "Enable plot of random sols");
 
 	app.add_option("--permutation", my_params->permutation, "Permutation");
@@ -53,9 +54,6 @@ int cli_parameters_parser(Parameters *my_params, int argc, char *argv[])
 	CLI11_PARSE(app, argc, argv);
 
 	my_params->search = (char)search[0];
-
-
-	std::cout<<"\n\njidjifdsijfidsjfijdifjds"<<my_params->search<<"\n";
 
 	if (my_params->num_random_sols_chosen > my_params->num_random_sols)
 	{
@@ -120,6 +118,7 @@ void start_parameters_circuit(Parameters *my_params, const int circuit_flat_n, c
 	std::cout << "Number of random sols chosen: " << my_params->num_random_sols_chosen << std::endl;
 	std::cout << "Number of sols to skip: " << my_params->num_sols_to_skip << std::endl;
 	std::cout << "Search: " << my_params->search << std::endl;
+	std::cout << "\tRecursive Search: " << my_params->recursive << std::endl;	
 	std::cout << "Cutoff depth: " << my_params->cutoff_depth << std::endl;
 	std::cout << "\tPercentage of the permutation: " << my_params->percent_of_the_permutation * 100 << "%" << std::endl;
 	std::cout << "Number of random sols: " << my_params->num_random_sols << std::endl;

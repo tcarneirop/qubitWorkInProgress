@@ -44,6 +44,7 @@ struct Parameters {
 	int perm_depth;
 	int perm_num_gates;
 	bool pruning = false;
+	bool recursive = false;
 	bool plot = false;
 
 };
