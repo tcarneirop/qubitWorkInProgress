@@ -15,7 +15,7 @@ SOURCE = qubit_bitset.cpp
 
 .PHONY: all gates depth clean
 
-all: gates depth  nranddepth nrandgates
+all: random  nonrandom
 
 nonrandom: nranddepth nrandgates
 random:   depth gates
