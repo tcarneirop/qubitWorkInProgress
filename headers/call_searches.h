@@ -24,7 +24,7 @@ void call_heuristics(const Parameters *my_params){
 	{
 		if (my_params->search == 't')
 		{
-
+			//This is the experiment for testing all local searches
 			call_kchange_vs_jurema(
 				my_params->PHYSIC_MACHINE, my_params->circuit_flat_gates_data,
 				my_params->circuit_flat_num_gates,
