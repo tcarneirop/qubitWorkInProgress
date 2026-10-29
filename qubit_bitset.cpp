@@ -67,10 +67,12 @@ struct Parameters {
 #include "headers/dfs_search.h"
 #include "headers/jurema.h"
 #include "headers/kopt.h"
+#include "headers/experiments.h"
 #include "headers/parameters.h"
 #include "headers/sanity_test.h"
 #include "headers/call_searches.h"
 #include "headers/verify_mapping.h"
+
 
 /* main routine for N Queens program.*/
 int main(int argc, char **argv)
