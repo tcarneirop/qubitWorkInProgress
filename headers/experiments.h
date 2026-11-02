@@ -70,7 +70,7 @@ void call_kchange_vs_jurema(
 
 
 	std::cout << "Random solutions generated: "<< NUM_RAND_SOLS << "\n\tRandom sols chonsen: " << NUM_RAND_SOLS_CHOSEN << "\n"<<std::endl;
-	std::cout << "Initial best solution: \n\tSabre runs: " << NUMBER_OF_SABRE_RUNS << "\n\tDepth: " << random_depth << "\n\tGates: " << random_gates << std::endl;
+	std::cout << "Initial best solution: \n\tSabre runs: " << NUMBER_OF_SABRE_RUNS << "\n\tDepth: " << random_depth << "\n\tSwaps: " << random_swaps << "\n\tGates: " << random_gates << std::endl;
 
 	std::cout << "########################## SOLUTION(S) GENERATED ##########################" << std::endl;
 

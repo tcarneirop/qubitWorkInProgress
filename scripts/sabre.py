@@ -89,12 +89,12 @@ def SABRE_post_trans_depth(qc,backend):
     for _ in range(len(pm.init)):
         pm.init.remove(0)
     
-    # for _ in range(len(pm.translation)):
-    #     pm.translation.remove(0)
-    for _ in range(len(pm.optimization)):
-        pm.optimization.remove(0)
-    for _ in range(len(pm.scheduling)):
-        pm.scheduling.remove(0)
+    #for _ in range(len(pm.translation)):
+    #    pm.translation.remove(0)
+    #for _ in range(len(pm.optimization)):
+    #    pm.optimization.remove(0)
+    #for _ in range(len(pm.scheduling)):
+    #    pm.scheduling.remove(0)
 
     QC=pm.run(qc)
     #print(QC.count_ops())
@@ -114,16 +114,15 @@ def sanity_depth_translated(qc,layout,backend):
         pm.init.remove(0)
     # for _ in range(len(pm.translation)):
     #     pm.translation.remove(0)
-    for _ in range(len(pm.optimization)):
-        pm.optimization.remove(0)
-    for _ in range(len(pm.scheduling)):
-        pm.scheduling.remove(0)
+    #for _ in range(len(pm.optimization)):
+    #    pm.optimization.remove(0)
+    #for _ in range(len(pm.scheduling)):
+    #    pm.scheduling.remove(0)
 
     QC=pm.run(qc)
     #print(QC.count_ops())
     return QC.depth()
 
 
-print(sanity_depth_translated(circuit,[6, 5, 1, 12, 13, 11, 7, 15, 3, 14, 8, 2, 0, 9, 4, 10]
-,backend))
-print(SABRE_post_trans_depth(circuit,backend))
+print("Mine: ", sanity_depth_translated(circuit,[8, 3, 0, 10, 4, 11, 2, 12, 15, 13, 7],backend))
+print("Sabre: ",SABRE_post_trans_depth(circuit,backend))
