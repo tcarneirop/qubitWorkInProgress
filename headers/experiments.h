@@ -533,7 +533,7 @@ void call_kchange_vs_jurema(
 	std::cout << "                    PRUNING RECURSIVE 3-CHANGE                       ";
 	std::cout << "\n------------------------------------------------------------------\n";
 
-	std::cout << "\nPruning 2-change best sol: \n\t";
+	std::cout << "\nPruning 3-change best sol: \n\t";
 	std::cout << "Depth: " << k3rec_pruning_depth << "\n\t";
 	std::cout << "Gates: " << k3rec_pruning_gates << "\n\t";
 	std::cout << "Swaps: " << k3rec_pruning_swaps << "\n\t";

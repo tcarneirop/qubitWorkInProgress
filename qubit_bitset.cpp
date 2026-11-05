@@ -60,6 +60,7 @@ struct Parameters {
 	@Todo: Organize real headers/.o files.
 */
 
+#include "headers/instances.hpp"
 #include "headers/sabre.h"
 #include "headers/parser.h"
 #include "headers/random.h"

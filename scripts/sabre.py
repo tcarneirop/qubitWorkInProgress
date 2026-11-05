@@ -112,8 +112,8 @@ def sanity_depth_translated(qc,layout,backend):
    
     for _ in range(len(pm.init)):
         pm.init.remove(0)
-    # for _ in range(len(pm.translation)):
-    #     pm.translation.remove(0)
+    #for _ in range(len(pm.translation)):
+    #    pm.translation.remove(0)
     #for _ in range(len(pm.optimization)):
     #    pm.optimization.remove(0)
     #for _ in range(len(pm.scheduling)):
@@ -124,5 +124,6 @@ def sanity_depth_translated(qc,layout,backend):
     return QC.depth()
 
 
-print("Mine: ", sanity_depth_translated(circuit,[8, 3, 0, 10, 4, 11, 2, 12, 15, 13, 7],backend))
+print("Mine: ", sanity_depth_translated(circuit,[9, 5, 4, 15, 0, 6, 11, 1, 13, 14, 7, 8, 10, 12, 3, 2]
+,backend))
 print("Sabre: ",SABRE_post_trans_depth(circuit,backend))
