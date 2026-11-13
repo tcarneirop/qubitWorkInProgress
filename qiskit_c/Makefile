@@ -9,11 +9,16 @@ LDFLAGS = -L$(LIBDIR) -Wl,-rpath,$(LIBDIR) -lqiskit
 
 .PHONY: sanity clean
 .PHONY: circuit
-
 .PHONY: target
 .PHONY: transpile
-
 .PHONY: mapping
+.PHONY: qasm
+
+qasm: qasm_test.exe
+	./qasm_test.exe test.qasm
+
+qasm_test.exe: qasm_test.cpp qasm_parser.hpp
+	$(CXX) $(CXXFLAGS) $(INCLUDES) $< -o $@ $(LDFLAGS)
 
 mapping: mapping_test.exe
 	./mapping_test.exe

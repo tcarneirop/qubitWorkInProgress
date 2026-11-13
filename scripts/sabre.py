@@ -1,3 +1,32 @@
+
+#Encontrei a causa no código-fonte do Qiskit 2.6.2.
+
+#Na função routing_stage(), o nível de otimização 3 pode executar VF2Layout e substituir o mapping inicial. É exatamente o comportamento que observamos.
+
+#Para nosso experimento, queremos executar SABRE Routing preservando o mapping fornecido.
+#Faça apenas esta alteração
+#No mapping_test.cpp, localize:
+#options.optimization_level = 3;
+
+
+#Substitua por:
+#options.optimization_level = 0;
+
+
+#Na implementação 2.6.2, esse caminho executa SABRE Routing quando há violações de conectividade, sem a etapa de remapeamento VF2.
+
+#Por exemplo, com optimization_level=3, ele pode:
+#- Simplificar portas: eliminar operações redundantes.
+#- Reduzir gates: substituir sequências de portas por outras equivalentes e mais curtas.
+#- Reduzir depth: reorganizar ou simplificar operações.
+#- Melhorar o layout: utilizar VF2PostLayout para procurar uma atribuição física mais favorável.
+#A distinção para seus experimentos é:
+#- Nível 0: avalia o routing a partir do mapping fornecido, sem passes de otimização adicionais.
+#- Nível 3: avalia o circuito após aplicar também otimizações mais agressivas.
+#Um detalhe importante: nível 3 não garante menos SWAPs, menos gates ou menor depth em todos os circuitos.
+
+#Para comparar exclusivamente a qualidade dos mappings produzidos pelo seu algoritmo, continuo recomendando o nível 0.
+
 from qiskit import QuantumCircuit
 from qiskit.transpiler import Layout
 from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
@@ -105,6 +134,7 @@ def sanity_depth_translated(qc,layout,backend):
     init_layout={qr[i]:layout[i] for i in range(len(layout))}
     init_layout=Layout(init_layout)
 
+    ### nao seria zero?
     pm = generate_preset_pass_manager(3,backend,initial_layout=init_layout)
    
     pm.layout.remove(1)
