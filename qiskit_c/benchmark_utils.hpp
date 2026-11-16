@@ -1,0 +1,152 @@
+#pragma once
+
+#include <cstddef>
+#include <cstdint>
+#include <cmath>
+#include <fstream>
+#include <iomanip>
+#include <iostream>
+#include <limits>
+#include <stdexcept>
+#include <string>
+#include <vector>
+#include <algorithm>
+
+/* Common benchmark configuration. Other algorithms can reuse this structure
+ * and ignore the SABRE-specific fields. */
+struct BenchmarkOptions {
+    std::string input;
+    std::string csv;
+    std::size_t runs = 10;
+    std::uint64_t seed = 42;
+    std::uint64_t seed_step = 1;  // 0 repeats the same seed in every run
+    std::size_t max_iterations = 4;
+    std::size_t num_swap_trials = 20;
+    std::size_t num_random_trials = 20;
+};
+
+/* One row per independent run. A later algorithm can reuse this type. */
+struct BenchmarkResult {
+    std::size_t run;
+    std::uint64_t seed;
+    double seconds;
+    std::size_t instructions;
+    std::size_t gates;
+    std::size_t swaps;
+    std::size_t depth;
+};
+
+inline void print_benchmark_usage(const char* exe) {
+    std::cerr
+        << "Usage: " << exe << " <file.qasm> [options]\n"
+        << "  --runs N           Independent runs (default: 10)\n"
+        << "  --seed N           First random seed (default: 42)\n"
+        << "  --seed-step N      Seed increment per run (default: 1; 0=same seed)\n"
+        << "  --iterations N     SABRE forward/backward iterations (default: 4)\n"
+        << "  --swap-trials N    SABRE routing trials (default: 20)\n"
+        << "  --random-trials N  SABRE random layout trials (default: 20)\n"
+        << "  --csv PATH         Write per-run results to CSV\n";
+}
+
+/* Strict unsigned-integer parsing: reject negative values and trailing text. */
+inline std::uint64_t parse_uint(const std::string& value, const std::string& flag) {
+    if (value.empty() || value[0] == '-') {
+        throw std::invalid_argument("Invalid value for " + flag + ": " + value);
+    }
+    std::size_t used = 0;
+    unsigned long long n = std::stoull(value, &used, 10);
+    if (used != value.size()) {
+        throw std::invalid_argument("Invalid value for " + flag + ": " + value);
+    }
+    return static_cast<std::uint64_t>(n);
+}
+
+inline std::size_t checked_size(std::uint64_t value, const std::string& flag) {
+    if (value > std::numeric_limits<std::size_t>::max()) {
+        throw std::out_of_range("Value too large for " + flag);
+    }
+    return static_cast<std::size_t>(value);
+}
+
+/* Parse CLI options without depending on an external argument parser. */
+inline BenchmarkOptions parse_benchmark_args(int argc, char* argv[]) {
+    if (argc < 2) throw std::invalid_argument("Missing QASM filename");
+    BenchmarkOptions opt;
+    opt.input = argv[1];
+    if (opt.input.rfind("--", 0) == 0) {
+        throw std::invalid_argument("Expected QASM filename first");
+    }
+    for (int i = 2; i < argc; ++i) {
+        std::string flag = argv[i];
+        if (i + 1 >= argc) throw std::invalid_argument("Missing value for " + flag);
+        std::string value = argv[++i];
+        if (flag == "--runs") opt.runs = checked_size(parse_uint(value, flag), flag);
+        else if (flag == "--seed") opt.seed = parse_uint(value, flag);
+        else if (flag == "--seed-step") opt.seed_step = parse_uint(value, flag);
+        else if (flag == "--iterations") opt.max_iterations = checked_size(parse_uint(value, flag), flag);
+        else if (flag == "--swap-trials") opt.num_swap_trials = checked_size(parse_uint(value, flag), flag);
+        else if (flag == "--random-trials") opt.num_random_trials = checked_size(parse_uint(value, flag), flag);
+        else if (flag == "--csv") opt.csv = value;
+        else throw std::invalid_argument("Unknown argument: " + flag);
+    }
+    if (!opt.runs || !opt.max_iterations || !opt.num_swap_trials || !opt.num_random_trials)
+        throw std::invalid_argument("Runs, iterations and trial counts must be positive");
+    // Check seed + (runs-1) * seed_step without unsigned overflow.
+    if (opt.seed_step && opt.runs > 1 &&
+        (opt.runs - 1 > (std::numeric_limits<std::uint64_t>::max() - opt.seed) / opt.seed_step))
+        throw std::out_of_range("Seed sequence would overflow uint64_t");
+    return opt;
+}
+
+inline void print_benchmark_results(const std::vector<BenchmarkResult>& results) {
+    std::cout << "\nRun results (time excludes parsing, circuit construction, metrics):\n";
+    std::cout << "run,seed,seconds,instructions,gates,swaps,depth\n";
+    for (const auto& r : results) {
+        std::cout << r.run << ',' << r.seed << ',' << std::setprecision(9)
+                  << r.seconds << ',' << r.instructions << ',' << r.gates
+                  << ',' << r.swaps << ',' << r.depth << '\n';
+    }
+
+    /* Arithmetic mean and sample standard deviation (N-1). */
+    auto report = [&](const char* name, auto extract) {
+        double sum = 0;
+        for (const auto& r : results) sum += extract(r);
+        const double mean = sum / results.size();
+        double squared = 0;
+        for (const auto& r : results) {
+            const double delta = extract(r) - mean;
+            squared += delta * delta;
+        }
+        const double sd = results.size() > 1
+            ? std::sqrt(squared / (results.size() - 1)) : 0.0;
+        std::cout << name << ": mean=" << mean << " sample_stddev=" << sd << '\n';
+    };
+    std::cout << "\nSummary (" << results.size() << " runs):\n";
+    report("seconds", [](const BenchmarkResult& r) { return r.seconds; });
+    report("swaps", [](const BenchmarkResult& r) { return double(r.swaps); });
+    report("depth", [](const BenchmarkResult& r) { return double(r.depth); });
+
+    const auto best = std::min_element(results.begin(), results.end(),
+        [](const BenchmarkResult& a, const BenchmarkResult& b) {
+            if (a.swaps != b.swaps) return a.swaps < b.swaps;
+            if (a.depth != b.depth) return a.depth < b.depth;
+            return a.seconds < b.seconds;
+        });
+    std::cout << "Best (min swaps, then depth, then time): run=" << best->run
+              << " seed=" << best->seed << " swaps=" << best->swaps
+              << " depth=" << best->depth << " seconds=" << best->seconds << '\n';
+}
+
+inline void write_benchmark_csv(const std::string& path,
+                                const std::vector<BenchmarkResult>& results) {
+    if (path.empty()) return;
+    std::ofstream out(path);
+    if (!out) throw std::runtime_error("Cannot open CSV output: " + path);
+    out << "run,seed,seconds,instructions,gates,swaps,depth\n";
+    out << std::setprecision(17);
+    for (const auto& r : results)
+        out << r.run << ',' << r.seed << ',' << r.seconds << ','
+            << r.instructions << ',' << r.gates << ',' << r.swaps << ','
+            << r.depth << '\n';
+    if (!out) throw std::runtime_error("Error writing CSV: " + path);
+}

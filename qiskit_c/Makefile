@@ -7,15 +7,22 @@ INCLUDES = -I$(QISKIT_HOME)/dist/c/include
 LIBDIR = $(QISKIT_HOME)/dist/c/lib
 LDFLAGS = -L$(LIBDIR) -Wl,-rpath,$(LIBDIR) -lqiskit
 
-.PHONY: sanity clean
-.PHONY: circuit
-.PHONY: target
-.PHONY: transpile
-.PHONY: mapping
-.PHONY: qasm
+.PHONY: sanity circuit target transpile mapping qasm sabre clean sabre-bench
 
 qasm: qasm_test.exe
 	./qasm_test.exe test.qasm
+	
+two-opt:
+	$(CXX) $(CXXFLAGS) $(INCLUDES) two_opt_test.cpp -o two_opt_test.exe $(LDFLAGS)
+
+mapping-generic:
+	$(CXX) $(CXXFLAGS) $(INCLUDES) mapping_generic_test.cpp -o mapping_generic_test.exe $(LDFLAGS)
+
+sabre-bench:
+	$(CXX) $(CXXFLAGS) $(INCLUDES) sabre_benchmark.cpp -o sabre_benchmark.exe $(LDFLAGS)
+
+sabre:
+	$(CXX) $(CXXFLAGS) $(INCLUDES) sabre_test.cpp -o sabre_test.exe $(LDFLAGS)
 
 qasm_test.exe: qasm_test.cpp qasm_parser.hpp
 	$(CXX) $(CXXFLAGS) $(INCLUDES) $< -o $@ $(LDFLAGS)
