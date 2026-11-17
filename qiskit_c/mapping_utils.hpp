@@ -5,7 +5,65 @@
 #include <qiskit.h>
 #include <vector>
 #include <iostream>
+#include "routing_utils.hpp"
 
+/*
+ * Store the evaluation result for a candidate mapping.
+ */
+struct MappingResult {
+    size_t swaps = 0;
+    size_t depth = 0;
+    double time = 0.0;
+};
+
+
+/*
+ * Print a complete physical-qubit mapping.
+ */
+void print_mapping(const std::vector<uint32_t>& mapping) {
+
+    for (size_t i = 0; i < mapping.size(); i++) {
+        std::cout << mapping[i]
+                  << (i + 1 == mapping.size() ? "\n" : " ");
+    }
+}
+
+
+/*
+ * Count the SWAP instructions inserted by SABRE Routing.
+ */
+size_t count_swaps(const QkCircuit* circuit) {
+
+    QkOpCounts counts = qk_circuit_count_ops(circuit);
+    size_t swaps = 0;
+
+    for (size_t i = 0; i < counts.len; i++) {
+        if (std::strcmp(counts.data[i].name, "swap") == 0) {
+            swaps = counts.data[i].count;
+            break;
+        }
+    }
+
+    qk_opcounts_clear(&counts);
+    return swaps;
+}
+
+
+/*
+ * Compare two mapping evaluations.
+ *
+ * Primary objective: minimize SWAPs.
+ * Tie-breaking criterion: minimize circuit depth.
+ */
+bool is_better(
+    const MappingResult& candidate,
+    const MappingResult& best
+) {
+    if (candidate.swaps != best.swaps)
+        return candidate.swaps < best.swaps;
+
+    return candidate.depth < best.depth;
+}
 
 
 inline QkDag* apply_mapping(
@@ -109,7 +167,6 @@ inline QkTranspilerStageState* create_mapping_state(
 }
 
 
-
 /*
  * Apply a logical-to-physical mapping to an arbitrary quantum DAG.
  *
@@ -198,6 +255,86 @@ inline QkDag* apply_mapping(
     }
 
     return physical_dag;
+}
+
+
+
+/*
+ * Evaluate a given logical-to-physical mapping.
+ *
+ * The original logical DAG is never modified.
+ * A new physical DAG and transpiler state are created
+ * for each candidate.
+ *
+ * The execution time measures only SABRE Routing.
+ */
+bool evaluate_mapping(
+    const QkDag* logical_dag,
+    const QkTarget* target,
+    const std::vector<uint32_t>& mapping,
+    uint32_t num_logical,
+    MappingResult& result,
+    int64_t sabre_seed = 42,
+    size_t num_trials = 5
+) {
+    const uint32_t num_physical = 16;
+
+    /* Create an independent physical DAG for this mapping. */
+    QkDag* physical_dag =
+        apply_mapping(logical_dag, num_physical, mapping.data());
+
+    if (physical_dag == nullptr)
+        return false;
+
+    /* Create the transpiler state with our fixed mapping. */
+    QkTranspilerStageState* state =
+        create_mapping_state(
+            logical_dag, target, mapping.data(), num_logical
+        );
+
+    if (state == nullptr) {
+        qk_dag_free(physical_dag);
+        return false;
+    }
+
+    /* Measure only the SABRE Routing execution time. */
+    auto start = std::chrono::steady_clock::now();
+
+    bool success = run_sabre_routing(
+        physical_dag, target, state,sabre_seed, num_trials
+    );
+
+    auto end = std::chrono::steady_clock::now();
+
+    result.time =
+        std::chrono::duration<double>(end - start).count();
+
+    if (!success) {
+        qk_transpile_state_free(state);
+        qk_dag_free(physical_dag);
+        return false;
+    }
+
+    /* Convert the routed DAG into a circuit for on. */
+    QkCircuit* routed_circuit =
+        qk_dag_to_circuit(physical_dag);
+
+    if (routed_circuit == nullptr) {
+        qk_transpile_state_free(state);
+        qk_dag_free(physical_dag);
+        return false;
+    }
+
+    /* Collect the objective value and additional metrics. */
+    result.swaps = count_swaps(routed_circuit);
+    result.depth = circuit_depth(routed_circuit);
+
+    /* Release all objects created for this candidate. */
+    qk_circuit_free(routed_circuit);
+    qk_transpile_state_free(state);
+    qk_dag_free(physical_dag);
+
+    return true;
 }
 
 

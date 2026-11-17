@@ -5,15 +5,21 @@
 #include <qiskit.h>
 #include <iostream>
 
+
 inline bool run_sabre_routing(
     QkDag* physical_dag,
     const QkTarget* target,
-    QkTranspilerStageState* state
+    QkTranspilerStageState* state,
+    int64_t seed = 42,
+    size_t num_trials = 5
 ) {
     QkTranspileOptions options = qk_transpiler_default_options();
 
     options.optimization_level = 0;
-    options.seed = 42;
+    options.seed = seed;
+    /* Number of internal SABRE Routing trials. */
+    options.num_trials = num_trials;
+
 
     char* error = nullptr;
 

@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -O2 -std=c++17 -Wall -Wextra
+CXXFLAGS = -O3 -std=c++17 -Wall -Wextra
 
 QISKIT_HOME ?= $(HOME)/qubitWorkInProgress/qiskit
 
@@ -12,8 +12,8 @@ LDFLAGS = -L$(LIBDIR) -Wl,-rpath,$(LIBDIR) -lqiskit
 qasm: qasm_test.exe
 	./qasm_test.exe test.qasm
 	
-two-opt:
-	$(CXX) $(CXXFLAGS) $(INCLUDES) two_opt_test.cpp -o two_opt_test.exe $(LDFLAGS)
+heuristics:
+	$(CXX) $(CXXFLAGS) $(INCLUDES) heuristics.cpp -o heuristics.exe $(LDFLAGS)
 
 mapping-generic:
 	$(CXX) $(CXXFLAGS) $(INCLUDES) mapping_generic_test.cpp -o mapping_generic_test.exe $(LDFLAGS)
