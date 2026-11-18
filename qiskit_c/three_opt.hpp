@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <iostream>
+#include <random>
 
 #include "mapping_utils.hpp"
 
@@ -37,7 +38,7 @@ inline bool three_opt(
     size_t num_trials = 5
 ) {
 
-
+    std::mt19937_64 rng(std::random_device{}());
     /* Generate all triples of physical-qubit positions. */
     for (uint32_t i = 0; i < num_logical; ++i) {
         for (uint32_t j = i + 1; j < num_logical; ++j) {
@@ -63,7 +64,7 @@ inline bool three_opt(
 
                     if (!evaluate_mapping(
                             logical_dag, target, candidate,
-                            num_logical, result, sabre_seed, num_trials
+                            num_logical, result, static_cast<int64_t>(rng()), num_trials
                         )) {
                         std::cerr << "ERROR: 3-opt candidate evaluation failed\n";
                         return false;
@@ -71,13 +72,13 @@ inline bool three_opt(
 
                     ++evaluations;
                     total_routing_time += result.time;
-
+                    #ifdef VERBOSE
                     std::cout << "Candidate " << evaluations
                               << " (" << i << "," << j << "," << k << ")"
                               << " swaps=" << result.swaps
                               << " depth=" << result.depth
                               << " time=" << result.time << "\n";
-
+                    #endif
                     /* Keep the best solution found so far. */
                     if (is_better(result, best_result)) {
                         best_mapping = candidate;

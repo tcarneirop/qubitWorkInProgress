@@ -7,15 +7,6 @@
 #include <iostream>
 #include "routing_utils.hpp"
 
-/*
- * Store the evaluation result for a candidate mapping.
- */
-struct MappingResult {
-    size_t swaps = 0;
-    size_t depth = 0;
-    double time = 0.0;
-};
-
 
 /*
  * Print a complete physical-qubit mapping.
@@ -59,7 +50,7 @@ bool is_better(
     const MappingResult& candidate,
     const MappingResult& best
 ) {
-    if (candidate.swaps != best.swaps)
+    if (candidate.depth == best.depth)
         return candidate.swaps < best.swaps;
 
     return candidate.depth < best.depth;
@@ -326,8 +317,9 @@ bool evaluate_mapping(
     }
 
     /* Collect the objective value and additional metrics. */
-    result.swaps = count_swaps(routed_circuit);
-    result.depth = circuit_depth(routed_circuit);
+    //result.swaps = count_swaps(routed_circuit);
+    //result.depth = circuit_depth(routed_circuit);
+    compute_circuit_metrics(routed_circuit, result);
 
     /* Release all objects created for this candidate. */
     qk_circuit_free(routed_circuit);

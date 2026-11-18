@@ -6,6 +6,7 @@
 #include <iostream>
 #include <algorithm>
 #include <qiskit.h>
+#include <random>
 
 /*
  * Explore the complete 2-opt neighborhood of an initial mapping.
@@ -51,6 +52,7 @@ inline bool two_opt(
      * For 16 physical qubits:
      * 16 * 15 / 2 = 120 candidates.
      */
+    std::mt19937_64 rng(std::random_device{}());
     for (uint32_t i = 0; i < num_logical; i++) {
         for (uint32_t j = i + 1; j < num_logical; j++) {
 
@@ -66,7 +68,7 @@ inline bool two_opt(
 
             if (!evaluate_mapping(
                     logical_dag, target, candidate,
-                    num_logical, result, sabre_seed, num_trials
+                    num_logical, result,  static_cast<int64_t>(rng()), num_trials
                 )) {
                 std::cerr << "ERROR: Candidate evaluation failed\n";
                 return false;
@@ -75,13 +77,15 @@ inline bool two_opt(
             evaluations++;
             total_routing_time += result.time;
 
+            #ifdef VERBOSE
             std::cout << "Candidate " << evaluations
                       << " (" << i << "," << j << ")"
                       << " swaps=" << result.swaps
                       << " depth=" << result.depth
                       << " time=" << result.time
                       << "\n";
-
+            #endif
+            
             /*
              * Retain the best candidate found so far.
              */

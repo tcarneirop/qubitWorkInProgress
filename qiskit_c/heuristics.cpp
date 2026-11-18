@@ -32,9 +32,9 @@ int main(int argc, char* argv[]) {
     uint32_t seed = 128;
     size_t heuristic = 2;
 
-    if (argc < 3 || argc > 6) {
+    if (argc < 4 || argc > 5) {
         std::cerr << "Usage: " << argv[0]
-              << " <file.qasm> [heuristic - 2opt or 3opt] [mapping_seed] [num_trials] [sabre_seed]\n";
+              << " <file.qasm> [heuristic - 2opt or 3opt] [num_trials]\n";
         return 1;
     }
 
@@ -43,9 +43,6 @@ int main(int argc, char* argv[]) {
         heuristic = static_cast<uint32_t>(std::stoul(argv[2]));
     }
 
-    if (argc >= 4) {
-        seed = static_cast<uint32_t>(std::stoul(argv[3]));
-    }
     /*
     * SABRE Routing configuration.
     *
@@ -54,14 +51,9 @@ int main(int argc, char* argv[]) {
     *
     * sabre_seed controls the stochastic SABRE search.
     */
-   
 
-    if (argc >= 5) {
-        num_trials = std::stoull(argv[4]);
-    }
-
-    if (argc >= 6) {
-        sabre_seed = std::stoll(argv[5]);
+    if (argc >= 4) {
+        num_trials = std::stoull(argv[3]);
     }
 
     if (num_trials == 0) {
@@ -71,8 +63,6 @@ int main(int argc, char* argv[]) {
 
     std::cout << "SABRE seed: " << sabre_seed << "\n";
     std::cout << "SABRE Routing trials: " << num_trials << "\n";
-
-
 
 
     try {
@@ -116,10 +106,10 @@ int main(int argc, char* argv[]) {
          * physical qubits, including unused physical qubits.
          */
 
+    
+        //std::mt19937 rng(seed);
+        std::mt19937 rng(std::random_device{}());
 
-      
-
-        std::mt19937 rng(seed);
 
         std::vector<uint32_t> initial_mapping(num_physical);
         std::iota(
@@ -213,27 +203,32 @@ int main(int argc, char* argv[]) {
          */
         std::cout << "\n=== HEURISTIC RESULTS ===\n";
 
-        std::cout << "Neighbors evaluated: "
-                  << evaluations << "\n";
-
-        std::cout << "Initial SWAPs: "
-                  << initial_result.swaps << "\n";
-
-        std::cout << "Best SWAPs: "
-                  << best_result.swaps << "\n";
-
-        std::cout << "Initial depth: "
-                  << initial_result.depth << "\n";
-
-        std::cout << "Best depth: "
-                  << best_result.depth << "\n";
 
         std::cout << "Initial mapping: ";
         print_mapping(initial_mapping);
+        std::cout << "Initial depth: "
+                  << initial_result.depth << "\n";
+        std::cout << "Initial gates: "
+          << initial_result.gates << "\n";
+        std::cout << "Initial SWAPs: "
+                  << initial_result.swaps << "\n";
+
+
+        std::cout << "\n====================\n";
+        
         std::cout << "Best mapping: ";
         print_mapping(best_mapping);
+        std::cout << "Best depth: "
+                  << best_result.depth << "\n";
+        std::cout << "Best gates: "
+          << best_result.gates << "\n";
+        std::cout << "Best SWAPs: "
+                  << best_result.swaps << "\n";
 
-        
+    
+        std::cout << "\n====================\n";
+        std::cout << "Neighbors evaluated: "
+                  << evaluations << "\n";
         std::cout << "Total SABRE Routing time: "
                   << total_routing_time << " seconds\n";
         std::cout << "Total heuristic evaluation time: "

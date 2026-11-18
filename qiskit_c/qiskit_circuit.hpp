@@ -56,12 +56,15 @@ inline QkCircuit* create_qiskit_circuit(const ParsedCircuit& pc) {
          * Translate the OpenQASM gate name into its corresponding
          * Qiskit C API gate identifier.
          */
+        
         if (name == "h")
             gate = QkGate_H;
         else if (name == "x")
             gate = QkGate_X;
         else if (name == "cx")
             gate = QkGate_CX;
+        else if (name == "cz")
+            gate = QkGate_CZ;
         else if (name == "sx")
             gate = QkGate_SX;
         else if (name == "rz") {
