@@ -211,7 +211,7 @@ int main(int argc, char* argv[]) {
         /*
          * Step 6: Report the best result.
          */
-        std::cout << "\n=== 2-OPT RESULTS ===\n";
+        std::cout << "\n=== HEURISTIC RESULTS ===\n";
 
         std::cout << "Neighbors evaluated: "
                   << evaluations << "\n";
@@ -236,7 +236,7 @@ int main(int argc, char* argv[]) {
         
         std::cout << "Total SABRE Routing time: "
                   << total_routing_time << " seconds\n";
-        std::cout << "Total 2-opt evaluation time: "
+        std::cout << "Total heuristic evaluation time: "
           << total_time << " seconds\n";
 
 

@@ -184,7 +184,7 @@ unsigned long long k3_change_SABRE(
     	for (int j = i + 1; j < logic; ++j){
         	for (int k = j + 1; k < logic; ++k){
 
-				std::array<int, 3> order = {0, 1, 2};
+				std::array<int, 3> order = {0, 2, 1};
 				std::array<int, 3> positions = {i, j, k};
 
 				do
