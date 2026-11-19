@@ -94,7 +94,7 @@ int main(int argc, char* argv[]) {
         auto start = std::chrono::steady_clock::now();
 
         QkTranspileLayout* layout =
-            run_sabre_layout(circuit, target, 42);
+            run_sabre_layout(circuit, target);
 
         auto end = std::chrono::steady_clock::now();
 

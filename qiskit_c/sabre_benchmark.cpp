@@ -34,6 +34,8 @@ static std::size_t count_swaps(const QkCircuit* circuit) {
 }
 
 int main(int argc, char* argv[]) {
+
+    //@todo add     options.seed = static_cast<uint64_t>(rng()); instead of manual seed
     try {
         /* Parse the same circuit once, outside the timed region. */
         const BenchmarkOptions opt = parse_benchmark_args(argc, argv);

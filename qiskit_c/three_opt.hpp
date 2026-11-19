@@ -35,7 +35,10 @@ inline bool three_opt(
     size_t& evaluations,
     double& total_routing_time,
     int64_t sabre_seed = 42,
-    size_t num_trials = 5
+    size_t num_trials = 5,
+    uint8_t optimization_level = 0,
+    bool translate = false,
+    bool optimize = false
 ) {
 
     std::mt19937_64 rng(std::random_device{}());
@@ -64,7 +67,7 @@ inline bool three_opt(
 
                     if (!evaluate_mapping(
                             logical_dag, target, candidate,
-                            num_logical, result, static_cast<int64_t>(rng()), num_trials
+                            num_logical, result, static_cast<int64_t>(rng()), num_trials, optimization_level,translate,optimize
                         )) {
                         std::cerr << "ERROR: 3-opt candidate evaluation failed\n";
                         return false;

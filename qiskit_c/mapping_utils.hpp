@@ -19,7 +19,6 @@ void print_mapping(const std::vector<uint32_t>& mapping) {
     }
 }
 
-
 /*
  * Count the SWAP instructions inserted by SABRE Routing.
  */
@@ -38,7 +37,6 @@ size_t count_swaps(const QkCircuit* circuit) {
     qk_opcounts_clear(&counts);
     return swaps;
 }
-
 
 /*
  * Compare two mapping evaluations.
@@ -266,7 +264,10 @@ bool evaluate_mapping(
     uint32_t num_logical,
     MappingResult& result,
     int64_t sabre_seed = 42,
-    size_t num_trials = 5
+    size_t num_trials = 5,
+    uint8_t optimization_level = 0,
+    bool translate = false,
+    bool optimize = false
 ) {
     const uint32_t num_physical = 16;
 
@@ -292,7 +293,8 @@ bool evaluate_mapping(
     auto start = std::chrono::steady_clock::now();
 
     bool success = run_sabre_routing(
-        physical_dag, target, state,sabre_seed, num_trials
+        physical_dag, target, state,
+        sabre_seed, num_trials, optimization_level
     );
 
     auto end = std::chrono::steady_clock::now();
@@ -306,9 +308,74 @@ bool evaluate_mapping(
         return false;
     }
 
-    /* Convert the routed DAG into a circuit for on. */
-    QkCircuit* routed_circuit =
+    /* Count SWAPs before translation decomposes them. */
+    QkCircuit* routing_circuit =
         qk_dag_to_circuit(physical_dag);
+
+    if (routing_circuit == nullptr) {
+        qk_transpile_state_free(state);
+        qk_dag_free(physical_dag);
+        return false;
+    }
+
+    const size_t routing_swaps = count_swaps(routing_circuit);
+
+    qk_circuit_free(routing_circuit);
+
+    /* Translate the routed circuit into the target gate basis. */
+    QkTranspileOptions options = qk_transpiler_default_options();
+    options.optimization_level = optimization_level;
+    options.seed = sabre_seed;
+
+    char* error = nullptr;
+    QkExitCode status;
+    QkCircuit* routed_circuit;
+
+    if (translate) {
+
+        status = qk_transpile_stage_translation(
+            physical_dag, target, &options, &error
+        );
+
+        if (status != QkExitCode_Success) {
+            if (error != nullptr) {
+                std::cerr << "Translation failed: " << error << '\n';
+                qk_str_free(error);
+            }
+
+            qk_transpile_state_free(state);
+            qk_dag_free(physical_dag);
+            return false;
+        }
+
+    }
+
+
+    if (optimize) {
+
+        /* Optimize the translated circuit. */
+        error = nullptr;
+
+        status = qk_transpile_stage_optimization(
+            physical_dag, target, &options, &error, state
+        );
+
+        if (status != QkExitCode_Success) {
+            if (error != nullptr) {
+                std::cerr << "Optimization failed: " << error << '\n';
+                qk_str_free(error);
+            }
+
+            qk_transpile_state_free(state);
+            qk_dag_free(physical_dag);
+            return false;
+        }
+
+
+    }//optimize
+    
+    /* Convert the optimized DAG into a circuit. */
+    routed_circuit = qk_dag_to_circuit(physical_dag);
 
     if (routed_circuit == nullptr) {
         qk_transpile_state_free(state);
@@ -316,10 +383,12 @@ bool evaluate_mapping(
         return false;
     }
 
-    /* Collect the objective value and additional metrics. */
-    //result.swaps = count_swaps(routed_circuit);
-    //result.depth = circuit_depth(routed_circuit);
+
+    /* Collect depth and gate count. */
     compute_circuit_metrics(routed_circuit, result);
+
+    /* Preserve the SWAP count obtained before translation. */
+    result.swaps = routing_swaps;
 
     /* Release all objects created for this candidate. */
     qk_circuit_free(routed_circuit);

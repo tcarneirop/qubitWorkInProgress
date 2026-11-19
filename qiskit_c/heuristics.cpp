@@ -24,6 +24,21 @@
 #include "three_opt.hpp"
 
 
+/*
+ 
+Optimization Levels (Qiskit)
+
+Level 0 — No optimization: Performs the transformations required to make the circuit compatible with the target hardware, without additional circuit optimization.
+
+Level 1 — Light optimization: Introduces basic circuit simplifications, including inverse-gate cancellation and single-qubit gate optimization.
+
+Level 2 — Medium optimization: Applies more extensive optimizations, including commutation-based gate cancellation and increased layout/routing search effort.
+
+Level 3 — High optimization: Performs more aggressive optimization, including two-qubit block resynthesis, potentially reducing circuit depth and gate count at a higher compilation cost.
+
+Higher optimization levels generally require more compilation effort and do not guarantee lower depth or gate count for every circuit.
+*/
+
 
 int main(int argc, char* argv[]) {
 
@@ -31,39 +46,70 @@ int main(int argc, char* argv[]) {
     int64_t sabre_seed = 42;
     uint32_t seed = 128;
     size_t heuristic = 2;
+    uint8_t optimization_level = 0;
+    bool translate = false;
+    bool optimize = false;
 
-    if (argc < 4 || argc > 5) {
+    if (argc < 4 || argc > 7) {
         std::cerr << "Usage: " << argv[0]
-              << " <file.qasm> [heuristic - 2opt or 3opt] [num_trials]\n";
+                << " <file.qasm> <heuristic - 2opt or 3opt> <num_trials>"
+                << " [optimization_level] [translate: 0|1] [optimize: 0|1]\n";
         return 1;
     }
 
+    heuristic = static_cast<size_t>(std::stoul(argv[2]));
 
-    if (argc >= 3) {
-        heuristic = static_cast<uint32_t>(std::stoul(argv[2]));
-    }
-
-    /*
-    * SABRE Routing configuration.
-    *
-    * num_trials controls the number of internal routing attempts
-    * performed for each candidate mapping.
-    *
-    * sabre_seed controls the stochastic SABRE search.
-    */
-
-    if (argc >= 4) {
-        num_trials = std::stoull(argv[3]);
-    }
+    /* SABRE Routing configuration. */
+    num_trials = std::stoull(argv[3]);
 
     if (num_trials == 0) {
         std::cerr << "ERROR: num_trials must be greater than zero\n";
         return 1;
     }
 
+    if (argc >= 5) {
+        const unsigned long level = std::stoul(argv[4]);
+
+        if (level > 3) {
+            std::cerr << "ERROR: optimization_level must be between 0 and 3\n";
+            return 1;
+        }
+
+        optimization_level = static_cast<uint8_t>(level);
+    }
+
+    if (argc >= 6) {
+        const unsigned long value = std::stoul(argv[5]);
+
+        if (value > 1) {
+            std::cerr << "ERROR: translate must be 0 or 1\n";
+            return 1;
+        }
+
+        translate = (value == 1);
+    }
+
+    if (argc >= 7) {
+        const unsigned long value = std::stoul(argv[6]);
+
+        if (value > 1) {
+            std::cerr << "ERROR: optimize must be 0 or 1\n";
+            return 1;
+        }
+
+        optimize = (value == 1);
+    }
+
+    std::cout << "Heuristic: "
+          << (heuristic == 2 ? "2-change" : "3-change") << "\n";
     std::cout << "SABRE seed: " << sabre_seed << "\n";
     std::cout << "SABRE Routing trials: " << num_trials << "\n";
-
+    std::cout << "Optimization level: "
+            << static_cast<unsigned int>(optimization_level) << "\n";
+    std::cout << "Translating in the pipeline: "
+            << (translate ? "Yes" : "No") << "\n";
+    std::cout << "Optimizing in the pipeline: "
+            << (optimize ? "Yes" : "No") << "\n";
 
     try {
         /*
@@ -173,14 +219,14 @@ int main(int argc, char* argv[]) {
             success = two_opt(
                 logical_dag, target, initial_mapping, num_logical,
                 best_mapping, best_result, evaluations,
-                total_routing_time, sabre_seed, num_trials
+                total_routing_time, sabre_seed, num_trials, optimization_level,optimize,translate
             );
         }
         else if (heuristic == 3) {
             success = three_opt(
                 logical_dag, target, initial_mapping, num_logical,
                 best_mapping, best_result, evaluations,
-                total_routing_time, sabre_seed, num_trials
+                total_routing_time, sabre_seed, num_trials,  optimization_level,optimize,translate
             );
         }
         if (!success) {

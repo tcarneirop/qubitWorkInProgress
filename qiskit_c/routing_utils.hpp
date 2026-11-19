@@ -11,11 +11,12 @@ inline bool run_sabre_routing(
     const QkTarget* target,
     QkTranspilerStageState* state,
     int64_t seed = 42,
-    size_t num_trials = 5
+    size_t num_trials = 5,
+    uint8_t optimization_level = 0
 ) {
     QkTranspileOptions options = qk_transpiler_default_options();
 
-    options.optimization_level = 0;
+    options.optimization_level = optimization_level;
     options.seed = seed;
     /* Number of internal SABRE Routing trials. */
     options.num_trials = num_trials;
