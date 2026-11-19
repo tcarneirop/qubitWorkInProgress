@@ -292,10 +292,18 @@ bool evaluate_mapping(
     /* Measure only the SABRE Routing execution time. */
     auto start = std::chrono::steady_clock::now();
 
+    //std::cout << "Before routing: ";
+    //for (auto q : mapping) std::cout << q << " ";
+    //std::cout << '\n';
+
     bool success = run_sabre_routing(
         physical_dag, target, state,
         sabre_seed, num_trials, optimization_level
     );
+
+    //std::cout << "After routing (input mapping): ";
+    //for (auto q : mapping) std::cout << q << " ";
+    //std::cout << '\n';
 
     auto end = std::chrono::steady_clock::now();
 
@@ -319,6 +327,15 @@ bool evaluate_mapping(
     }
 
     const size_t routing_swaps = count_swaps(routing_circuit);
+
+    QkOpCounts counts = qk_circuit_count_ops(routing_circuit);
+
+    for (size_t i = 0; i < counts.len; ++i) {
+        std::cout << counts.data[i].name
+                << ": " << counts.data[i].count << '\n';
+    }
+
+    qk_opcounts_clear(&counts);
 
     qk_circuit_free(routing_circuit);
 
