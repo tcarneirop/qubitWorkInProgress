@@ -330,10 +330,12 @@ bool evaluate_mapping(
 
     QkOpCounts counts = qk_circuit_count_ops(routing_circuit);
 
+    #ifdef VERBOSE
     for (size_t i = 0; i < counts.len; ++i) {
         std::cout << counts.data[i].name
                 << ": " << counts.data[i].count << '\n';
     }
+    #endif
 
     qk_opcounts_clear(&counts);
 

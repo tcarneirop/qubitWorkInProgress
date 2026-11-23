@@ -14,7 +14,7 @@ import time
 from qiskit import QuantumCircuit,transpile,ClassicalRegister
 from qiskit.transpiler import Layout
 from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
-from GRAPScpp_paral_func_matrix import GRASP, fitness_cpp, fitnessOG
+from GRAPS_func  import GRASP, fitness_cpp, fitnessOG
 
 import argparse
 parser = argparse.ArgumentParser()
