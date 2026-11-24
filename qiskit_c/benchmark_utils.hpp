@@ -23,6 +23,8 @@ struct BenchmarkOptions {
     std::size_t max_iterations = 4;
     std::size_t num_swap_trials = 20;
     std::size_t num_random_trials = 20;
+    bool pipeline = false;
+    std::uint8_t optimization_level = 3;
 };
 
 /* One row per independent run. A later algorithm can reuse this type. */
@@ -70,31 +72,73 @@ inline std::size_t checked_size(std::uint64_t value, const std::string& flag) {
 
 /* Parse CLI options without depending on an external argument parser. */
 inline BenchmarkOptions parse_benchmark_args(int argc, char* argv[]) {
-    if (argc < 2) throw std::invalid_argument("Missing QASM filename");
+
+    bool pipeline = false;
+    std::uint8_t optimization_level = 3;
+
+    if (argc < 2)
+        throw std::invalid_argument("Missing QASM filename");
+
     BenchmarkOptions opt;
+    bool seed_provided = false;
+
     opt.input = argv[1];
+
+    
+
     if (opt.input.rfind("--", 0) == 0) {
         throw std::invalid_argument("Expected QASM filename first");
     }
+
     for (int i = 2; i < argc; ++i) {
         std::string flag = argv[i];
-        if (i + 1 >= argc) throw std::invalid_argument("Missing value for " + flag);
+
+        if (flag == "--pipeline") {
+            opt.pipeline = true;
+            continue;
+        }
+
+        if (i + 1 >= argc)
+            throw std::invalid_argument("Missing value for " + flag);
+
         std::string value = argv[++i];
-        if (flag == "--runs") opt.runs = checked_size(parse_uint(value, flag), flag);
-        else if (flag == "--seed") opt.seed = parse_uint(value, flag);
-        else if (flag == "--seed-step") opt.seed_step = parse_uint(value, flag);
-        else if (flag == "--iterations") opt.max_iterations = checked_size(parse_uint(value, flag), flag);
-        else if (flag == "--swap-trials") opt.num_swap_trials = checked_size(parse_uint(value, flag), flag);
-        else if (flag == "--random-trials") opt.num_random_trials = checked_size(parse_uint(value, flag), flag);
-        else if (flag == "--csv") opt.csv = value;
-        else throw std::invalid_argument("Unknown argument: " + flag);
+
+        if (flag == "--runs")
+            opt.runs = checked_size(parse_uint(value, flag), flag);
+
+        else if (flag == "--seed") {
+            opt.seed = parse_uint(value, flag);
+            seed_provided = true;
+        }
+
+        // Continue with your existing else-if options.
     }
-    if (!opt.runs || !opt.max_iterations || !opt.num_swap_trials || !opt.num_random_trials)
-        throw std::invalid_argument("Runs, iterations and trial counts must be positive");
-    // Check seed + (runs-1) * seed_step without unsigned overflow.
+
+
+    if (!opt.runs || !opt.max_iterations ||
+        !opt.num_swap_trials || !opt.num_random_trials) {
+        throw std::invalid_argument(
+            "Runs, iterations and trial counts must be positive"
+        );
+    }
+
+    /* Generate a seed when none was explicitly provided. */
+    if (!seed_provided) {
+        std::random_device rd;
+
+        opt.seed =
+            (static_cast<std::uint64_t>(rd()) << 32) |
+             static_cast<std::uint64_t>(rd());
+    }
+
+    /* Check seed + (runs-1) * seed_step without unsigned overflow. */
     if (opt.seed_step && opt.runs > 1 &&
-        (opt.runs - 1 > (std::numeric_limits<std::uint64_t>::max() - opt.seed) / opt.seed_step))
+        (opt.runs - 1 >
+         (std::numeric_limits<std::uint64_t>::max() - opt.seed) /
+         opt.seed_step)) {
         throw std::out_of_range("Seed sequence would overflow uint64_t");
+    }
+
     return opt;
 }
 
@@ -126,15 +170,22 @@ inline void print_benchmark_results(const std::vector<BenchmarkResult>& results)
     report("swaps", [](const BenchmarkResult& r) { return double(r.swaps); });
     report("depth", [](const BenchmarkResult& r) { return double(r.depth); });
 
+  
     const auto best = std::min_element(results.begin(), results.end(),
         [](const BenchmarkResult& a, const BenchmarkResult& b) {
-            if (a.swaps != b.swaps) return a.swaps < b.swaps;
             if (a.depth != b.depth) return a.depth < b.depth;
+            if (a.swaps != b.swaps) return a.swaps < b.swaps;
             return a.seconds < b.seconds;
         });
-    std::cout << "Best (min swaps, then depth, then time): run=" << best->run
-              << " seed=" << best->seed << " swaps=" << best->swaps
-              << " depth=" << best->depth << " seconds=" << best->seconds << '\n';
+
+    std::cout << "Best (min depth, then swaps, then time): run=" << best->run
+            << " seed=" << best->seed
+            << " swaps=" << best->swaps
+            << " depth=" << best->depth
+            << " seconds=" << best->seconds << '\n';
+
+
+
 }
 
 inline void write_benchmark_csv(const std::string& path,

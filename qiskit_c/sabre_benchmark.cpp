@@ -7,6 +7,8 @@
 #include <memory>
 #include <stdexcept>
 #include <qiskit.h>
+#include <random>
+#include <cstdint>
 
 #include "qasm_parser.hpp"
 #include "qiskit_circuit.hpp"
@@ -19,6 +21,7 @@
 using CircuitPtr = std::unique_ptr<QkCircuit, decltype(&qk_circuit_free)>;
 using TargetPtr = std::unique_ptr<QkTarget, decltype(&qk_target_free)>;
 using LayoutPtr = std::unique_ptr<QkTranspileLayout, decltype(&qk_transpile_layout_free)>;
+using DagPtr = std::unique_ptr<QkDag, decltype(&qk_dag_free)>;
 
 /* Count only actual SWAP instructions, not the number of CX used to
  * implement them after a later decomposition pass. */
@@ -39,6 +42,7 @@ int main(int argc, char* argv[]) {
     try {
         /* Parse the same circuit once, outside the timed region. */
         const BenchmarkOptions opt = parse_benchmark_args(argc, argv);
+
         const ParsedCircuit parsed = parse_qasm(opt.input);
 
         /* Use the same target for every run. */
@@ -69,30 +73,106 @@ int main(int argc, char* argv[]) {
 
             /* Time ONLY SABRE Layout + Routing. */
             const auto start = std::chrono::steady_clock::now();
+
+
+            // 1. SABRE Layout + Routing
             LayoutPtr layout(
                 run_sabre_layout(circuit.get(), target.get(), seed,
                                  opt.max_iterations, opt.num_swap_trials,
                                  opt.num_random_trials),
                 &qk_transpile_layout_free
             );
+
+            const std::size_t routing_swaps = count_swaps(circuit.get());
+
+            CircuitPtr translated(nullptr, &qk_circuit_free);
+
+
+            //THIS IS TO EXECUTE THE FULL PIPELINE -- Translation, Optimization and Scheduling
+            if (opt.pipeline) {
+
+                /* Convert the SABRE-routed circuit into a DAG. */
+                DagPtr dag(
+                    qk_circuit_to_dag(circuit.get()),
+                    &qk_dag_free
+                );
+
+                if (!dag)
+                    throw std::runtime_error("Could not create routed DAG");
+
+                /* Configure the translation stage. */
+                QkTranspileOptions options = qk_transpiler_default_options();
+                options.optimization_level = opt.optimization_level;
+
+                char* error = nullptr;
+
+                QkExitCode status = qk_transpile_stage_translation(
+                    dag.get(),
+                    target.get(),
+                    &options,
+                    &error
+                );
+
+                if (status != QkExitCode_Success) {
+                    std::string message = error ? error : "Unknown error";
+
+                    if (error)
+                        qk_str_free(error);
+
+                    throw std::runtime_error(
+                        "Translation failed: " + message
+                    );
+                }
+
+                if (error)
+                    qk_str_free(error);
+
+                translated.reset(qk_dag_to_circuit(dag.get()));
+
+                if (!translated)
+                    throw std::runtime_error(
+                        "Could not convert translated DAG to circuit"
+                    );
+
+                std::cout << "Translation completed: "
+                        << "gates=" << circuit_num_gates(translated.get())
+                        << " depth=" << circuit_depth(translated.get())
+                        << '\n';
+            }
+
+
             const auto stop = std::chrono::steady_clock::now();
+
             if (!layout) throw std::runtime_error("SABRE Layout failed at run " + std::to_string(i + 1));
 
             const double elapsed = std::chrono::duration<double>(stop - start).count();
+            
 
-            /* Collect metrics OUTSIDE the timed region. */
+
+            /* Select the circuit from the last executed stage. */
+            const QkCircuit* result_circuit =
+                opt.pipeline ? translated.get() : circuit.get();
+
+            /* Collect metrics after the selected pipeline. */
             results.push_back({
-                i + 1, seed, elapsed,
-                qk_circuit_num_instructions(circuit.get()),
-                circuit_num_gates(circuit.get()),
-                count_swaps(circuit.get()),
-                static_cast<std::size_t>(circuit_depth(circuit.get()))
+                i + 1,
+                seed,
+                elapsed,
+                qk_circuit_num_instructions(result_circuit),
+                circuit_num_gates(result_circuit),
+                routing_swaps,
+                static_cast<std::size_t>(circuit_depth(result_circuit))
             });
+
         }
+
 
         print_benchmark_results(results);
         write_benchmark_csv(opt.csv, results);
+        
         if (!opt.csv.empty()) std::cout << "CSV written: " << opt.csv << '\n';
+
+
         return 0;
     } catch (const std::exception& e) {
         std::cerr << "ERROR: " << e.what() << "\n";

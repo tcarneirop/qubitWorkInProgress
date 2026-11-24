@@ -34,10 +34,10 @@ inline QkTranspileLayout* run_sabre_layout(
     /* Initialize SABRE options. */
     QkSabreLayoutOptions options = qk_sabre_layout_options_default();
     //optionsis seed, max it, swap trails and random trails
-
+    
     /* Configure the search parameters. */
 
-    
+    options.seed = seed;
     options.max_iterations = max_iterations;
     options.num_swap_trials = num_swap_trials;
     options.num_random_trials = num_random_trials;

@@ -271,10 +271,16 @@ bool evaluate_mapping(
 ) {
     const uint32_t num_physical = 16;
 
+     auto t0 = std::chrono::steady_clock::now();
+
     /* Create an independent physical DAG for this mapping. */
     QkDag* physical_dag =
         apply_mapping(logical_dag, num_physical, mapping.data());
 
+
+    auto t1 = std::chrono::steady_clock::now();
+   
+    
     if (physical_dag == nullptr)
         return false;
 
@@ -283,6 +289,28 @@ bool evaluate_mapping(
         create_mapping_state(
             logical_dag, target, mapping.data(), num_logical
         );
+
+
+    auto t2 = std::chrono::steady_clock::now();
+
+    static double total_mapping_time = 0.0;
+    static double total_state_time = 0.0;
+    static size_t evaluations = 0;
+
+    total_mapping_time +=
+        std::chrono::duration<double>(t1 - t0).count();
+
+    total_state_time +=
+        std::chrono::duration<double>(t2 - t1).count();
+
+    ++evaluations;
+
+    if (evaluations % 100 == 0) {
+        std::cout << "[PROFILE] Evaluations: " << evaluations
+                << " | apply_mapping: " << total_mapping_time
+                << " s | create_mapping_state: " << total_state_time
+                << " s\n";
+    }
 
     if (state == nullptr) {
         qk_dag_free(physical_dag);
@@ -337,7 +365,20 @@ bool evaluate_mapping(
     }
     #endif
 
-    qk_opcounts_clear(&counts);
+   qk_opcounts_clear(&counts);
+
+    /* Reuse the routed circuit when no additional stages are requested. */
+    if (!translate && !optimize) {
+
+        compute_circuit_metrics(routing_circuit, result);
+        result.swaps = routing_swaps;
+
+        qk_circuit_free(routing_circuit);
+        qk_transpile_state_free(state);
+        qk_dag_free(physical_dag);
+
+        return true;
+    }
 
     qk_circuit_free(routing_circuit);
 

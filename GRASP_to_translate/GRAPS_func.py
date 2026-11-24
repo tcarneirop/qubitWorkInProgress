@@ -62,7 +62,7 @@ def GRASPiteration(circuit, backend, cost_func, alpha, task_id):
     end1 = time.time()
     ### Local search 
     depth, nbgate = fitness_cpp_swap(circuit, mapping, Dist)
-    depth1 = fitnessOG(circuit, mapping, backend)
+    #depth1 = fitnessOG(circuit, mapping, backend)
     change = True
     k = 0    
     start = time.time()
@@ -71,9 +71,9 @@ def GRASPiteration(circuit, backend, cost_func, alpha, task_id):
         k+=1
         mapping, depth, nbgate, change = GRASPlocal_search(circuit, mapping, depth, nbgate, Dist, fitness_cpp_swap)
     end = time.time()
-    depth2 = fitnessOG(circuit, mapping, backend)
-    print(f"Depth of build {depth1} {end1-start1} Depth of ls {depth2} {end-start} after {k} improvements")
-    return mapping, depth2
+    #depth2 = fitnessOG(circuit, mapping, backend)
+    print(f"Depth of build {depth} {end1-start1} Depth of ls {depth} {end-start} after {k} improvements")
+    return mapping, depth
 
 
 def GRASPbuild(circuit, Dist, cost_func, alpha, task_id):
