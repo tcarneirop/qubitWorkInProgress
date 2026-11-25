@@ -93,13 +93,13 @@ print(target.num_qubits, target.dt)
 print(target['cx'][(0, 1)])
 ```
 
-Washington was validated with 127 physical qubits, `dt = 2.2222222222222221e-10 s`, and CX(0,1) duration `8.533333333333332e-07 s`. These are fake-backend snapshot properties, not live calibration data. Albatroz is not listed by this provider and remains a custom target. The integration of arbitrary backend names into the project's `--topology` argument is future work.
+Washington was validated with 127 physical qubits, `dt = 2.2222222222222221e-10 s`, and CX(0,1) duration `8.533333333333332e-07 s`. These are fake-backend snapshot properties, not live calibration data. Albatroz is not listed by this provider and remains a custom target. The Python-backed benchmark now supports dynamic backend selection through `--topology NAME`.
 
 ### C++ integration
 
 The headers must come from the Python package, not `dist/c/include`. Define `QISKIT_PYTHON_EXTENSION` before including `qiskit.h`, initialize Python, and call `qk_import()` in every translation unit that uses this API before calling its functions. Create the Python `Target`, obtain its `PyObject*`, and call `qk_target_borrow_from_python()`. The borrowed target remains owned by Python; keep the Python object alive and do not call `qk_target_free()` on it.
 
-The validated `sanity_python_target.cpp` uses this approach. Add this rule to the existing Makefile:
+The validated `sanity_python_target.cpp` uses this approach. The current Makefile already contains this rule:
 
 ```makefile
 sanity_python: sanity_python_target.cpp
@@ -143,34 +143,81 @@ The project's Makefile uses the following configuration:
 
 ```makefile
 CXX = g++
-CXXFLAGS = -O2 -std=c++17 -Wall -Wextra
+CXXFLAGS = -O3 -std=c++17 -Wall -Wextra
 QISKIT_HOME ?= $(HOME)/qubitWorkInProgress/qiskit
 INCLUDES = -I$(QISKIT_HOME)/dist/c/include
 LIBDIR = $(QISKIT_HOME)/dist/c/lib
 LDFLAGS = -L$(LIBDIR) -Wl,-rpath,$(LIBDIR) -lqiskit
 ```
 
-From the C++ project directory, the previously validated targets include:
+The current Makefile provides the following targets. Run them from the `qiskit_c` directory.
+
+| Target | Output | Behavior |
+| --- | --- | --- |
+| `sanity` | `sanity_test.exe` | Build and run standalone sanity test. |
+| `circuit` | `circuit_test.exe` | Build and run circuit test. |
+| `target` | `target_test.exe` | Build and run target test. |
+| `transpile` | `transpile_test.exe` | Build and run transpilation test. |
+| `mapping` | `mapping_test.exe` | Build and run mapping test. |
+| `qasm` | `qasm_test.exe` | Build and run with `test.qasm`. |
+| `mapping-generic` | `mapping_generic_test.exe` | Build generic mapping test. |
+| `sabre` | `sabre_test.exe` | Build SABRE test. |
+| `sabre-bench` | `sabre_benchmark.exe` | Build standalone SABRE benchmark. |
+| `heuristics` | `heuristics.exe` | Build heuristics driver. |
+| `sanity_python` | `sanity_python` | Build Python-backed sanity test. |
+| `topology` | `topology_test.exe` | Build dynamic topology test. |
+| `sabre-bench-topology` | `sabre_bench_topology.exe` | Build Python-backed SABRE benchmark. |
+| `clean` | — | Remove `*.exe` files (not `sanity_python`). |
+
+The last three build targets that use Python require an active Python 3.12 virtual environment and use the installed package's C API headers and Python embedding flags. They do not link the standalone Qiskit library. `QISKIT_HOME` can be overridden for standalone targets.
+
+The current Makefile no longer defines `two-opt`; historical examples below are retained for reference, not as current build commands. The command-line interface of `heuristics.exe` has not been verified here.
+
+## Dynamic topology benchmark
 
 ```bash
+source ~/qubitWorkInProgress/GRASP_to_translate/.venv/bin/activate
 cd ~/qubitWorkInProgress/qiskit_c
-make sanity
-make circuit
-make target
-make transpile
-make mapping
-make qasm
-make sabre
-make mapping-generic
-make two-opt
+make topology
+./topology_test.exe cairo
+./topology_test.exe inexistente
+make sabre-bench-topology
+./sabre_bench_topology.exe ../NEW_Bechmark/sym9_146.qasm --topology washington --runs 1 --seed 42
 ```
 
-Targets must be present in your local Makefile; not all are necessarily included in every intermediate revision. The `QISKIT_HOME` variable can be overridden to point to a different Qiskit source checkout.
+`--topology NAME` defaults to `albatroz`. Albatroz is constructed locally; other names are looked up as `fake_NAME` through `FakeProviderForBackendV2`, without a hard-coded list. Unknown names produce an error (the isolated topology test returned exit status 1). The benchmark checks the logical-qubit count against the selected target's physical-qubit count.
+
+`topology_utils.hpp` returns a `PythonTarget` containing a borrowed `QkTarget*` and its owning Python reference. The benchmark uses an ownership-aware RAII deleter: locally created targets are freed with `qk_target_free()`, whereas borrowed targets release their Python reference with `Py_DECREF()`. All Qiskit objects must be destroyed before `Py_Finalize()`. Copying the Python target with `qk_target_copy()` caused a PyO3 panic in the tested embedding configuration and is not used.
+
+### Translation and optimization
+
+```bash
+./sabre_bench_topology.exe ../NEW_Bechmark/sym9_146.qasm --topology washington --runs 1 --seed 42 --pipeline --optimization-level 0
+./sabre_bench_topology.exe ../NEW_Bechmark/sym9_146.qasm --topology washington --runs 1 --seed 42 --pipeline --optimization-level 1
+```
+
+Without `--pipeline`, the benchmark executes SABRE Layout + Routing. With `--pipeline`, it additionally executes Translation and Optimization. **Scheduling is not implemented yet.** The reported `swaps` count is collected before Translation. `seconds` measures Layout + Routing; `pipeline_seconds` measures elapsed time from the routing start through Optimization (not Scheduling).
+
+Validated Washington results for `sym9_146.qasm` (12 logical qubits, 378 original gates, seed 42):
+
+| Optimization level | Gates | Depth | Pre-translation SWAPs |
+| --- | ---: | ---: | ---: |
+| 0 | 615 | 382 | 79 |
+| 1 | 587 | 364 | 79 |
+
+Layout + Routing was also validated with Cairo (27 physical qubits) and Albatroz (16). These are functional tests, not controlled comparisons between hardware targets. The exact passes controlled by `optimization_level` remain to be investigated.
 
 ## Project components
 
 | File | Responsibility |
 | --- | --- |
+| `topology_utils.hpp` | Load IBM fake targets dynamically and retain the owning Python reference. |
+| `topology_test.cpp` | Validate dynamic topology loading and unknown names. |
+| `sanity_python_target.cpp` | Validate Python-backed C API access. |
+| `sabre_benchmark.cpp` | Standalone SABRE benchmark. |
+| `sabre_benchmark_topology.cpp` | Python-backed benchmark with dynamic targets, Translation and Optimization (source name as listed in the current Makefile). |
+| `benchmark_utils.hpp` | Benchmark arguments, results and CSV utilities. |
+| `heuristics.cpp` | Current heuristics build entry point; CLI not verified here. |
 | `qasm_parser.hpp` | Parse the supported subset of OpenQASM 2 into an intermediate representation. |
 | `qiskit_circuit.hpp` | Construct a `QkCircuit` from parsed gates and parameters. |
 | `albatroz_target.hpp` | Define the 16-qubit Albatroz target, connectivity, and gate support. |
@@ -324,4 +371,4 @@ The `qiskit-2.6.2-sabre-routing.patch` file should be regenerated from the Qiski
 
 ## Current scope
 
-This project is an experimental framework for mapping evaluation and performance studies, rather than a complete quantum compiler. Future work may include integrating additional local-search heuristics, pruning, more hardware targets, and systematic performance-portability experiments. The current results do not demonstrate quantum computational advantage.
+This project is an experimental framework for mapping evaluation and performance studies, rather than a complete quantum compiler. Future work includes Scheduling, investigating optimization-level semantics across stages, additional local-search heuristics, pruning, and systematic performance-portability experiments. The current results do not demonstrate quantum computational advantage.
