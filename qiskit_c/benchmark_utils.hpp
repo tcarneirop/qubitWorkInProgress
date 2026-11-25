@@ -15,16 +15,17 @@
 /* Common benchmark configuration. Other algorithms can reuse this structure
  * and ignore the SABRE-specific fields. */
 struct BenchmarkOptions {
-    std::string input;
+    
     std::string csv;
+    std::string input;
+    bool pipeline = false;
     std::size_t runs = 10;
     std::uint64_t seed = 42;
     std::uint64_t seed_step = 1;  // 0 repeats the same seed in every run
     std::size_t max_iterations = 4;
     std::size_t num_swap_trials = 20;
     std::size_t num_random_trials = 20;
-    bool pipeline = false;
-    std::uint8_t optimization_level = 3;
+    std::uint8_t optimization_level = 0;
 };
 
 /* One row per independent run. A later algorithm can reuse this type. */
@@ -73,8 +74,8 @@ inline std::size_t checked_size(std::uint64_t value, const std::string& flag) {
 /* Parse CLI options without depending on an external argument parser. */
 inline BenchmarkOptions parse_benchmark_args(int argc, char* argv[]) {
 
-    bool pipeline = false;
-    std::uint8_t optimization_level = 3;
+
+ 
 
     if (argc < 2)
         throw std::invalid_argument("Missing QASM filename");
@@ -110,6 +111,16 @@ inline BenchmarkOptions parse_benchmark_args(int argc, char* argv[]) {
             opt.seed = parse_uint(value, flag);
             seed_provided = true;
         }
+        else if (flag == "--optimization-level") {
+            auto level = parse_uint(value, flag);
+
+            if (level > 3)
+                throw std::invalid_argument(
+                    "Optimization level must be between 0 and 3"
+                );
+
+            opt.optimization_level = static_cast<std::uint8_t>(level);
+        } 
 
         // Continue with your existing else-if options.
     }

@@ -26,6 +26,7 @@ using DagPtr = std::unique_ptr<QkDag, decltype(&qk_dag_free)>;
 /* Count only actual SWAP instructions, not the number of CX used to
  * implement them after a later decomposition pass. */
 static std::size_t count_swaps(const QkCircuit* circuit) {
+
     QkOpCounts counts = qk_circuit_count_ops(circuit);
     std::size_t swaps = 0;
     for (std::size_t i = 0; i < counts.len; ++i) {
@@ -57,12 +58,17 @@ int main(int argc, char* argv[]) {
                   << "\nSeed: " << opt.seed << " (step " << opt.seed_step << ')'
                   << "\nSABRE: iterations=" << opt.max_iterations
                   << " swap_trials=" << opt.num_swap_trials
-                  << " random_trials=" << opt.num_random_trials << "\n";
+                  << " random_trials=" << opt.num_random_trials << "\n"
+                  << "Pipeline? " << opt.pipeline <<"\n"
+                  << "Optimization level: "<< (int)opt.optimization_level <<"\n";
 
         std::vector<BenchmarkResult> results;
         results.reserve(opt.runs);
 
         for (std::size_t i = 0; i < opt.runs; ++i) {
+
+
+
             const std::uint64_t seed = opt.seed + i * opt.seed_step;
 
             /* The SABRE pass modifies its QkCircuit input in place.
@@ -82,12 +88,19 @@ int main(int argc, char* argv[]) {
                                  opt.num_random_trials),
                 &qk_transpile_layout_free
             );
+            if (!layout)
+                throw std::runtime_error(
+                    "SABRE Layout failed at run " + std::to_string(i + 1)
+                );
+                
 
             const std::size_t routing_swaps = count_swaps(circuit.get());
 
             CircuitPtr translated(nullptr, &qk_circuit_free);
 
 
+            //THIS IS TO EXECUTE THE FULL PIPELINE -- Translation, Optimization and Scheduling
+            //THIS IS TO EXECUTE THE FULL PIPELINE -- Translation, Optimization and Scheduling
             //THIS IS TO EXECUTE THE FULL PIPELINE -- Translation, Optimization and Scheduling
             if (opt.pipeline) {
 
@@ -100,12 +113,13 @@ int main(int argc, char* argv[]) {
                 if (!dag)
                     throw std::runtime_error("Could not create routed DAG");
 
-                /* Configure the translation stage. */
+                /* Configure the transpilation stages. */
                 QkTranspileOptions options = qk_transpiler_default_options();
                 options.optimization_level = opt.optimization_level;
 
                 char* error = nullptr;
 
+                /* Translation stage. */
                 QkExitCode status = qk_transpile_stage_translation(
                     dag.get(),
                     target.get(),
@@ -124,30 +138,83 @@ int main(int argc, char* argv[]) {
                     );
                 }
 
-                if (error)
+                if (error) {
                     qk_str_free(error);
+                    error = nullptr;
+                }
 
+                /* Create a transpiler state for the optimization stage. */
+                QkTranspilerStageState* raw_state = nullptr;
+                qk_transpile_state_new(&raw_state);
+
+                if (raw_state == nullptr)
+                    throw std::runtime_error("Could not create transpiler state");
+
+                std::unique_ptr<
+                    QkTranspilerStageState,
+                    decltype(&qk_transpile_state_free)
+                > state(raw_state, &qk_transpile_state_free);
+
+                /* Transfer ownership of the SABRE layout to the state. */
+                qk_transpile_state_layout_set(
+                    state.get(),
+                    layout.release()
+                );
+
+                /* Optimization stage. */
+                status = qk_transpile_stage_optimization(
+                    dag.get(),
+                    target.get(),
+                    &options,
+                    &error,
+                    state.get()
+                );
+
+                if (status != QkExitCode_Success) {
+                    std::string message = error ? error : "Unknown error";
+
+                    if (error)
+                        qk_str_free(error);
+
+                    throw std::runtime_error(
+                        "Optimization failed: " + message
+                    );
+                }
+
+                if (error) {
+                    qk_str_free(error);
+                    error = nullptr;
+                }
+
+                /* Scheduling stage: not implemented yet. */
+
+                /* Convert the optimized DAG into a circuit. */
                 translated.reset(qk_dag_to_circuit(dag.get()));
 
                 if (!translated)
                     throw std::runtime_error(
-                        "Could not convert translated DAG to circuit"
+                        "Could not convert optimized DAG to circuit"
                     );
 
-                std::cout << "Translation completed: "
+                /* Collect metrics after Optimization. */
+                std::cout << "Optimization completed: "
                         << "gates=" << circuit_num_gates(translated.get())
                         << " depth=" << circuit_depth(translated.get())
                         << '\n';
             }
 
+            //END - THIS IS TO EXECUTE THE FULL PIPELINE -- Translation, Optimization and Scheduling
+            //END - THIS IS TO EXECUTE THE FULL PIPELINE -- Translation, Optimization and Scheduling
+            //END - THIS IS TO EXECUTE THE FULL PIPELINE -- Translation, Optimization and Scheduling
+
+
 
             const auto stop = std::chrono::steady_clock::now();
 
-            if (!layout) throw std::runtime_error("SABRE Layout failed at run " + std::to_string(i + 1));
+            //if (!layout) throw std::runtime_error("SABRE Layout failed at run " + std::to_string(i + 1));
 
             const double elapsed = std::chrono::duration<double>(stop - start).count();
             
-
 
             /* Select the circuit from the last executed stage. */
             const QkCircuit* result_circuit =
