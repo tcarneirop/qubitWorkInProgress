@@ -57,6 +57,86 @@ The generated `QkTranspileOptions` structure must contain `size_t num_trials;` (
 grep -Rn -B 5 -A 5 'num_trials' ~/qubitWorkInProgress/qiskit/dist/c/include/
 ```
 
+## Python-backed C API and IBM fake backends
+
+The standalone, locally patched C library and the Python-backed C API are **separate build paths**. The latter uses the C API embedded in the installed Qiskit Python extension (`qiskit._accelerate`) through its function-pointer tables. It does not link the standalone `libqiskit.so`.
+
+### Python environment
+
+The tested environment was Python 3.12.3, Qiskit 2.6.2 and `qiskit-ibm-runtime` 0.52.1. Python development headers, the embedding library, `python3.12-config`, and virtual-environment support are required. On Ubuntu these are provided by the corresponding Python development and venv packages.
+
+To reuse the tested environment:
+
+```bash
+source ~/qubitWorkInProgress/GRASP_to_translate/.venv/bin/activate
+cd ~/qubitWorkInProgress/qiskit_c
+python -m pip install 'qiskit==2.6.2' 'qiskit-ibm-runtime==0.52.1'
+python -c 'import sys, qiskit, qiskit_ibm_runtime; print(sys.version); print(qiskit.__version__); print(qiskit_ibm_runtime.__version__); print(qiskit.__file__)'
+python3-config --includes
+python3-config --embed --ldflags
+```
+
+Alternatively, create a local environment with `python3.12 -m venv .venv`, activate it and install the same pinned packages. Do not run imports from inside the Qiskit source checkout, since the local source tree may shadow the installed package.
+
+### Accessing a fake backend
+
+```python
+from qiskit_ibm_runtime.fake_provider import FakeProviderForBackendV2
+
+provider = FakeProviderForBackendV2()
+for backend in provider.backends():
+    print(backend.name, backend.num_qubits)
+
+backend = provider.backend('fake_washington')
+target = backend.target
+print(target.num_qubits, target.dt)
+print(target['cx'][(0, 1)])
+```
+
+Washington was validated with 127 physical qubits, `dt = 2.2222222222222221e-10 s`, and CX(0,1) duration `8.533333333333332e-07 s`. These are fake-backend snapshot properties, not live calibration data. Albatroz is not listed by this provider and remains a custom target. The integration of arbitrary backend names into the project's `--topology` argument is future work.
+
+### C++ integration
+
+The headers must come from the Python package, not `dist/c/include`. Define `QISKIT_PYTHON_EXTENSION` before including `qiskit.h`, initialize Python, and call `qk_import()` in every translation unit that uses this API before calling its functions. Create the Python `Target`, obtain its `PyObject*`, and call `qk_target_borrow_from_python()`. The borrowed target remains owned by Python; keep the Python object alive and do not call `qk_target_free()` on it.
+
+The validated `sanity_python_target.cpp` uses this approach. Add this rule to the existing Makefile:
+
+```makefile
+sanity_python: sanity_python_target.cpp
+	$(CXX) $(CXXFLAGS) \
+		-I$(VIRTUAL_ENV)/lib/python3.12/site-packages/qiskit/capi/include \
+		$(shell python3-config --includes) \
+		$< -o $@ \
+		$(shell python3-config --embed --ldflags)
+```
+
+With the virtual environment active:
+
+```bash
+make -B sanity_python
+./sanity_python
+```
+
+Expected output (the provider may also emit a warning about Nighthawk):
+
+```text
+Qubits: 127
+dt: 2.22222e-10
+```
+
+If embedded Python cannot find the virtual environment packages, run from the project directory with `PYTHONPATH="$VIRTUAL_ENV/lib/python3.12/site-packages" ./sanity_python`.
+
+**Important:** Do not use the standalone `INCLUDES` or `LDFLAGS` in this rule. Building the standalone library with `python_binding` exported the borrowing function but failed at runtime with `TypeError: 'Target' object is not an instance of 'BaseTarget'`. The Python-backed API resolved this failure. The pip-installed Qiskit package does **not** contain our custom SABRE `num_trials` patch; the existing patched standalone examples remain separate. A unified patched Python-backed build has not yet been validated. Do not pass native objects between these two API builds.
+
+### Setup and sanity scripts
+
+```bash
+bash setup_qiskit.sh
+bash sanity_check.sh
+```
+
+Setup preserves the original patched standalone build, installs the pinned Python dependencies, and runs both sanity checks. It reuses `QISKIT_VENV` if specified, otherwise the active `VIRTUAL_ENV`, otherwise creates `.venv` in this project. For a separate invocation of the sanity script, activate the same environment or set `QISKIT_VENV` to its path. The Python-backed sanity check is self-contained and does not require the Makefile target.
+
 ## Build the C++ examples
 
 The project's Makefile uses the following configuration:
@@ -232,6 +312,7 @@ The routing step can be skipped by the level-0 stage when the mapping already re
 For comparable experiments, keep the following fixed or record them explicitly:
 
 - Qiskit source version and the exact applied C API patch.
+- API build path (patched standalone or Python-backed), Python and IBM Runtime versions, and fake-backend snapshot when applicable.
 - QASM input and target topology.
 - Initial mapping seed and SABRE seed.
 - Number of internal SABRE trials.

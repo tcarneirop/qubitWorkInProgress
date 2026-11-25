@@ -60,7 +60,9 @@ int main(int argc, char* argv[]) {
                   << " swap_trials=" << opt.num_swap_trials
                   << " random_trials=" << opt.num_random_trials << "\n"
                   << "Pipeline? " << opt.pipeline <<"\n"
-                  << "Optimization level: "<< (int)opt.optimization_level <<"\n";
+                  << "Optimization level: "<< (int)opt.optimization_level <<"\n"
+                  << "Topology: "<< opt.topology <<"\n";
+                  
 
         std::vector<BenchmarkResult> results;
         results.reserve(opt.runs);
@@ -92,7 +94,11 @@ int main(int argc, char* argv[]) {
                 throw std::runtime_error(
                     "SABRE Layout failed at run " + std::to_string(i + 1)
                 );
-                
+            /* Stop timing immediately after SABRE Layout + Routing. */
+            const auto stop = std::chrono::steady_clock::now();
+
+            const double elapsed =
+                std::chrono::duration<double>(stop - start).count();
 
             const std::size_t routing_swaps = count_swaps(circuit.get());
 
@@ -102,6 +108,10 @@ int main(int argc, char* argv[]) {
             //THIS IS TO EXECUTE THE FULL PIPELINE -- Translation, Optimization and Scheduling
             //THIS IS TO EXECUTE THE FULL PIPELINE -- Translation, Optimization and Scheduling
             //THIS IS TO EXECUTE THE FULL PIPELINE -- Translation, Optimization and Scheduling
+           // const auto start_pipeline = std::chrono::steady_clock::now();
+            
+           double pipeline_seconds = 0.0f;
+
             if (opt.pipeline) {
 
                 /* Convert the SABRE-routed circuit into a DAG. */
@@ -187,6 +197,10 @@ int main(int argc, char* argv[]) {
                 }
 
                 /* Scheduling stage: not implemented yet. */
+                /* Stop timing after Optimization, before metric collection. */
+                const auto pipeline_stop = std::chrono::steady_clock::now();
+                pipeline_seconds = std::chrono::duration<double>(pipeline_stop - start).count();
+
 
                 /* Convert the optimized DAG into a circuit. */
                 translated.reset(qk_dag_to_circuit(dag.get()));
@@ -202,19 +216,13 @@ int main(int argc, char* argv[]) {
                         << " depth=" << circuit_depth(translated.get())
                         << '\n';
             }
+         
 
             //END - THIS IS TO EXECUTE THE FULL PIPELINE -- Translation, Optimization and Scheduling
             //END - THIS IS TO EXECUTE THE FULL PIPELINE -- Translation, Optimization and Scheduling
             //END - THIS IS TO EXECUTE THE FULL PIPELINE -- Translation, Optimization and Scheduling
 
-
-
-            const auto stop = std::chrono::steady_clock::now();
-
-            //if (!layout) throw std::runtime_error("SABRE Layout failed at run " + std::to_string(i + 1));
-
-            const double elapsed = std::chrono::duration<double>(stop - start).count();
-            
+    
 
             /* Select the circuit from the last executed stage. */
             const QkCircuit* result_circuit =
@@ -225,6 +233,7 @@ int main(int argc, char* argv[]) {
                 i + 1,
                 seed,
                 elapsed,
+                pipeline_seconds,
                 qk_circuit_num_instructions(result_circuit),
                 circuit_num_gates(result_circuit),
                 routing_swaps,

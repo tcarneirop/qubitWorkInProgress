@@ -45,3 +45,67 @@ g++ -O2 -std=c++17 -Wall -Wextra \
     -o "$TEMP_DIR/check.exe"
 
 "$TEMP_DIR/check.exe"
+
+# Test the Python-backed API using the installed package's own vtables.
+# Do not link the standalone libqiskit.so or use its patched headers here.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+QISKIT_VENV="${QISKIT_VENV:-${VIRTUAL_ENV:-$SCRIPT_DIR/.venv}}"
+if [[ ! -x "$QISKIT_VENV/bin/python" ]]; then
+    echo "ERROR: Python environment not found: $QISKIT_VENV" >&2
+    exit 1
+fi
+source "$QISKIT_VENV/bin/activate"
+PYTHON_CONFIG="${PYTHON_CONFIG:-python3.12-config}"
+python -I -c 'import sys, qiskit, qiskit_ibm_runtime; assert sys.version_info[:2] == (3, 12); assert qiskit.__version__ == "2.6.2"; assert qiskit_ibm_runtime.__version__ == "0.52.1"'
+PYTHON_SITE="$(python -I -c 'import pathlib, qiskit; print(pathlib.Path(qiskit.__file__).resolve().parent.parent)')"
+PYTHON_QISKIT_INCLUDE="$PYTHON_SITE/qiskit/capi/include"
+if [[ ! -f "$PYTHON_QISKIT_INCLUDE/qiskit/funcs_py_generated.h" ]]; then
+    echo "ERROR: Python-backed Qiskit C API headers not found" >&2
+    exit 1
+fi
+read -r -a PY_INCLUDES <<< "$($PYTHON_CONFIG --includes)"
+read -r -a PY_LDFLAGS <<< "$($PYTHON_CONFIG --embed --ldflags)"
+cat > "$TEMP_DIR/check_python.cpp" <<'CPP'
+#define QISKIT_PYTHON_EXTENSION
+#include <qiskit.h>
+#include <cmath>
+#include <iostream>
+
+int main() {
+    Py_Initialize();
+    if (qk_import() != 0 || PyRun_SimpleString(
+        "from qiskit_ibm_runtime.fake_provider import FakeProviderForBackendV2\n"
+        "backend = FakeProviderForBackendV2().backend('fake_washington')\n"
+        "target = backend.target\n") != 0) {
+        if (PyErr_Occurred()) PyErr_Print();
+        Py_Finalize();
+        return 1;
+    }
+    PyObject *module = PyImport_AddModule("__main__");
+    PyObject *obj = module ? PyDict_GetItemString(PyModule_GetDict(module), "target") : nullptr;
+    QkTarget *target = obj ? qk_target_borrow_from_python(obj) : nullptr;
+    if (!target) {
+        if (PyErr_Occurred()) PyErr_Print();
+        std::cerr << "ERROR: Could not borrow Python Target\n";
+        Py_Finalize();
+        return 1;
+    }
+    const auto n = qk_target_num_qubits(target);
+    const auto dt = qk_target_dt(target);
+    std::cout << "Qubits: " << n << "\ndt: " << dt << '\n';
+    const bool ok = n == 127 && std::abs(dt - 2.2222222222222221e-10) < 1e-18;
+    // The target belongs to Python: do not call qk_target_free().
+    Py_Finalize();
+    if (!ok) return 1;
+    std::cout << "PASS: Python-backed Qiskit C API (Washington).\n";
+    return 0;
+}
+CPP
+
+g++ -O2 -std=c++17 -Wall -Wextra \
+    -I"$PYTHON_QISKIT_INCLUDE" "${PY_INCLUDES[@]}" \
+    "$TEMP_DIR/check_python.cpp" -o "$TEMP_DIR/check_python.exe" \
+    "${PY_LDFLAGS[@]}"
+
+# Make venv packages visible to embedded Python and avoid source-checkout shadowing.
+(cd "$TEMP_DIR" && PYTHONPATH="$PYTHON_SITE" ./check_python.exe)

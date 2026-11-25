@@ -1,4 +1,3 @@
-
 #!/usr/bin/env bash
 
 set -euo pipefail
@@ -17,7 +16,7 @@ if [[ -f "$HOME/.cargo/env" ]]; then
 fi
 
 # Check required tools.
-for tool in git cargo rustc make g++; do
+for tool in git cargo rustc make g++ python3.12 python3.12-config; do
     if ! command -v "$tool" >/dev/null 2>&1; then
         echo "ERROR: Missing dependency: $tool"
         exit 1
@@ -83,11 +82,25 @@ fi
 
 echo "Qiskit C library and patch verified."
 
-# Build and execute project tests.
+# Set up the Python-backed C API independently of the patched standalone library.
+# Reuse an explicitly selected or already active virtual environment, or create one locally.
+QISKIT_VENV="${QISKIT_VENV:-${VIRTUAL_ENV:-$SCRIPT_DIR/.venv}}"
+if [[ ! -x "$QISKIT_VENV/bin/python" ]]; then
+    python3.12 -m venv "$QISKIT_VENV"
+fi
+QISKIT_VENV="$(cd "$QISKIT_VENV" && pwd)"
+source "$QISKIT_VENV/bin/activate"
+python -I -c 'import sys; assert sys.version_info[:2] == (3, 12), sys.version'
+python -m pip install "qiskit==$QISKIT_VERSION" "qiskit-ibm-runtime==0.52.1"
+python -I -c 'import qiskit, qiskit_ibm_runtime; assert qiskit.__version__ == "2.6.2"; assert qiskit_ibm_runtime.__version__ == "0.52.1"; print("Python Qiskit:", qiskit.__version__, "IBM Runtime:", qiskit_ibm_runtime.__version__)'
+
+# Build project examples and execute both API sanity checks.
 echo "Testing qiskit_c..."
 
 make -C "$SCRIPT_DIR" target
 make -C "$SCRIPT_DIR" mapping
+(cd "$SCRIPT_DIR" && QISKIT_HOME="$QISKIT_DIR" bash ./sanity_check.sh)
 
 echo
 echo "=== Setup completed successfully ==="
+printf 'Activate the Python environment with: source %q\n' "$QISKIT_VENV/bin/activate"

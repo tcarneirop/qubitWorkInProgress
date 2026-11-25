@@ -11,6 +11,28 @@ LDFLAGS = -L$(LIBDIR) -Wl,-rpath,$(LIBDIR) -lqiskit
 
 qasm: qasm_test.exe
 	./qasm_test.exe test.qasm
+
+topology: topology_test.cpp topology_utils.hpp
+	$(CXX) $(CXXFLAGS) \
+		-I$(VIRTUAL_ENV)/lib/python3.12/site-packages/qiskit/capi/include \
+		$(shell python3-config --includes) \
+		$< -o topology_test.exe \
+		$(shell python3-config --embed --ldflags)
+
+sanity_python: sanity_python_target.cpp
+	$(CXX) $(CXXFLAGS) \
+		-I$(VIRTUAL_ENV)/lib/python3.12/site-packages/qiskit/capi/include \
+		$(shell python3-config --includes) \
+		$< -o $@ \
+		$(shell python3-config --embed --ldflags)
+
+sabre-bench-topology:
+	$(CXX) $(CXXFLAGS) \
+		-I$(VIRTUAL_ENV)/lib/python3.12/site-packages/qiskit/capi/include \
+		$(shell python3-config --includes) \
+		sabre_benchmark_topology.cpp -o sabre_bench_topology.exe \
+		$(shell python3-config --embed --ldflags)
+
 	
 heuristics:
 	$(CXX) $(CXXFLAGS) $(INCLUDES) heuristics.cpp -o heuristics.exe $(LDFLAGS)

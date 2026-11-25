@@ -18,6 +18,7 @@ struct BenchmarkOptions {
     
     std::string csv;
     std::string input;
+    std::string topology = "albatroz";
     bool pipeline = false;
     std::size_t runs = 10;
     std::uint64_t seed = 42;
@@ -26,6 +27,7 @@ struct BenchmarkOptions {
     std::size_t num_swap_trials = 20;
     std::size_t num_random_trials = 20;
     std::uint8_t optimization_level = 0;
+
 };
 
 /* One row per independent run. A later algorithm can reuse this type. */
@@ -33,6 +35,7 @@ struct BenchmarkResult {
     std::size_t run;
     std::uint64_t seed;
     double seconds;
+    double pipeline_seconds;
     std::size_t instructions;
     std::size_t gates;
     std::size_t swaps;
@@ -48,7 +51,9 @@ inline void print_benchmark_usage(const char* exe) {
         << "  --iterations N     SABRE forward/backward iterations (default: 4)\n"
         << "  --swap-trials N    SABRE routing trials (default: 20)\n"
         << "  --random-trials N  SABRE random layout trials (default: 20)\n"
-        << "  --csv PATH         Write per-run results to CSV\n";
+        << "  --csv PATH         Write per-run results to CSV\n"
+        << "  --topology NAME    Hardware topology (default: albatroz)\n"
+        ;
 }
 
 /* Strict unsigned-integer parsing: reject negative values and trailing text. */
@@ -121,6 +126,9 @@ inline BenchmarkOptions parse_benchmark_args(int argc, char* argv[]) {
 
             opt.optimization_level = static_cast<std::uint8_t>(level);
         } 
+        else if (flag == "--topology") {
+            opt.topology = value;
+        }
 
         // Continue with your existing else-if options.
     }
@@ -154,11 +162,13 @@ inline BenchmarkOptions parse_benchmark_args(int argc, char* argv[]) {
 }
 
 inline void print_benchmark_results(const std::vector<BenchmarkResult>& results) {
+
+
     std::cout << "\nRun results (time excludes parsing, circuit construction, metrics):\n";
-    std::cout << "run,seed,seconds,instructions,gates,swaps,depth\n";
+    std::cout << "run,seed,seconds,pipeline_seconds,instructions,gates,swaps,depth\n";
     for (const auto& r : results) {
         std::cout << r.run << ',' << r.seed << ',' << std::setprecision(9)
-                  << r.seconds << ',' << r.instructions << ',' << r.gates
+                  << r.seconds << ',' << r.pipeline_seconds << ',' << r.instructions << ',' << r.gates
                   << ',' << r.swaps << ',' << r.depth << '\n';
     }
 
@@ -178,6 +188,7 @@ inline void print_benchmark_results(const std::vector<BenchmarkResult>& results)
     };
     std::cout << "\nSummary (" << results.size() << " runs):\n";
     report("seconds", [](const BenchmarkResult& r) { return r.seconds; });
+    report("pipeline_seconds", [](const BenchmarkResult& r) {return r.pipeline_seconds;});
     report("swaps", [](const BenchmarkResult& r) { return double(r.swaps); });
     report("depth", [](const BenchmarkResult& r) { return double(r.depth); });
 
@@ -204,10 +215,10 @@ inline void write_benchmark_csv(const std::string& path,
     if (path.empty()) return;
     std::ofstream out(path);
     if (!out) throw std::runtime_error("Cannot open CSV output: " + path);
-    out << "run,seed,seconds,instructions,gates,swaps,depth\n";
+    out << "run,seed,seconds,pipeline_seconds,instructions,gates,swaps,depth\n";
     out << std::setprecision(17);
     for (const auto& r : results)
-        out << r.run << ',' << r.seed << ',' << r.seconds << ','
+        out << r.run << ',' << r.seed << ',' << r.seconds << ',' <<r.pipeline_seconds << ','
             << r.instructions << ',' << r.gates << ',' << r.swaps << ','
             << r.depth << '\n';
     if (!out) throw std::runtime_error("Error writing CSV: " + path);
