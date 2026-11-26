@@ -22,6 +22,7 @@ struct BenchmarkOptions {
     bool pipeline = false;
     std::size_t runs = 10;
     std::uint64_t seed = 42;
+    double makespan_seconds = 0.0;
     std::uint64_t seed_step = 1;  // 0 repeats the same seed in every run
     std::size_t max_iterations = 4;
     std::size_t num_swap_trials = 20;
@@ -36,6 +37,7 @@ struct BenchmarkResult {
     std::uint64_t seed;
     double seconds;
     double pipeline_seconds;
+    double makespan_seconds = 0.0;
     std::size_t instructions;
     std::size_t gates;
     std::size_t swaps;
@@ -129,6 +131,10 @@ inline BenchmarkOptions parse_benchmark_args(int argc, char* argv[]) {
         else if (flag == "--topology") {
             opt.topology = value;
         }
+        else if (flag == "--csv") {
+            opt.csv = value;
+        }
+
 
         // Continue with your existing else-if options.
     }
@@ -161,16 +167,37 @@ inline BenchmarkOptions parse_benchmark_args(int argc, char* argv[]) {
     return opt;
 }
 
+inline void write_benchmark_rows(
+    std::ostream& out,
+    const std::vector<BenchmarkResult>& results)
+{
+    const auto old_precision = out.precision();
+
+    out << "run,seed,seconds,pipeline_seconds,instructions,gates,swaps,depth,makespan_seconds\n";
+
+    out << std::setprecision(17);
+
+    for (const auto& r : results)
+        out << r.run << ','
+            << r.seed << ','
+            << r.seconds << ','
+            << r.pipeline_seconds << ','
+            << r.instructions << ','
+            << r.gates << ','
+            << r.swaps << ','
+            << r.depth << ','
+            << r.makespan_seconds << '\n';
+
+    out.precision(old_precision);
+}
+
 inline void print_benchmark_results(const std::vector<BenchmarkResult>& results) {
 
 
     std::cout << "\nRun results (time excludes parsing, circuit construction, metrics):\n";
-    std::cout << "run,seed,seconds,pipeline_seconds,instructions,gates,swaps,depth\n";
-    for (const auto& r : results) {
-        std::cout << r.run << ',' << r.seed << ',' << std::setprecision(9)
-                  << r.seconds << ',' << r.pipeline_seconds << ',' << r.instructions << ',' << r.gates
-                  << ',' << r.swaps << ',' << r.depth << '\n';
-    }
+
+    write_benchmark_rows(std::cout, results);
+
 
     /* Arithmetic mean and sample standard deviation (N-1). */
     auto report = [&](const char* name, auto extract) {
@@ -191,8 +218,9 @@ inline void print_benchmark_results(const std::vector<BenchmarkResult>& results)
     report("pipeline_seconds", [](const BenchmarkResult& r) {return r.pipeline_seconds;});
     report("swaps", [](const BenchmarkResult& r) { return double(r.swaps); });
     report("depth", [](const BenchmarkResult& r) { return double(r.depth); });
+    report("makespan_seconds", [](const BenchmarkResult& r) {return r.makespan_seconds;});
 
-  
+
     const auto best = std::min_element(results.begin(), results.end(),
         [](const BenchmarkResult& a, const BenchmarkResult& b) {
             if (a.depth != b.depth) return a.depth < b.depth;
@@ -200,26 +228,56 @@ inline void print_benchmark_results(const std::vector<BenchmarkResult>& results)
             return a.seconds < b.seconds;
         });
 
-    std::cout << "Best (min depth, then swaps, then time): run=" << best->run
-            << " seed=" << best->seed
-            << " swaps=" << best->swaps
-            << " depth=" << best->depth
-            << " seconds=" << best->seconds << '\n';
+    const auto best_makespan = std::min_element(
+            results.begin(), results.end(),
+            [](const BenchmarkResult& a, const BenchmarkResult& b) {
+        return a.makespan_seconds < b.makespan_seconds;
+    });
 
+    const auto print_best = [](const char* criterion, const BenchmarkResult& r) {
+    std::cout << criterion
+              << ": run=" << r.run
+              << " seed=" << r.seed
+              << " swaps=" << r.swaps
+              << " depth=" << r.depth
+              << " seconds=" << r.seconds
+              << " makespan_seconds=" << r.makespan_seconds
+              << '\n';
+    };
 
+    print_best("Best (min depth, then swaps, then time)", *best);
+
+    if (best_makespan != results.end() &&
+        best_makespan->makespan_seconds > 0.0)
+        print_best("Best (min makespan)", *best_makespan);
+        
 
 }
 
-inline void write_benchmark_csv(const std::string& path,
-                                const std::vector<BenchmarkResult>& results) {
+inline void write_benchmark_csv(const std::string& path, const std::vector<BenchmarkResult>& results)
+{
     if (path.empty()) return;
+
     std::ofstream out(path);
-    if (!out) throw std::runtime_error("Cannot open CSV output: " + path);
-    out << "run,seed,seconds,pipeline_seconds,instructions,gates,swaps,depth\n";
+
+    if (!out)
+        throw std::runtime_error("Cannot open CSV output: " + path);
+
+    out << "run,seed,seconds,pipeline_seconds,instructions,gates,swaps,depth,makespan_seconds\n";
+
     out << std::setprecision(17);
+
     for (const auto& r : results)
-        out << r.run << ',' << r.seed << ',' << r.seconds << ',' <<r.pipeline_seconds << ','
-            << r.instructions << ',' << r.gates << ',' << r.swaps << ','
-            << r.depth << '\n';
-    if (!out) throw std::runtime_error("Error writing CSV: " + path);
+        out << r.run << ','
+            << r.seed << ','
+            << r.seconds << ','
+            << r.pipeline_seconds << ','
+            << r.instructions << ','
+            << r.gates << ','
+            << r.swaps << ','
+            << r.depth << ','
+            << r.makespan_seconds << '\n';
+
+    if (!out)
+        throw std::runtime_error("Error writing CSV: " + path);
 }

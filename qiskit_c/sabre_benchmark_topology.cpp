@@ -173,6 +173,8 @@ int main(int argc, char* argv[]) {
             CircuitPtr translated(nullptr, &qk_circuit_free);
 
             double pipeline_seconds = 0.0;
+            double makespan_seconds = 0.0;
+
 
             if (opt.pipeline) {
 
@@ -320,10 +322,11 @@ int main(int argc, char* argv[]) {
                 );
 
                 /* Estimate QPU execution duration in seconds. */
-                const double makespan = estimate_makespan(
+                makespan_seconds = estimate_makespan(
                     scheduled.get(),
                     py_target
                 );
+                
 
                 /* Stop timing after Scheduling. */
                 const auto pipeline_stop =
@@ -343,8 +346,8 @@ int main(int argc, char* argv[]) {
                           << '\n';
 
                 std::cout << "Scheduling completed: "
-                          << "makespan (ns)="
-                          << makespan * 1e9
+                          << "makespan (s) = "
+                          << makespan_seconds
                           << '\n';
             }
 
@@ -357,12 +360,11 @@ int main(int argc, char* argv[]) {
                 seed,
                 elapsed,
                 pipeline_seconds,
+                makespan_seconds,
                 qk_circuit_num_instructions(result_circuit),
                 circuit_num_gates(result_circuit),
                 routing_swaps,
-                static_cast<std::size_t>(
-                    circuit_depth(result_circuit)
-                )
+                static_cast<std::size_t>(circuit_depth(result_circuit)),
             });
         }
 
