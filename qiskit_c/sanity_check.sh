@@ -90,6 +90,13 @@ int main() {
         Py_Finalize();
         return 1;
     }
+    const auto options = qk_transpiler_default_options();
+    if (options.num_trials != 5) {
+        std::cerr << "ERROR: Python-backed num_trials default is not 5\n";
+        Py_Finalize();
+        return 1;
+    }
+    std::cout << "PASS: Python-backed num_trials (default=5).\n";
     const auto n = qk_target_num_qubits(target);
     const auto dt = qk_target_dt(target);
     std::cout << "Qubits: " << n << "\ndt: " << dt << '\n';
@@ -109,3 +116,53 @@ g++ -O2 -std=c++17 -Wall -Wextra \
 
 # Make venv packages visible to embedded Python and avoid source-checkout shadowing.
 (cd "$TEMP_DIR" && PYTHONPATH="$PYTHON_SITE" ./check_python.exe)
+
+# Exercise the actual shared scheduling helper with the validated Washington circuit.
+cat > "$TEMP_DIR/check_scheduling.cpp" <<'CPP'
+#define QISKIT_PYTHON_EXTENSION
+#include <qiskit.h>
+#include "scheduling_utils.hpp"
+#include <cmath>
+#include <iostream>
+#include <memory>
+int main() {
+    Py_Initialize();
+    int rc = 1;
+    try {
+        if (qk_import() != 0) throw std::runtime_error("qk_import failed");
+        if (PyRun_SimpleString(
+            "from qiskit_ibm_runtime.fake_provider import FakeProviderForBackendV2\n"
+            "from qiskit import QuantumCircuit\n"
+            "from qiskit.converters import circuit_to_dag\n"
+            "target = FakeProviderForBackendV2().backend('fake_washington').target\n"
+            "qc = QuantumCircuit(127)\n"
+            "qc.x(0); qc.cx(0,1); qc.x(1)\n"
+            "dag = circuit_to_dag(qc)\n") != 0)
+            throw std::runtime_error("Could not create scheduling test circuit");
+        init_scheduling();
+        PyObject* dict = PyModule_GetDict(PyImport_AddModule("__main__"));
+        PyObject* target = PyDict_GetItemString(dict, "target");
+        PyObject* dag = PyDict_GetItemString(dict, "dag");
+        for (const char* method : {"asap", "alap"}) {
+            auto deleter = [](PyObject* obj) { Py_XDECREF(obj); };
+            std::unique_ptr<PyObject, decltype(deleter)> scheduled(
+                run_scheduling(dag, target, method), deleter);
+            double duration = estimate_makespan(scheduled.get(), target);
+            if (!std::isfinite(duration) || std::abs(duration - 924.4444444444443e-9) > 1e-12)
+                throw std::runtime_error("Unexpected Washington makespan");
+            std::cout << "PASS: " << method << " makespan (s): " << duration << '\n';
+        }
+        rc = 0;
+    } catch (const std::exception& e) {
+        if (PyErr_Occurred()) PyErr_Print();
+        std::cerr << e.what() << '\n';
+    }
+    Py_Finalize();
+    return rc;
+}
+CPP
+g++ -O2 -std=c++17 -Wall -Wextra \
+    -I"$PYTHON_QISKIT_INCLUDE" -I"$SCRIPT_DIR" "${PY_INCLUDES[@]}" \
+    "$TEMP_DIR/check_scheduling.cpp" -o "$TEMP_DIR/check_scheduling.exe" \
+    "${PY_LDFLAGS[@]}"
+(cd "$TEMP_DIR" && PYTHONPATH="$PYTHON_SITE" ./check_scheduling.exe)

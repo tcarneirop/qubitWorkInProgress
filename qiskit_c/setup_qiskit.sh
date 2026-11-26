@@ -91,15 +91,34 @@ fi
 QISKIT_VENV="$(cd "$QISKIT_VENV" && pwd)"
 source "$QISKIT_VENV/bin/activate"
 python -I -c 'import sys; assert sys.version_info[:2] == (3, 12), sys.version'
+# Install runtime dependencies, then replace the stock Qiskit with our local wheel.
 python -m pip install "qiskit==$QISKIT_VERSION" "qiskit-ibm-runtime==0.52.1"
+WHEEL_DIR="$(mktemp -d)"
+trap 'rm -rf "$WHEEL_DIR"' EXIT
+(cd "$QISKIT_DIR" && QISKIT_BUILD_PROFILE=release python -m pip wheel . --no-deps -w "$WHEEL_DIR")
+wheels=("$WHEEL_DIR"/qiskit-2.6.2-*.whl)
+if [[ ${#wheels[@]} -ne 1 || ! -f "${wheels[0]}" ]]; then
+    echo "ERROR: Expected exactly one Qiskit 2.6.2 wheel" >&2
+    exit 1
+fi
+python - "${wheels[0]}" <<'PYTHON'
+import sys, zipfile, re
+with zipfile.ZipFile(sys.argv[1]) as wheel:
+    header = wheel.read("qiskit/capi/include/qiskit/types.h").decode()
+    if not re.search(r"size_t\s+num_trials;", header):
+        raise SystemExit("ERROR: num_trials missing from wheel")
+PYTHON
+python -m pip install --force-reinstall --no-deps "${wheels[0]}"
+PYTHON_HEADER="$(python -I -c 'import pathlib, qiskit; print(pathlib.Path(qiskit.__file__).parent / "capi/include/qiskit/types.h")')"
+grep -Eq 'size_t[[:space:]]+num_trials;' "$PYTHON_HEADER"
 python -I -c 'import qiskit, qiskit_ibm_runtime; assert qiskit.__version__ == "2.6.2"; assert qiskit_ibm_runtime.__version__ == "0.52.1"; print("Python Qiskit:", qiskit.__version__, "IBM Runtime:", qiskit_ibm_runtime.__version__)'
 
 # Build project examples and execute both API sanity checks.
 echo "Testing qiskit_c..."
 
-make -C "$SCRIPT_DIR" target
-make -C "$SCRIPT_DIR" mapping
-(cd "$SCRIPT_DIR" && QISKIT_HOME="$QISKIT_DIR" bash ./sanity_check.sh)
+make -B -C "$SCRIPT_DIR" target
+make -B -C "$SCRIPT_DIR" mapping
+(cd "$SCRIPT_DIR" && QISKIT_HOME="$QISKIT_DIR" QISKIT_VENV="$QISKIT_VENV" bash ./sanity_check.sh)
 
 echo
 echo "=== Setup completed successfully ==="

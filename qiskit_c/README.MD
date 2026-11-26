@@ -76,6 +76,23 @@ python3-config --includes
 python3-config --embed --ldflags
 ```
 
+### Build and install the patched Python wheel
+
+After applying the same Rust patch used for `make c`, activate the virtual environment above and run:
+
+```bash
+cd ~/qubitWorkInProgress/qiskit
+QISKIT_BUILD_PROFILE=release python -m pip wheel . --no-deps -w /tmp/qiskit-patched
+unzip -p /tmp/qiskit-patched/qiskit-*.whl qiskit/capi/include/qiskit/types.h | grep -n -C 3 num_trials
+python -m pip install --force-reinstall --no-deps /tmp/qiskit-patched/qiskit-*.whl
+cd ~/qubitWorkInProgress/qiskit_c
+grep -n -C 3 num_trials "$VIRTUAL_ENV/lib/python3.12/site-packages/qiskit/capi/include/qiskit/types.h"
+make sanity_trials
+./sanity_trials.exe
+```
+
+Use an empty wheel output directory (or select the exact wheel). The tested artifact was `qiskit-2.6.2-cp310-abi3-linux_x86_64.whl`; the runtime test returned `Default num_trials: 5`. The upstream `pyproject.toml` uses `setuptools.build_meta` with `setuptools-rust`; `setup.py` builds `qiskit._accelerate` from `crates/pyext/Cargo.toml` and generates the C API headers in `qiskit.capi`. No additional Python routing API patch is needed: native C/Rust calls through `qk_import()` use this patched extension. Do not replace the local wheel with the stock package in subsequent installations.
+
 Alternatively, create a local environment with `python3.12 -m venv .venv`, activate it and install the same pinned packages. Do not run imports from inside the Qiskit source checkout, since the local source tree may shadow the installed package.
 
 ### Accessing a fake backend
@@ -126,7 +143,7 @@ dt: 2.22222e-10
 
 If embedded Python cannot find the virtual environment packages, run from the project directory with `PYTHONPATH="$VIRTUAL_ENV/lib/python3.12/site-packages" ./sanity_python`.
 
-**Important:** Do not use the standalone `INCLUDES` or `LDFLAGS` in this rule. Building the standalone library with `python_binding` exported the borrowing function but failed at runtime with `TypeError: 'Target' object is not an instance of 'BaseTarget'`. The Python-backed API resolved this failure. The pip-installed Qiskit package does **not** contain our custom SABRE `num_trials` patch; the existing patched standalone examples remain separate. A unified patched Python-backed build has not yet been validated. Do not pass native objects between these two API builds.
+**Important:** Do not use the standalone `INCLUDES` or `LDFLAGS` in this rule. Building the standalone library with `python_binding` exported the borrowing function but failed at runtime with `TypeError: 'Target' object is not an instance of 'BaseTarget'`. The Python-backed API resolved this failure. The stock PyPI Qiskit package does not contain our custom SABRE `num_trials` patch. Build and install a local wheel from the same patched source (see below). Both patched build paths have been validated independently. Do not pass native objects between these two API builds.
 
 ### Setup and sanity scripts
 
@@ -135,7 +152,7 @@ bash setup_qiskit.sh
 bash sanity_check.sh
 ```
 
-Setup preserves the original patched standalone build, installs the pinned Python dependencies, and runs both sanity checks. It reuses `QISKIT_VENV` if specified, otherwise the active `VIRTUAL_ENV`, otherwise creates `.venv` in this project. For a separate invocation of the sanity script, activate the same environment or set `QISKIT_VENV` to its path. The Python-backed sanity check is self-contained and does not require the Makefile target.
+Setup preserves the original patched standalone build, installs the pinned Python dependencies, builds and installs the patched local wheel, and runs the standalone, Python-backed and Scheduling sanity checks. It reuses `QISKIT_VENV` if specified, otherwise the active `VIRTUAL_ENV`, otherwise creates `.venv` in this project. For a separate invocation of the sanity script, activate the same environment or set `QISKIT_VENV` to its path. The Python-backed sanity checks do not require the Makefile targets; the Scheduling check includes the project’s existing `scheduling_utils.hpp`.
 
 ## Build the C++ examples
 
@@ -164,14 +181,16 @@ The current Makefile provides the following targets. Run them from the `qiskit_c
 | `sabre` | `sabre_test.exe` | Build SABRE test. |
 | `sabre-bench` | `sabre_benchmark.exe` | Build standalone SABRE benchmark. |
 | `heuristics` | `heuristics.exe` | Build heuristics driver. |
+| `sanity_trials` | `sanity_trials.exe` | Check the patched default trial count via `qk_import()`. |
+| `heuristics-python` | `heuristics_python.exe` | Build dynamic-target heuristics with optional Scheduling. |
 | `sanity_python` | `sanity_python` | Build Python-backed sanity test. |
 | `topology` | `topology_test.exe` | Build dynamic topology test. |
 | `sabre-bench-topology` | `sabre_bench_topology.exe` | Build Python-backed SABRE benchmark. |
 | `clean` | — | Remove `*.exe` files (not `sanity_python`). |
 
-The last three build targets that use Python require an active Python 3.12 virtual environment and use the installed package's C API headers and Python embedding flags. They do not link the standalone Qiskit library. `QISKIT_HOME` can be overridden for standalone targets.
+The build targets that use Python require an active Python 3.12 virtual environment and use the installed package's C API headers and Python embedding flags. They do not link the standalone Qiskit library. `QISKIT_HOME` can be overridden for standalone targets.
 
-The current Makefile no longer defines `two-opt`; historical examples below are retained for reference, not as current build commands. The command-line interface of `heuristics.exe` has not been verified here.
+The current Makefile no longer defines `two-opt`; historical examples below are retained for reference, not as current build commands. The Python-backed driver interface is documented below.
 
 ## Dynamic topology benchmark
 
@@ -189,14 +208,14 @@ make sabre-bench-topology
 
 `topology_utils.hpp` returns a `PythonTarget` containing a borrowed `QkTarget*` and its owning Python reference. The benchmark uses an ownership-aware RAII deleter: locally created targets are freed with `qk_target_free()`, whereas borrowed targets release their Python reference with `Py_DECREF()`. All Qiskit objects must be destroyed before `Py_Finalize()`. Copying the Python target with `qk_target_copy()` caused a PyO3 panic in the tested embedding configuration and is not used.
 
-### Translation and optimization
+### Translation, optimization and scheduling
 
 ```bash
 ./sabre_bench_topology.exe ../NEW_Bechmark/sym9_146.qasm --topology washington --runs 1 --seed 42 --pipeline --optimization-level 0
 ./sabre_bench_topology.exe ../NEW_Bechmark/sym9_146.qasm --topology washington --runs 1 --seed 42 --pipeline --optimization-level 1
 ```
 
-Without `--pipeline`, the benchmark executes SABRE Layout + Routing. With `--pipeline`, it additionally executes Translation and Optimization. **Scheduling is not implemented yet.** The reported `swaps` count is collected before Translation. `seconds` measures Layout + Routing; `pipeline_seconds` measures elapsed time from the routing start through Optimization (not Scheduling).
+Without `--pipeline`, the benchmark executes SABRE Layout + Routing. With `--pipeline`, it additionally executes Translation, Optimization and Scheduling (ASAP by default; select `--scheduling alap`). A Python-owned target is required; Albatroz is rejected. The reported `swaps` count is collected before Translation. `seconds` measures Layout + Routing; `pipeline_seconds` measures elapsed time from the start of SABRE Layout + Routing through Scheduling and makespan estimation. Gate/depth metrics come from the optimized circuit before delay padding. `makespan_seconds` is the estimated circuit duration on the target, not a host execution time or measured QPU runtime.
 
 Validated Washington results for `sym9_146.qasm` (12 logical qubits, 378 original gates, seed 42):
 
@@ -215,13 +234,17 @@ Layout + Routing was also validated with Cairo (27 physical qubits) and Albatroz
 | `topology_test.cpp` | Validate dynamic topology loading and unknown names. |
 | `sanity_python_target.cpp` | Validate Python-backed C API access. |
 | `sabre_benchmark.cpp` | Standalone SABRE benchmark. |
-| `sabre_benchmark_topology.cpp` | Python-backed benchmark with dynamic targets, Translation and Optimization (source name as listed in the current Makefile). |
+| `sabre_benchmark_topology.cpp` | Python-backed benchmark with dynamic targets and full pipeline. |
+| `pipeline_utils.hpp` | Translation, Optimization and Scheduling for the SABRE benchmark. |
+| `scheduling_utils.hpp` | Shared Python Scheduling bridge and duration estimation. |
+| `heuristics_python.cpp` | Dynamic-target 2-change/3-change driver with optional Scheduling. |
+| `sanity_trials.cpp` | Verify the patched C API default trial count through the Python extension. |
 | `benchmark_utils.hpp` | Benchmark arguments, results and CSV utilities. |
 | `heuristics.cpp` | Current heuristics build entry point; CLI not verified here. |
 | `qasm_parser.hpp` | Parse the supported subset of OpenQASM 2 into an intermediate representation. |
 | `qiskit_circuit.hpp` | Construct a `QkCircuit` from parsed gates and parameters. |
 | `albatroz_target.hpp` | Define the 16-qubit Albatroz target, connectivity, and gate support. |
-| `circuit_metrics.hpp` | Report gate counts, SWAP counts, and circuit depth. |
+| `circuit_metrics.hpp` | Report gate counts, SWAP counts, circuit depth and store makespan in `MappingResult`. |
 | `mapping_utils.hpp` | Apply a user-supplied mapping, create the transpiler layout/state, and evaluate routed mappings. |
 | `routing_utils.hpp` | Invoke SABRE Routing with a fixed initial mapping, seed, and configurable internal trial count. |
 | `layout_utils.hpp` | Invoke standalone SABRE Layout + Routing, which chooses its own initial mapping. |
@@ -295,34 +318,37 @@ Each candidate is evaluated using a fresh physical DAG and routing state. The or
 
 ## Non-recursive 2-opt and 3-opt
 
-Both heuristics start with an initial random logical-to-physical assignment and evaluate neighbors with fixed-mapping SABRE Routing. The primary objective is to **minimize SWAPs**, with routed depth as the tie-breaker.
+Both heuristics start with an initial random logical-to-physical assignment and evaluate neighbors with fixed-mapping SABRE Routing. The primary objective is to **minimize depth** (or makespan when Scheduling is enabled), with pre-translation SWAP count as the tie-breaker.
 
-The complete physical mapping has 16 entries for Albatroz. **The search loops use the number of logical qubits in the input circuit**, not 16 unconditionally. For a 12-logical-qubit circuit, the candidate positions range from 0 to 11; entries 12–15 remain part of the mapping but are not exchanged by these local-search neighborhoods.
+The complete physical mapping has one entry per physical qubit (16 for Albatroz, 27 for Montreal, 127 for Washington). **The search loops use the number of logical qubits in the input circuit**, not 16 unconditionally. For a 12-logical-qubit circuit, the candidate positions range from 0 to 11; entries 12–15 remain part of the mapping but are not exchanged by these local-search neighborhoods.
 
 - **2-opt:** swap every pair of positions `i < j`. Number of neighbors: `L(L-1)/2`.
-- **3-opt:** for every triple `i < j < k`, evaluate the six permutations of the three selected entries, including the unchanged permutation. Number of evaluations in this implementation: `6 * C(L,3)`. This deliberately retains redundant evaluations, matching the original custom implementation.
+- **3-opt:** for every triple `i < j < k`, evaluate the five non-identity permutations of the three selected entries. Number of evaluations: `5 * C(L,3)`. Some 2-change-equivalent neighbors may recur across triples.
 
 Each search explores **one neighborhood** of the initial mapping; it is not a recursive or repeated-improvement local search.
 
 ### Command line
 
-The tested heuristic-selection interface is:
-
 ```text
-./two_opt_test.exe <file.qasm> <heuristic> [mapping_seed] [num_trials] [sabre_seed]
+./heuristics_python.exe <file.qasm> <2|3> <num_trials> [optimization_level] [translate: 0|1] [optimize: 0|1] [schedule: 0|1] [topology] [asap|alap]
 ```
-
-For example:
 
 ```bash
-make two-opt
-./two_opt_test.exe ../NEW_Bechmark/cycle10_2_110.qasm 2 4 1 34
-./two_opt_test.exe ../NEW_Bechmark/cycle10_2_110.qasm 3 4 20 34
+make heuristics-python
+RAYON_NUM_THREADS=1 ./heuristics_python.exe ../NEW_Bechmark/sym9_146.qasm 2 5 0 0 0 0 montreal
+RAYON_NUM_THREADS=1 ./heuristics_python.exe ../NEW_Bechmark/sym9_146.qasm 3 5 0 1 1 1 montreal alap
+RAYON_NUM_THREADS=1 ./heuristics_python.exe ../NEW_Bechmark/sym9_146.qasm 2 5 0 1 1 1 washington asap
 ```
 
-Here `heuristic` is `2` for 2-opt or `3` for 3-opt. The mapping seed initializes the random physical permutation; `num_trials` controls the number of **internal** routing attempts per candidate; `sabre_seed` controls SABRE's randomization. Defaults used during development were `mapping_seed = 128`, `num_trials = 5`, and `sabre_seed = 42`.
+Defaults: optimization level 0, all three stage flags off, Albatroz, ASAP. The initial mapping seed is 128 and initial SABRE seed is 42 in the tested Python-backed driver. Neighbor routing seeds come from a generator initialized with `std::random_device`; the printed initial seed does not guarantee identical neighbor routing across runs. Scheduling requires both preceding flags and a Python-owned target. Albatroz supports the native stages but not Scheduling in this implementation. The full heuristic pipeline was validated at level 0 only; failures at higher levels remain under investigation. The benchmark SABRE pipeline has separately run at level 1.
 
-Some intermediate revisions of `two_opt_test.cpp` accepted only the 2-opt-specific argument sequence (`<file.qasm> [mapping_seed] [num_trials] [sabre_seed]`). Use the executable's current usage output to confirm its interface if working from an earlier revision.
+The existing standalone `heuristics.exe` remains separate; its positional CLI ends at `[optimize: 0|1]`. The older `two_opt_test.exe` interfaces are historical.
+
+### Implementation and ownership
+
+For each mapping, `evaluate_mapping()` creates an independent physical DAG and transpiler state, runs native SABRE Routing, counts SWAPs before Translation, optionally runs Translation and Optimization, and calculates structural metrics before Scheduling. With all three stage flags enabled, `qk_dag_to_python()` transfers the physical DAG to Python; the native pointer is cleared to avoid double-free. Python-owned references are released with `Py_XDECREF`, and targets remain alive until all evaluations finish. The original logical DAG is preserved. The initial mapping is evaluated with the same flags as its neighbors. `is_better()` compares makespan when Scheduling is enabled, otherwise depth; both use SWAPs to break exact ties.
+
+The SABRE benchmark retains its own `pipeline_utils.hpp` because its layout/state construction differs. Both paths reuse `scheduling_utils.hpp`: convert the Python DAG to a circuit, construct the scheduling pass manager using `generate_scheduling(target.durations(), method, target.timing_constraints(), target=target)`, run it, and call `estimate_duration(target, "s")`. This estimates the scheduled circuit duration from fake-target timing properties, not actual hardware execution. Native Mapping, Routing, Translation and Optimization are not replaced by Python calls.
 
 ### Example validation
 
@@ -334,20 +360,20 @@ For a QASM input with **12 logical qubits** on the **16-qubit Albatroz** target,
 
 A reported test evaluated 66 neighbors, improving SWAP count from `1721` to `1600`, with the best candidate corresponding to swapping logical mapping positions `(5,11)`.
 
-For 12 logical qubits, six permutations per triple yield `6 * C(12,3) = 1,320` 3-opt evaluations. This count includes redundant candidates by design.
+For 12 logical qubits, five non-identity permutations per triple yield `5 * C(12,3) = 1,100` 3-change evaluations.
 
 ## Timing and parallel execution
 
 Two timing metrics are retained:
 
 - **Total SABRE Routing time:** sum of time spent within the routing calls across the initial mapping and all candidates.
-- **Total local-search evaluation time:** elapsed time from evaluation of the initial mapping through completion of neighbor exploration. It includes mapping/DAG preparation, routing, result extraction, and reporting, but excludes initial QASM parsing, target creation, and initial random mapping generation.
+- **Total local-search evaluation time:** elapsed time from evaluation of the initial mapping through completion of neighbor exploration. It includes mapping/DAG preparation, routing, result extraction, but excludes initial QASM parsing, target creation, and initial random mapping generation.
 
 The Qiskit Rust implementation uses Rayon for parallel work. Control the number of Rayon worker threads with `RAYON_NUM_THREADS`:
 
 ```bash
-RAYON_NUM_THREADS=1  ./two_opt_test.exe ../NEW_Bechmark/cycle10_2_110.qasm 3 4 100 34
-RAYON_NUM_THREADS=24 ./two_opt_test.exe ../NEW_Bechmark/cycle10_2_110.qasm 3 4 100 34
+RAYON_NUM_THREADS=1  ./heuristics_python.exe ../NEW_Bechmark/sym9_146.qasm 3 100 0 0 0 0 montreal
+RAYON_NUM_THREADS=24 ./heuristics_python.exe ../NEW_Bechmark/sym9_146.qasm 3 100 0 0 0 0 montreal
 ```
 
 In one reported single-routing comparison with 100 internal trials, the serial timing was approximately `0.0291218 s` and the parallel timing approximately `0.0047477 s`, corresponding to about `6.13x` observed speedup. These are preliminary single measurements, not a statistically controlled scaling study. Increasing the Rayon pool above the 24 available CPUs did not produce an observed performance improvement in that test.
@@ -365,10 +391,24 @@ For comparable experiments, keep the following fixed or record them explicitly:
 - Number of internal SABRE trials.
 - Selected heuristic and the logical-qubit count.
 - Rayon thread count and CPU configuration.
-- SWAP count, circuit depth, accumulated routing time, and complete evaluation time.
+- SWAP count, circuit depth, makespan (when enabled), stage flags, scheduling method, accumulated routing time, and complete evaluation time. Record the neighbor seeds for controlled comparisons; they are not currently fixed.
 
 The `qiskit-2.6.2-sabre-routing.patch` file should be regenerated from the Qiskit checkout after any further Rust or C API changes, as described in the [patch document](QISKIT_2_6_2_SABRE_ROUTING_PATCH.md).
 
 ## Current scope
 
-This project is an experimental framework for mapping evaluation and performance studies, rather than a complete quantum compiler. Future work includes Scheduling, investigating optimization-level semantics across stages, additional local-search heuristics, pruning, and systematic performance-portability experiments. The current results do not demonstrate quantum computational advantage.
+This project is an experimental framework for mapping evaluation and performance studies, rather than a complete quantum compiler. Future work includes investigating optimization-level semantics across stages, additional local-search heuristics, pruning, and systematic performance-portability experiments. The current results do not demonstrate quantum computational advantage.
+
+## Functional validation (patched Python-backed API)
+
+Reported runs on `sym9_146.qasm`, 12 logical qubits, level 0, five routing trials and one Rayon thread:
+
+| Target | Search | Method | Initial makespan (s) | Best makespan (s) | Best depth | Best SWAPs | Neighbors |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: |
+| Montreal | 2-change | ASAP | 0.000140345 | 0.000120341 | 446 | 111 | 66 |
+| Montreal | 2-change | ALAP | 0.000140345 | 0.000127004 | 445 | 112 | 66 |
+| Montreal | 3-change | ASAP | 0.000140345 | 0.000116672 | 385 | 106 | 1100 |
+| Montreal | 3-change | ALAP | 0.000140345 | 0.000115499 | 410 | 108 | 1100 |
+| Washington | 2-change | ASAP | 0.00015648 | 0.000153252 | 419 | 149 | 66 |
+
+These are functional tests, not controlled comparisons of scheduling methods or search quality. The no-Scheduling path and Albatroz rejection were also tested. Cairo Layout + Routing worked, but Translation failed in a full-pipeline test; its cause is not established. Exact optimization-level pass semantics remain open. Timing of the full heuristic includes all enabled stages and Python overhead, while accumulated Routing time measures only native Routing calls.

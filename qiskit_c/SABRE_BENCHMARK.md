@@ -48,3 +48,16 @@ Keep `benchmark_utils.hpp`. Replace only the function invoked in the timed regio
 ## Validation
 
 The code was prepared against the public Qiskit C API signatures and the existing project interfaces discussed in this conversation, but **could not be compiled in this environment** because the user's local Qiskit 2.6.2 headers/library and helper headers were not available here. Compile and test with `make sabre-bench` locally before relying on results.
+
+## Dynamic-target benchmark and full pipeline
+
+The preceding sections describe the original standalone executable. The separate Python-backed executable uses the locally patched Qiskit wheel (see README and patch documentation):
+
+```bash
+make sabre-bench-topology
+./sabre_bench_topology.exe ../NEW_Bechmark/sym9_146.qasm --topology washington --runs 3 --seed 42 --pipeline --optimization-level 1 --scheduling asap --csv washington.csv
+```
+
+Without `--pipeline`, only SABRE Layout + Routing runs. With it, `pipeline_utils.hpp` performs Translation, Optimization and Scheduling via the shared `scheduling_utils.hpp`. `--scheduling` accepts `asap` (default) or `alap`. The full pipeline rejects Albatroz because it requires a Python target. Other topology names are resolved dynamically through `FakeProviderForBackendV2`. The routing SWAP count is collected before translation; gates, instructions and depth are measured on the optimized circuit before scheduling delays. `seconds` measures Layout + Routing; `pipeline_seconds` measures from the same start through Scheduling and makespan estimation, including intermediate work. `makespan_seconds` estimates the target circuit duration, not actual device runtime. Zero pipeline/makespan values indicate those stages were not requested. CSV/terminal rows in the latest validated version use `run,seed,seconds,pipeline_seconds,instructions,gates,swaps,depth,makespan_seconds`. Best structural result is selected by depth, SWAPs, then time; a separate best makespan is reported when scheduling is active.
+
+Washington (127 qubits) and Montreal (27 qubits) completed full-pipeline tests. Washington seed 42 at level 1 returned 587 gates, depth 364, 79 routing SWAPs and estimated makespan 0.00012519111111111136 s in the reported ASAP run. Cairo failed during Translation in one full-pipeline test; the cause remains unknown. The pipeline was extracted to `pipeline_utils.hpp` and the user reported successful validation. These tests are not a controlled hardware or scheduling comparison. The heuristics use a separate mapping/routing flow and reuse only the Scheduling helper.

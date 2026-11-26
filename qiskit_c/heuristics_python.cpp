@@ -241,7 +241,7 @@ int main(int argc, char* argv[]) {
 
     
         //std::mt19937 rng(seed);
-        std::mt19937 rng(seed);
+        std::mt19937 rng(std::random_device{}());
 
 
         std::vector<uint32_t> initial_mapping(num_physical);

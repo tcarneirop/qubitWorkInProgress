@@ -7,7 +7,8 @@ INCLUDES = -I$(QISKIT_HOME)/dist/c/include
 LIBDIR = $(QISKIT_HOME)/dist/c/lib
 LDFLAGS = -L$(LIBDIR) -Wl,-rpath,$(LIBDIR) -lqiskit
 
-.PHONY: sanity circuit target transpile mapping qasm sabre clean sabre-bench
+.PHONY: sanity circuit target transpile mapping qasm sabre clean sabre-bench \
+        topology sanity_python sanity_trials sabre-bench-topology heuristics-python heuristics mapping-generic
 
 qasm: qasm_test.exe
 	./qasm_test.exe test.qasm
