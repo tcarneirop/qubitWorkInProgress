@@ -45,7 +45,15 @@ inline bool two_opt(
     size_t num_trials = 5,
     uint8_t optimization_level = 0,
     bool translate = false,
-    bool optimize = false
+    bool optimize = false,
+    bool schedule = false,
+    #ifdef QISKIT_PYTHON_EXTENSION
+    PyObject* py_target = nullptr,
+    #else
+    void* py_target = nullptr,
+    #endif
+    const char* scheduling = "asap"
+
 ) {
     //const uint32_t num_physical = initial_mapping.size();
 
@@ -70,9 +78,11 @@ inline bool two_opt(
             MappingResult result;
 
             if (!evaluate_mapping(
-                    logical_dag, target, candidate,
-                    num_logical, result,  static_cast<int64_t>(rng()), num_trials, optimization_level,translate,optimize
-                )) {
+                logical_dag, target, candidate,
+                num_logical, result, static_cast<int64_t>(rng()),
+                num_trials, optimization_level, translate, optimize,
+                schedule, py_target, scheduling)) 
+            {
                 std::cerr << "ERROR: Candidate evaluation failed\n";
                 return false;
             }
@@ -92,7 +102,7 @@ inline bool two_opt(
             /*
              * Retain the best candidate found so far.
              */
-            if (is_better(result, best_result)) {
+            if (is_better(result, best_result, schedule)) {
                 best_mapping = candidate;
                 best_result = result;
             }

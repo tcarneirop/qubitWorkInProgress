@@ -26,6 +26,13 @@ sanity_python: sanity_python_target.cpp
 		$< -o $@ \
 		$(shell python3-config --embed --ldflags)
 
+sanity_trials: sanity_trials.cpp
+	$(CXX) $(CXXFLAGS) \
+		-I$(VIRTUAL_ENV)/lib/python3.12/site-packages/qiskit/capi/include \
+		$(shell python3-config --includes) \
+		$< -o sanity_trials.exe \
+		$(shell python3-config --embed --ldflags)
+
 sabre-bench-topology:
 	$(CXX) $(CXXFLAGS) \
 		-I$(VIRTUAL_ENV)/lib/python3.12/site-packages/qiskit/capi/include \
@@ -33,7 +40,13 @@ sabre-bench-topology:
 		sabre_benchmark_topology.cpp -o sabre_bench_topology.exe \
 		$(shell python3-config --embed --ldflags)
 
-	
+heuristics-python:
+	$(CXX) $(CXXFLAGS) -DQISKIT_PYTHON_EXTENSION \
+		-I$(VIRTUAL_ENV)/lib/python3.12/site-packages/qiskit/capi/include \
+		$(shell python3-config --includes) \
+		heuristics_python.cpp -o heuristics_python.exe \
+		$(shell python3-config --embed --ldflags)
+		
 heuristics:
 	$(CXX) $(CXXFLAGS) $(INCLUDES) heuristics.cpp -o heuristics.exe $(LDFLAGS)
 

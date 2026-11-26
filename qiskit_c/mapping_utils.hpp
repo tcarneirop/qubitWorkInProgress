@@ -1,6 +1,11 @@
 #ifndef MAPPING_UTILS_HPP
 #define MAPPING_UTILS_HPP
 
+#ifdef QISKIT_PYTHON_EXTENSION
+#include "scheduling_utils.hpp"
+#include <memory>
+#endif
+
 #include <cstdint>
 #include <qiskit.h>
 #include <vector>
@@ -44,15 +49,24 @@ size_t count_swaps(const QkCircuit* circuit) {
  * Primary objective: minimize SWAPs.
  * Tie-breaking criterion: minimize circuit depth.
  */
+
 bool is_better(
-    const MappingResult& candidate,
-    const MappingResult& best
+const MappingResult& candidate,
+const MappingResult& best,
+const bool schedule = false
 ) {
+    if (schedule) {
+        if (candidate.makespan_seconds == best.makespan_seconds)
+            return candidate.swaps < best.swaps;
+        return candidate.makespan_seconds < best.makespan_seconds;
+    }
+
     if (candidate.depth == best.depth)
         return candidate.swaps < best.swaps;
 
     return candidate.depth < best.depth;
 }
+
 
 
 inline QkDag* apply_mapping(
@@ -267,9 +281,27 @@ bool evaluate_mapping(
     size_t num_trials = 5,
     uint8_t optimization_level = 0,
     bool translate = false,
-    bool optimize = false
+    bool optimize = false,
+    bool schedule = false,
+#ifdef QISKIT_PYTHON_EXTENSION
+    PyObject* py_target = nullptr,
+#else
+    void* py_target = nullptr,
+#endif
+    const char* scheduling = "asap"
 ) {
-    const uint32_t num_physical = 16;
+
+    result.makespan_seconds = 0.0;
+
+    if (schedule && (!translate || !optimize || !py_target))
+        return false;
+
+    #ifndef QISKIT_PYTHON_EXTENSION
+    if (schedule)
+        return false;
+    #endif
+
+    const uint32_t num_physical = qk_target_num_qubits(target);
 
      auto t0 = std::chrono::steady_clock::now();
 
@@ -449,11 +481,61 @@ bool evaluate_mapping(
 
     /* Preserve the SWAP count obtained before translation. */
     result.swaps = routing_swaps;
+    #ifdef QISKIT_PYTHON_EXTENSION
+    if (schedule) {
+
+        auto py_deleter = [](PyObject* obj) {
+            Py_XDECREF(obj);
+        };
+
+        using PyObjectPtr =
+            std::unique_ptr<PyObject, decltype(py_deleter)>;
+
+        try {
+            PyObjectPtr py_dag(
+                qk_dag_to_python(physical_dag),
+                py_deleter
+            );
+
+            physical_dag = nullptr;
+
+            if (!py_dag) {
+                PyErr_Print();
+                throw std::runtime_error(
+                    "Could not transfer DAG to Python"
+                );
+            }
+
+            PyObjectPtr scheduled(
+                run_scheduling(
+                    py_dag.get(),
+                    py_target,
+                    scheduling
+                ),
+                py_deleter
+            );
+
+            result.makespan_seconds =
+                estimate_makespan(scheduled.get(), py_target);
+
+        } catch (const std::exception& e) {
+            std::cerr << e.what() << '\n';
+
+            qk_circuit_free(routed_circuit);
+            qk_transpile_state_free(state);
+
+            return false;
+        }
+    }
+    #endif
+
+
+    //here
 
     /* Release all objects created for this candidate. */
     qk_circuit_free(routed_circuit);
     qk_transpile_state_free(state);
-    qk_dag_free(physical_dag);
+    if (physical_dag) qk_dag_free(physical_dag);
 
     return true;
 }

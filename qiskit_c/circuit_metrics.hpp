@@ -17,6 +17,7 @@ struct MappingResult {
     size_t depth = 0;
     size_t gates = 0;
     double time = 0.0;
+    double makespan_seconds = 0.0;
 };
 
 
