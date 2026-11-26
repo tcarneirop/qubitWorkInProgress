@@ -28,6 +28,7 @@ struct BenchmarkOptions {
     std::size_t num_swap_trials = 20;
     std::size_t num_random_trials = 20;
     std::uint8_t optimization_level = 0;
+    std::string scheduling = "asap";
 
 };
 
@@ -55,6 +56,7 @@ inline void print_benchmark_usage(const char* exe) {
         << "  --random-trials N  SABRE random layout trials (default: 20)\n"
         << "  --csv PATH         Write per-run results to CSV\n"
         << "  --topology NAME    Hardware topology (default: albatroz)\n"
+        << "  --scheduling METHOD  asap or alap (default: asap)\n"
         ;
 }
 
@@ -133,6 +135,10 @@ inline BenchmarkOptions parse_benchmark_args(int argc, char* argv[]) {
         }
         else if (flag == "--csv") {
             opt.csv = value;
+        }
+        else if (flag == "--scheduling") {
+            if (value != "asap" && value != "alap") throw std::invalid_argument("Scheduling must be asap or alap");
+            opt.scheduling = value;
         }
 
 

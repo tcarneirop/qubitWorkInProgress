@@ -119,6 +119,8 @@ int main(int argc, char* argv[]) {
                   << "Pipeline? " << opt.pipeline << "\n"
                   << "Optimization level: "
                   << (int)opt.optimization_level << "\n"
+                  << "Scheduling: "
+                  << opt.scheduling << "\n"
                   << "Topology: " << opt.topology << "\n";
 
         std::vector<BenchmarkResult> results;
@@ -312,11 +314,12 @@ int main(int argc, char* argv[]) {
                 }
 
                 /* Execute the scheduling stage. */
+                //receives the scheduling from the cli parameters
                 PyObjectPtr scheduled(
                     run_scheduling(
                         py_dag.get(),
                         py_target,
-                        "asap"
+                        opt.scheduling.c_str()
                     ),
                     py_deleter
                 );
