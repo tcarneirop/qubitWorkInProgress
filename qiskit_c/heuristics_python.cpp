@@ -14,7 +14,7 @@
 #include <qiskit.h>
 #include <memory>
 #include <string>
-
+#include <iomanip>
 
 
 #include "qasm_parser.hpp"
@@ -46,22 +46,6 @@ struct TargetDeleter {
 using TargetPtr = std::unique_ptr<QkTarget, TargetDeleter>;
 
 
-/*
- 
-Optimization Levels (Qiskit)
-
-Level 0 — No optimization: Performs the transformations required to make the circuit compatible with the target hardware, without additional circuit optimization.
-
-Level 1 — Light optimization: Introduces basic circuit simplifications, including inverse-gate cancellation and single-qubit gate optimization.
-
-Level 2 — Medium optimization: Applies more extensive optimizations, including commutation-based gate cancellation and increased layout/routing search effort.
-
-Level 3 — High optimization: Performs more aggressive optimization, including two-qubit block resynthesis, potentially reducing circuit depth and gate count at a higher compilation cost.
-
-Higher optimization levels generally require more compilation effort and do not guarantee lower depth or gate count for every circuit.
-*/
-
-
 int main(int argc, char* argv[]) {
 
     Py_Initialize();
@@ -74,8 +58,8 @@ int main(int argc, char* argv[]) {
 
 
     size_t num_trials = 5;
-    int64_t sabre_seed = 42;
-    uint32_t seed = 128;
+    uint32_t seed = std::random_device{}();
+    int64_t sabre_seed = std::random_device{}();
     size_t heuristic = 2;
     uint8_t optimization_level = 0;
     bool translate = false;
@@ -83,11 +67,12 @@ int main(int argc, char* argv[]) {
     bool schedule = false;
     std::string scheduling = "asap";
 
-    if (argc < 4 || argc > 10) {
+    if (argc < 4 || argc > 12) {
         std::cerr << "Usage: " << argv[0]
             << " <file.qasm> <heuristic - 2opt or 3opt> <num_trials>"
             << " [optimization_level] [translate: 0|1] [optimize: 0|1]"
-            << " [schedule: 0|1] [topology] [asap|alap]\n";
+            << " [schedule: 0|1] [topology] [asap|alap]\n"
+            << " [mapping_seed] [sabre_seed]\n";
         return 1;
     }
 
@@ -151,6 +136,13 @@ int main(int argc, char* argv[]) {
     if (argc >= 10)
         scheduling = argv[9];
 
+    if (argc >= 11)
+        seed = std::stoul(argv[10]);
+
+    if (argc >= 12)
+        sabre_seed = std::stoll(argv[11]);
+
+
     if (scheduling != "asap" && scheduling != "alap") {
         std::cerr << "ERROR: scheduling must be asap or alap\n";
         return 1;
@@ -172,6 +164,7 @@ int main(int argc, char* argv[]) {
 
     std::cout << "Heuristic: "
           << (heuristic == 2 ? "2-change" : "3-change") << "\n";
+    std::cout << "Mapping seed: " << seed << "\n";
     std::cout << "SABRE seed: " << sabre_seed << "\n";
     std::cout << "SABRE Routing trials: " << num_trials << "\n";
     std::cout << "Optimization level: "
@@ -180,6 +173,9 @@ int main(int argc, char* argv[]) {
             << (translate ? "Yes" : "No") << "\n";
     std::cout << "Optimizing in the pipeline: "
             << (optimize ? "Yes" : "No") << "\n";
+    std::cout << "Scheduling in the pipeline: "
+            << (schedule ? "Yes" : "No") << "\n";
+    std::cout<<"############################################\n\n";
 
     try {
         /*
@@ -240,8 +236,8 @@ int main(int argc, char* argv[]) {
          */
 
     
-        //std::mt19937 rng(seed);
-        std::mt19937 rng(std::random_device{}());
+        std::mt19937 rng(seed);
+        //std::mt19937 rng(sabre_seed);
 
 
         std::vector<uint32_t> initial_mapping(num_physical);
@@ -348,7 +344,10 @@ int main(int argc, char* argv[]) {
           << initial_result.gates << "\n";
         std::cout << "Initial SWAPs: "
                   << initial_result.swaps << "\n";
-        if (schedule) std::cout << "Initial makespan (s): " << initial_result.makespan_seconds << "\n";
+        if (schedule) std::cout << std::fixed << std::setprecision(10)
+          << "Initial makespan (s): "
+          << initial_result.makespan_seconds
+          << std::defaultfloat << std::setprecision(6) << '\n';
 
         std::cout << "\n====================\n";
         
@@ -360,7 +359,10 @@ int main(int argc, char* argv[]) {
           << best_result.gates << "\n";
         std::cout << "Best SWAPs: "
                   << best_result.swaps << "\n";
-        if (schedule) std::cout << "Best makespan (s): " << best_result.makespan_seconds << "\n";
+        if (schedule) std::cout << std::fixed << std::setprecision(10)
+          << "Best makespan (s): "
+          << best_result.makespan_seconds
+          << std::defaultfloat << std::setprecision(6) << '\n';
 
     
         std::cout << "\n====================\n";

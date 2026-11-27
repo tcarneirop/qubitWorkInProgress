@@ -49,7 +49,7 @@ inline bool three_opt(
 
 ) {
 
-    std::mt19937_64 rng(std::random_device{}());
+    std::mt19937_64 rng(sabre_seed);
     /* Generate all triples of physical-qubit positions. */
     for (uint32_t i = 0; i < num_logical; ++i) {
         for (uint32_t j = i + 1; j < num_logical; ++j) {

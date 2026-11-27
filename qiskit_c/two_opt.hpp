@@ -63,7 +63,8 @@ inline bool two_opt(
      * For 16 physical qubits:
      * 16 * 15 / 2 = 120 candidates.
      */
-    std::mt19937_64 rng(std::random_device{}());
+    std::mt19937_64 rng(sabre_seed);
+    
     for (uint32_t i = 0; i < num_logical; i++) {
         for (uint32_t j = i + 1; j < num_logical; j++) {
 

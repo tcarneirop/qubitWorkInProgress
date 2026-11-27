@@ -358,7 +358,7 @@ bool evaluate_mapping(
 
     bool success = run_sabre_routing(
         physical_dag, target, state,
-        sabre_seed, num_trials, optimization_level
+        sabre_seed, num_trials, 0
     );
 
     //std::cout << "After routing (input mapping): ";
