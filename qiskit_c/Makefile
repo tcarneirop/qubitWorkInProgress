@@ -1,0 +1,97 @@
+CXX = g++
+CXXFLAGS = -O3 -std=c++17 -Wall -Wextra
+
+QISKIT_HOME ?= $(HOME)/qubitWorkInProgress/qiskit
+
+INCLUDES = -I$(QISKIT_HOME)/dist/c/include
+LIBDIR = $(QISKIT_HOME)/dist/c/lib
+LDFLAGS = -L$(LIBDIR) -Wl,-rpath,$(LIBDIR) -lqiskit
+
+.PHONY: sanity circuit target transpile mapping qasm sabre clean sabre-bench \
+        topology sanity_python sanity_trials sabre-bench-topology heuristics-python heuristics mapping-generic
+
+qasm: qasm_test.exe
+	./qasm_test.exe test.qasm
+
+topology: topology_test.cpp topology_utils.hpp
+	$(CXX) $(CXXFLAGS) \
+		-I$(VIRTUAL_ENV)/lib/python3.12/site-packages/qiskit/capi/include \
+		$(shell python3-config --includes) \
+		$< -o topology_test.exe \
+		$(shell python3-config --embed --ldflags)
+
+sanity_python: sanity_python_target.cpp
+	$(CXX) $(CXXFLAGS) \
+		-I$(VIRTUAL_ENV)/lib/python3.12/site-packages/qiskit/capi/include \
+		$(shell python3-config --includes) \
+		$< -o $@ \
+		$(shell python3-config --embed --ldflags)
+
+sanity_trials: sanity_trials.cpp
+	$(CXX) $(CXXFLAGS) \
+		-I$(VIRTUAL_ENV)/lib/python3.12/site-packages/qiskit/capi/include \
+		$(shell python3-config --includes) \
+		$< -o sanity_trials.exe \
+		$(shell python3-config --embed --ldflags)
+
+sabre-bench-topology:
+	$(CXX) $(CXXFLAGS) \
+		-I$(VIRTUAL_ENV)/lib/python3.12/site-packages/qiskit/capi/include \
+		$(shell python3-config --includes) \
+		sabre_benchmark_topology.cpp -o sabre_bench_topology.exe \
+		$(shell python3-config --embed --ldflags)
+
+heuristics-topology:
+	$(CXX) $(CXXFLAGS) -DQISKIT_PYTHON_EXTENSION \
+		-I$(VIRTUAL_ENV)/lib/python3.12/site-packages/qiskit/capi/include \
+		$(shell python3-config --includes) \
+		heuristics_topology.cpp -o heuristics_topology.exe \
+		$(shell python3-config --embed --ldflags)
+		
+heuristics:
+	$(CXX) $(CXXFLAGS) $(INCLUDES) heuristics.cpp -o heuristics.exe $(LDFLAGS)
+
+mapping-generic:
+	$(CXX) $(CXXFLAGS) $(INCLUDES) mapping_generic_test.cpp -o mapping_generic_test.exe $(LDFLAGS)
+
+sabre-bench:
+	$(CXX) $(CXXFLAGS) $(INCLUDES) sabre_benchmark.cpp -o sabre_benchmark.exe $(LDFLAGS)
+
+sabre:
+	$(CXX) $(CXXFLAGS) $(INCLUDES) sabre_test.cpp -o sabre_test.exe $(LDFLAGS)
+
+qasm_test.exe: qasm_test.cpp qasm_parser.hpp
+	$(CXX) $(CXXFLAGS) $(INCLUDES) $< -o $@ $(LDFLAGS)
+
+mapping: mapping_test.exe
+	./mapping_test.exe
+
+mapping_test.exe: mapping_test.cpp
+	$(CXX) $(CXXFLAGS) $(INCLUDES) $< -o $@ $(LDFLAGS)
+
+transpile: transpile_test.exe
+	./transpile_test.exe
+
+transpile_test.exe: transpile_test.cpp
+	$(CXX) $(CXXFLAGS) $(INCLUDES) $< -o $@ $(LDFLAGS)
+	
+target: target_test.exe
+	./target_test.exe
+
+target_test.exe: target_test.cpp
+	$(CXX) $(CXXFLAGS) $(INCLUDES) $< -o $@ $(LDFLAGS)
+
+circuit: circuit_test.exe
+	./circuit_test.exe
+
+circuit_test.exe: circuit_test.cpp
+	$(CXX) $(CXXFLAGS) $(INCLUDES) $< -o $@ $(LDFLAGS)
+
+sanity: sanity_test.exe
+	./sanity_test.exe
+
+sanity_test.exe: sanity_test.cpp
+	$(CXX) $(CXXFLAGS) $(INCLUDES) $< -o $@ $(LDFLAGS)
+
+clean:
+	rm -f *.exe
