@@ -41,11 +41,11 @@ sabre-bench-topology:
 		sabre_benchmark_topology.cpp -o sabre_bench_topology.exe \
 		$(shell python3-config --embed --ldflags)
 
-heuristics-python:
+heuristics-topology:
 	$(CXX) $(CXXFLAGS) -DQISKIT_PYTHON_EXTENSION \
 		-I$(VIRTUAL_ENV)/lib/python3.12/site-packages/qiskit/capi/include \
 		$(shell python3-config --includes) \
-		heuristics_python.cpp -o heuristics_python.exe \
+		heuristics_topology.cpp -o heuristics_topology.exe \
 		$(shell python3-config --embed --ldflags)
 		
 heuristics:
